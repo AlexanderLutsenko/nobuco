@@ -4,12 +4,11 @@ from typing import Collection, List
 import torch
 from torch import nn
 
-from pytorch2keras.convert.layers.container import ConnectivityStatus
 from pytorch2keras.convert.validation import ValidationStatus
-from sty import bg, ef, fg, rs
 
 from pytorch2keras.converters.channel_ordering import make_template_recursively
 from pytorch2keras.util import collect_recursively, get_torch_tensor_id
+from pytorch2keras.vis.stylizer import ConsoleStylizer
 
 
 class WrappedOp:
@@ -49,8 +48,8 @@ class TensorNameAssigner():
 
 
 class TierStatus:
-    def __init__(self, color: str, is_last: bool, is_disconnected: bool, has_parent_outputs: bool):
-        self.color = color
+    def __init__(self, style: str, is_last: bool, is_disconnected: bool, has_parent_outputs: bool):
+        self.style = style
         self.is_last = is_last
         self.is_disconnected = is_disconnected
         self.has_parent_outputs = has_parent_outputs
@@ -128,11 +127,13 @@ class PytorchNodeHierarchy:
             tensor_name_assigner = TensorNameAssigner()
             tensor_name_assigner.fill(self)
 
+        stylizer = ConsoleStylizer()
+
         def to_str(obj, self_connectivity_status=None, parent_connectivity_status=None, is_input=False):
             if isinstance(obj, torch.Tensor):
-                color = connectivity_status_to_color(obj, self_connectivity_status, parent_connectivity_status, is_input)
+                style = stylizer.connectivity_status_to_style(obj, self_connectivity_status, parent_connectivity_status, is_input)
                 name = tensor_name_assigner.get_name(obj)
-                return color + f'tens{name}' + '{' + ','.join([str(s) for s in obj.shape]) + '}' + rs.all
+                return stylizer.stylize(f'tens{name}' + '{' + ','.join([str(s) for s in obj.shape]) + '}', style)
             elif isinstance(obj, torch.Size):
                 return f'Size{tuple(obj)}'
             elif isinstance(obj, str):
@@ -159,42 +160,6 @@ class PytorchNodeHierarchy:
             else:
                 return str(obj)
 
-        def validation_status_to_color(status: ValidationStatus, converted_manually):
-            if status == ValidationStatus.SUCCESS:
-                color = fg.green
-            elif status == ValidationStatus.FAIL:
-                color = fg.red
-            elif status == ValidationStatus.INACCURATE:
-                color = fg.yellow
-            else:
-                color = rs.all
-
-            if converted_manually:
-                color += ef.bold
-            return color
-
-        def connectivity_status_to_color(tensor, self_status: ConnectivityStatus, parent_status: ConnectivityStatus, is_input) -> str:
-            color = ''
-
-            if self_status is not None:
-                if is_input:
-                    if get_torch_tensor_id(tensor) in self_status.unused_inputs:
-                        color += fg.da_grey
-                else:
-                    if get_torch_tensor_id(tensor) in self_status.unreached_outputs:
-                        color += ef.inverse
-
-            if parent_status is not None:
-                if is_input:
-                    if get_torch_tensor_id(tensor) in parent_status.unprovided_inputs:
-                        color += ef.underl
-                else:
-                    if get_torch_tensor_id(tensor) in parent_status.unused_nodes:
-                        color += fg.da_grey
-            return color
-
-        color_not_implemented = fg.red + ef.inverse
-
         status = None
         converted_manually = None
         is_implemented = None
@@ -219,28 +184,28 @@ class PytorchNodeHierarchy:
 
         if with_legend:
             result += 'Legend:\n'
-            c = validation_status_to_color(ValidationStatus.SUCCESS, False)
-            result += '    ' + c + 'Green' + rs.all + ' — conversion successful\n'
-            c = validation_status_to_color(ValidationStatus.INACCURATE, False)
-            result += '    ' + c + 'Yellow' + rs.all + ' — conversion imprecise\n'
-            c = validation_status_to_color(ValidationStatus.FAIL, False)
-            result += '    ' + c + 'Red' + rs.all + ' — conversion failed\n'
-            c = color_not_implemented
-            result += '    ' + c + 'Red' + rs.all + ' — no converter found\n'
-            c = validation_status_to_color(None, True)
-            result += '    ' + c + 'Bold' + rs.all + ' — conversion applied directly\n'
+            st = stylizer.validation_status_to_style(ValidationStatus.SUCCESS, False)
+            result += '    ' + stylizer.stylize('Green', st) + ' — conversion successful\n'
+            st = stylizer.validation_status_to_style(ValidationStatus.INACCURATE, False)
+            result += '    ' + stylizer.stylize('Yellow', st) + ' — conversion imprecise\n'
+            st = stylizer.validation_status_to_style(ValidationStatus.FAIL, False)
+            result += '    ' + stylizer.stylize('Red', st) + ' — conversion failed\n'
+            st = stylizer.style_not_implemented
+            result += '    ' + stylizer.stylize('Red', st) + ' — no converter found\n'
+            st = stylizer.validation_status_to_style(None, True)
+            result += '    ' + stylizer.stylize('Bold', st) + ' — conversion applied directly\n'
             result += '    ' + '*' + ' — subgraph reused\n'
-            c = ef.inverse
-            result += '    ' + c + 'Tensor' + rs.all + " — this output is not dependent on any of subgraph's input tensors\n"
-            c = ef.underl
-            result += '    ' + c + 'Tensor' + rs.all + " — this input is a parameter / constant\n"
-            c = fg.da_grey
-            result += '    ' + c + 'Tensor' + rs.all + " — this tensor is useless\n"
+            st = stylizer.style_inverse
+            result += '    ' + stylizer.stylize('Tensor', st) + " — this output is not dependent on any of subgraph's input tensors\n"
+            st = stylizer.style_underl
+            result += '    ' + stylizer.stylize('Tensor', st) + " — this input is a parameter / constant\n"
+            st = stylizer.style_grey
+            result += '    ' + stylizer.stylize('Tensor', st) + " — this tensor is useless\n"
             result += '\n'
 
-        color = validation_status_to_color(status, converted_manually)
+        style = stylizer.validation_status_to_style(status, converted_manually)
         if is_implemented == False: # noqa
-            color = color_not_implemented
+            style = stylizer.style_not_implemented
 
         def get_tier_str(tier_statuses, is_additional=False):
             res = ''
@@ -265,14 +230,14 @@ class PytorchNodeHierarchy:
                             symbol = ' │ '
                     elif s.has_parent_outputs:
                         if s.is_last and block_has_ended:
-                            symbol = ' └' + ef.bold + '·' + rs.all
+                            symbol = ' └' + stylizer.stylize('·', stylizer.style_bold)
                         elif tier_is_last:
-                            symbol = ' ├' + ef.bold + '·' + rs.all
+                            symbol = ' ├' + stylizer.stylize('·', stylizer.style_bold)
                         else:
                             symbol = ' │ '
                     else:
                         symbol = ' │ '
-                res += f'{s.color}{symbol}{rs.all} '
+                res += stylizer.stylize(symbol, s.style) + ' '
 
             return res
 
@@ -280,17 +245,17 @@ class PytorchNodeHierarchy:
             result += get_tier_str(tier_statuses, is_additional=True)
 
             if status == ValidationStatus.INACCURATE:
-                result += color + ef.inverse + f' (!) Max diff {validation_result.diff} ' + rs.all + ' '
+                result += stylizer.stylize(f' (!) Max diff {validation_result.diff} ', style + stylizer.style_inverse) + ' '
             if is_disconnected:
-                result += ef.inverse + f' (!) Subgraph disconnected ' + rs.all + ' '
+                result += stylizer.stylize(f' (!) Subgraph disconnected ', stylizer.style_inverse) + ' '
             result += '\n'
 
         result += get_tier_str(tier_statuses)
         result += \
-            color + \
-            f'{"*" if is_duplicate else ""}' + \
-            f'{self.node.get_type().__name__}' + f'[{self.node.module_name}]' + \
-            rs.all + \
+            stylizer.stylize(
+                f'{"*" if is_duplicate else ""}' + f'{self.node.get_type().__name__}' + f'[{self.node.module_name}]',
+                style
+            ) + \
             f'{to_str(FunctionArgs(self.node.input_args, self.node.input_kwargs), connectivity_status, parent_connectivity_status, is_input=True)}' + \
             f' -> {to_str(self.node.outputs, connectivity_status, parent_connectivity_status)}' + \
             '\n'
@@ -309,7 +274,7 @@ class PytorchNodeHierarchy:
             for i, child in enumerate(self.children):
                 is_last = i == len(self.children) - 1
                 result += child.__str__(tier + 1,
-                                        tier_statuses + [TierStatus(color=color, is_last=is_last, is_disconnected=is_disconnected, has_parent_outputs=has_parent_outputs_list[i])],
+                                        tier_statuses + [TierStatus(style=style, is_last=is_last, is_disconnected=is_disconnected, has_parent_outputs=has_parent_outputs_list[i])],
                                         validation_result_dict, conversion_result_dict,
                                         with_legend=False, parent_connectivity_status=connectivity_status,
                                         tensor_name_assigner=tensor_name_assigner

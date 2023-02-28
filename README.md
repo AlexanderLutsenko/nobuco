@@ -12,6 +12,8 @@ Stage (1) is error-prone and tedious for a human, and that's where a machine com
 
 Let's say we've got a pytorch module like this one:
 
+
+
 ````python
 class MyModule(nn.Module):
     def __init__(self):

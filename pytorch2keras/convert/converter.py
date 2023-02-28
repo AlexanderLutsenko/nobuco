@@ -228,7 +228,6 @@ def pytorch_to_keras(
 ) -> keras.Model:
     start = time.time()
     node_hierarchy = Tracer.trace(module, inputs)
-    print(node_hierarchy.__str__())
 
     keras_converted_node = convert_hierarchy(node_hierarchy, converter_dict,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
