@@ -1,0 +1,84 @@
+import warnings
+from enum import Enum
+import math
+
+import torch
+
+from pytorch2keras.commons import ChannelOrder, TF_TENSOR_CLASSES
+from pytorch2keras.converters.channel_ordering import t_keras2pytorch, pytorch2keras_recursively
+from pytorch2keras.util import str_parents, collect_recursively
+
+
+class ValidationStatus(Enum):
+    SUCCESS = 1
+    FAIL = 2
+    INACCURATE = 3
+
+
+class ValidationResult:
+    def __init__(self, diff, status):
+        self.diff = diff
+        self.status = status
+
+
+class ConversionResult:
+    def __init__(self, converted_manually, is_implemented=True, is_duplicate=False, connectivity_status=None):
+        self.converted_manually = converted_manually
+        self.is_implemented = is_implemented
+        self.is_duplicate = is_duplicate
+        self.connectivity_status = connectivity_status
+
+
+def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensors, op_type, tolerance=1e-4):
+    try:
+        diff = validate_diff_default(keras_op, pytorch_op, input_args, input_kwargs, output_tensors)
+        if diff > tolerance or math.isnan(diff):
+            warnings.warn(
+                f'[{op_type}|{str_parents(node)}] conversion procedure might be incorrect: max. discrepancy is {diff:5f}',
+                category=RuntimeWarning
+            )
+            return diff, ValidationStatus.INACCURATE
+        else:
+            return diff, ValidationStatus.SUCCESS
+    except Exception as e:
+        # raise Exception("Validation exception on node '{}'".format(op_type.__name__), e)
+        warnings.warn("Validation exception on node '{}': {}".format(op_type.__name__, e))
+        return None, ValidationStatus.FAIL
+
+
+def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, is_training=False):
+    args_tf = pytorch2keras_recursively(args_pt, channel_order=ChannelOrder.TENSORFLOW)
+    kwargs_tf = pytorch2keras_recursively(kwargs_pt, channel_order=ChannelOrder.TENSORFLOW)
+
+    outputs_tf = keras_op(*args_tf, **kwargs_tf)
+
+    outputs_tf = collect_recursively(outputs_tf, TF_TENSOR_CLASSES)
+    outputs_tf_converted = [t_keras2pytorch(t, restore_channel_order=True) for t in outputs_tf]
+
+    # with torch.no_grad():
+    #     outputs_pt = pytorch_op(*args_pt, **kwargs_pt)
+    #     outputs_pt = collect_recursively(outputs_pt, torch.Tensor)
+
+    for t_tf, t_pt in zip(outputs_tf_converted, outputs_pt):
+        if t_tf.shape != t_pt.shape:
+            raise Exception(f"Tensor shapes don't match: (Pytorch) {list(t_pt.shape)} vs {list(t_tf.shape)} (Tensorflow)")
+
+    def calc_diff(t1, t2):
+        def calc_diff_numerical(t1, t2):
+            diff = t1 - t2
+            if diff.numel() == 0:
+                return 0
+            else:
+                return diff.abs().max().detach().cpu().numpy()
+
+        def calc_diff_boolean(t1, t2):
+            diff = t1 ^ t2
+            return diff.to(torch.float32).max()
+
+        if t1.dtype == t2.dtype == torch.bool:
+            return calc_diff_boolean(t1, t2)
+        else:
+            return calc_diff_numerical(t1, t2)
+
+    diff = max([calc_diff(t1, t2) for t1, t2 in zip(outputs_tf_converted, outputs_pt)])
+    return diff
