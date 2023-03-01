@@ -24,6 +24,8 @@ from pytorch2keras.converters.node_converter import CONVERTER_DICT, Pytorch2Kera
 from pytorch2keras.converters import impl
 
 # Trace pytorch ops right away
+from pytorch2keras.vis.html_stylizer import HtmlStylizer
+
 Tracer.decorate_all()
 
 
@@ -225,6 +227,7 @@ def pytorch_to_keras(
         constants_to_variables: bool = True,
         full_validation: bool = True,
         validation_tolerance=1e-4,
+        save_trace_html=True,
 ) -> keras.Model:
     start = time.time()
     node_hierarchy = Tracer.trace(module, inputs)
@@ -238,6 +241,11 @@ def pytorch_to_keras(
     conversion_result_dict = collect_conversion_results(keras_converted_node)
 
     print(node_hierarchy.__str__(validation_result_dict=validation_result_dict, conversion_result_dict=conversion_result_dict, with_legend=True))
+
+    if save_trace_html:
+        html = node_hierarchy.__str__(validation_result_dict=validation_result_dict, conversion_result_dict=conversion_result_dict, with_legend=True, stylizer=HtmlStylizer())
+        with open('trace.html', 'w') as f:
+            f.write(html)
 
     unimplemented_hierarchy = find_unimplemented(node_hierarchy, converter_dict)
     if unimplemented_hierarchy is not None:

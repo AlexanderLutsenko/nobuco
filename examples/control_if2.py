@@ -15,76 +15,85 @@ import torch
 from torch import nn
 
 
-class ControlWhile(nn.Module):
+class ControlIf(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv_pre = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_loop = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_true = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_false = nn.Conv2d(300, 300, kernel_size=(1, 1))
         self.conv_shared = nn.Conv2d(300, 300, kernel_size=(1, 1))
 
     @Tracer.traceable()
-    def loop_cond(self, x):
-        return x.abs().mean() < 3
-
-    @Tracer.traceable()
-    def loop_body(self, x):
-        x = self.conv_shared(x)
+    def branch_true(self, x):
+        x = self.conv_true(x)
         x = torch.tanh(x)
-        x = self.conv_loop(x)
-        return x * 10
+        x = self.conv_shared(x)
+        return x + 1
 
     @Tracer.traceable()
-    def loop(self, x):
-        while self.loop_cond(x):
-            x = self.loop_body(x)
-        return x
+    def branch_false(self, x):
+        x = self.conv_false(x)
+        x = torch.sigmoid(x)
+        x = self.conv_shared(x)
+        return x - 1
+
+    @Tracer.traceable()
+    def cond(self, inputs):
+        pred, x = inputs
+        if pred:
+            return self.branch_true(x)
+        else:
+            return self.branch_false(x)
 
     def forward(self, x):
         x = self.conv_pre(x)
-        x = self.loop(x)
+        x = self.cond([x.mean() > 0, x])
         x = self.conv_shared(x)
         return x
 
 
-class Loop(tf.keras.layers.Layer):
-    def __init__(self, cond, body, *args, **kwargs):
+class Cond(tf.keras.layers.Layer):
+    def __init__(self, branch_true, branch_false, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.cond = cond
-        self.body = body
+        self.branch_true = branch_true
+        self.branch_false = branch_false
 
     def get_config(self):
         config = super().get_config()
         config.update({
-            "cond": self.cond,
-            "body": self.body,
+            "branch_true": self.branch_true,
+            "branch_false": self.branch_false,
         })
         return config
 
     @tf.function
-    def call(self, x):
-        return tf.while_loop(lambda x: self.cond(x), lambda x: self.body(x), [x])
+    def call(self, inputs):
+        pred, x = inputs
+        return tf.cond(pred, true_fn=lambda: self.branch_true(x), false_fn=lambda: self.branch_false(x))
 
-        # while self.cond(x):
-        #     x = self.body(x)
-        # return x
+        # if pred:
+        #     return self.branch_true(x)
+        # else:
+        #     return self.branch_false(x)
 
 
-@converter(ControlWhile.loop, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def loop(self, x):
+@converter(ControlIf.cond, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def cond(self, inputs):
+    pred, x = inputs
     order = ChannelOrder.TENSORFLOW
-    cond = pytorch_to_keras(self.loop_cond, [x], inputs_channel_order=order, outputs_channel_order=order)
-    body = pytorch_to_keras(self.loop_body, [x], inputs_channel_order=order, outputs_channel_order=order)
-    loop = Loop(cond, body)
+    branch_true = pytorch_to_keras(self.branch_true, [x], inputs_channel_order=order, outputs_channel_order=order)
+    branch_false = pytorch_to_keras(self.branch_false, [x], inputs_channel_order=order, outputs_channel_order=order)
+    cond = Cond(branch_true, branch_false)
 
-    def func(self, x):
-        return loop(x)
+    def func(self, inputs):
+        return cond(inputs)
     return func
 
 
 inputs = [
     torch.normal(0, 1, size=(1, 300, 32, 32)),
 ]
-pytorch_module = ControlWhile().eval()
+pytorch_module = ControlIf().eval()
 
 keras_model = pytorch_to_keras(
     pytorch_module, inputs,
@@ -92,11 +101,11 @@ keras_model = pytorch_to_keras(
 )
 
 
-model_path = 'control_while'
+model_path = 'control_if2'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 
-custom_objects = {'WeightLayer': WeightLayer, 'Loop': Loop}
+custom_objects = {'WeightLayer': WeightLayer, 'Cond': Cond}
 
 keras_model_restored = keras.models.load_model(model_path + '.h5', custom_objects=custom_objects)
 print('Model loaded')

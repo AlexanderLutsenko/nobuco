@@ -7,6 +7,9 @@ from pytorch2keras.util import get_torch_tensor_id
 
 class ConsoleStylizer:
 
+    def postprocess(self, text):
+        return text
+
     def stylize(self, text: str, style: str):
         return style + text + rs.all
 
@@ -42,6 +45,9 @@ class ConsoleStylizer:
                 if get_torch_tensor_id(tensor) in parent_status.unused_nodes:
                     style += fg.da_grey
         return style
+
+    def styles_join(self, style1: str, style2: str) -> str:
+        return style1 + style2
 
     style_not_implemented = fg.red + ef.inverse
     style_bold = ef.bold

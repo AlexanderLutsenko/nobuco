@@ -23,78 +23,66 @@ class ControlIf(nn.Module):
         self.conv_false = nn.Conv2d(300, 300, kernel_size=(1, 1))
         self.conv_shared = nn.Conv2d(300, 300, kernel_size=(1, 1))
 
-    @Tracer.traceable()
-    def branch_true(self, x):
-        x = self.conv_true(x)
-        x = torch.tanh(x)
-        x = self.conv_shared(x)
-        return x + 1
-
-    @Tracer.traceable()
-    def branch_false(self, x):
-        x = self.conv_false(x)
-        x = torch.sigmoid(x)
-        x = self.conv_shared(x)
-        return x - 1
-
-    @Tracer.traceable()
-    def cond(self, inputs):
-        pred, x = inputs
-        if pred:
-            return self.branch_true(x)
-        else:
-            return self.branch_false(x)
-
     def forward(self, x):
         x = self.conv_pre(x)
-        x = self.cond([x.mean() > 0, x])
+        if x.mean() > 0:
+            x = self.conv_true(x)
+            x = torch.tanh(x)
+            x = self.conv_shared(x)
+            x = x + 1
+        else:
+            x = self.conv_false(x)
+            x = torch.sigmoid(x)
+            x = self.conv_shared(x)
+            x = x - 1
         x = self.conv_shared(x)
         return x
 
 
-class Cond(tf.keras.layers.Layer):
-    def __init__(self, branch_true, branch_false, *args, **kwargs):
+class ControlIfKeras(tf.keras.layers.Layer):
+    def __init__(self, conv_pre, conv_true, conv_false, conv_shared, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.branch_true = branch_true
-        self.branch_false = branch_false
+        self.conv_pre = conv_pre
+        self.conv_true = conv_true
+        self.conv_false = conv_false
+        self.conv_shared = conv_shared
 
     def get_config(self):
         config = super().get_config()
         config.update({
-            "branch_true": self.branch_true,
-            "branch_false": self.branch_false,
+            "conv_pre": self.conv_pre,
+            "conv_true": self.conv_true,
+            "conv_false": self.conv_false,
+            "conv_shared": self.conv_shared,
         })
         return config
 
     @tf.function
-    def call(self, inputs):
-        pred, x = inputs
-        return tf.cond(pred, true_fn=lambda: self.branch_true(x), false_fn=lambda: self.branch_false(x))
+    def call(self, x):
+        x = self.conv_pre(x)
+        if tf.reduce_mean(x) > 0:
+            x = self.conv_true(x)
+            x = tf.tanh(x)
+            x = self.conv_shared(x)
+            x = x + 1
+        else:
+            x = self.conv_false(x)
+            x = tf.sigmoid(x)
+            x = self.conv_shared(x)
+            x = x - 1
+        x = self.conv_shared(x)
+        return x
 
-        # if pred:
-        #     return self.branch_true(x)
-        # else:
-        #     return self.branch_false(x)
 
-
-@converter(ControlIf.cond, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def cond(self, inputs):
-    pred, x = inputs
-
+@converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def cond(self, x):
     order = ChannelOrder.TENSORFLOW
-    branch_true = pytorch_to_keras(self.branch_true, [x],
-                                   inputs_channel_order=order,
-                                   outputs_channel_order=order
-                                   )
-    branch_false = pytorch_to_keras(self.branch_false, [x],
-                                    inputs_channel_order=order,
-                                    outputs_channel_order=order
-                                    )
-    cond = Cond(branch_true, branch_false)
-
-    def func(self, inputs):
-        return cond(inputs)
-    return func
+    conv_pre = pytorch_to_keras(self.conv_pre, [x], inputs_channel_order=order, outputs_channel_order=order)
+    conv_true = pytorch_to_keras(self.conv_true, [x], inputs_channel_order=order, outputs_channel_order=order)
+    conv_false = pytorch_to_keras(self.conv_false, [x], inputs_channel_order=order, outputs_channel_order=order)
+    conv_shared = pytorch_to_keras(self.conv_shared, [x], inputs_channel_order=order, outputs_channel_order=order)
+    layer = ControlIfKeras(conv_pre, conv_true, conv_false, conv_shared)
+    return layer
 
 
 inputs = [
@@ -112,7 +100,7 @@ model_path = 'control_if'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 
-custom_objects = {'WeightLayer': WeightLayer, 'Cond': Cond}
+custom_objects = {'WeightLayer': WeightLayer, 'ControlIfKeras': ControlIfKeras}
 
 keras_model_restored = keras.models.load_model(model_path + '.h5', custom_objects=custom_objects)
 print('Model loaded')

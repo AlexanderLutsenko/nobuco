@@ -8,7 +8,7 @@ from pytorch2keras.convert.validation import ValidationStatus
 
 from pytorch2keras.converters.channel_ordering import make_template_recursively
 from pytorch2keras.util import collect_recursively, get_torch_tensor_id
-from pytorch2keras.vis.stylizer import ConsoleStylizer
+from pytorch2keras.vis.console_stylizer import ConsoleStylizer
 
 
 class WrappedOp:
@@ -112,8 +112,10 @@ class PytorchNodeHierarchy:
                 tier_statuses=None,
                 validation_result_dict=None, conversion_result_dict=None,
                 with_legend=False, parent_connectivity_status=None,
-                tensor_name_assigner: TensorNameAssigner = None
+                tensor_name_assigner: TensorNameAssigner = None,
+                stylizer=None
                 ) -> str:
+
         if tier_statuses is None:
             tier_statuses = []
 
@@ -127,7 +129,8 @@ class PytorchNodeHierarchy:
             tensor_name_assigner = TensorNameAssigner()
             tensor_name_assigner.fill(self)
 
-        stylizer = ConsoleStylizer()
+        if stylizer is None:
+            stylizer = ConsoleStylizer()
 
         def to_str(obj, self_connectivity_status=None, parent_connectivity_status=None, is_input=False):
             if isinstance(obj, torch.Tensor):
@@ -230,9 +233,9 @@ class PytorchNodeHierarchy:
                             symbol = ' │ '
                     elif s.has_parent_outputs:
                         if s.is_last and block_has_ended:
-                            symbol = ' └' + stylizer.stylize('·', stylizer.style_bold)
+                            symbol = ' └·'
                         elif tier_is_last:
-                            symbol = ' ├' + stylizer.stylize('·', stylizer.style_bold)
+                            symbol = ' ├·'
                         else:
                             symbol = ' │ '
                     else:
@@ -245,7 +248,7 @@ class PytorchNodeHierarchy:
             result += get_tier_str(tier_statuses, is_additional=True)
 
             if status == ValidationStatus.INACCURATE:
-                result += stylizer.stylize(f' (!) Max diff {validation_result.diff} ', style + stylizer.style_inverse) + ' '
+                result += stylizer.stylize(f' (!) Max diff {validation_result.diff:.6f} ', stylizer.styles_join(style, stylizer.style_inverse)) + ' '
             if is_disconnected:
                 result += stylizer.stylize(f' (!) Subgraph disconnected ', stylizer.style_inverse) + ' '
             result += '\n'
@@ -277,6 +280,9 @@ class PytorchNodeHierarchy:
                                         tier_statuses + [TierStatus(style=style, is_last=is_last, is_disconnected=is_disconnected, has_parent_outputs=has_parent_outputs_list[i])],
                                         validation_result_dict, conversion_result_dict,
                                         with_legend=False, parent_connectivity_status=connectivity_status,
-                                        tensor_name_assigner=tensor_name_assigner
+                                        tensor_name_assigner=tensor_name_assigner,
+                                        stylizer=stylizer
                                         )
+        if tier == 0:
+            result = stylizer.postprocess(result)
         return result
