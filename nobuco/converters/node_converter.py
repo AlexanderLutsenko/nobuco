@@ -1,9 +1,9 @@
 from typing import Callable
 
-from pytorch2keras.convert.layers.channel_order import ChangeOrderingLayer
-from pytorch2keras.convert.validation import validate_diff_default
-from pytorch2keras.commons import ChannelOrderingStrategy
-from pytorch2keras.trace.trace import Tracer
+from nobuco.convert.layers.channel_order import ChangeOrderingLayer
+from nobuco.convert.validation import validate_diff_default
+from nobuco.commons import ChannelOrderingStrategy
+from nobuco.trace.trace import Tracer
 
 CONVERTER_DICT = {}
 

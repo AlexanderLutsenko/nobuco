@@ -13,14 +13,14 @@ from torch import nn
 
 import numpy as np
 
-from pytorch2keras.commons import ChannelOrder, ChannelOrderingStrategy
-from pytorch2keras.funcs import force_tensorflow_order, force_pytorch_order
-from pytorch2keras.converters.channel_ordering import set_channel_order, get_channel_order
-from pytorch2keras.converters.node_converter import converter
-from pytorch2keras.converters.tensor import dims_pytorch2keras, perm_keras2pytorch, \
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco.funcs import force_tensorflow_order, force_pytorch_order
+from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
+from nobuco.converters.node_converter import converter
+from nobuco.converters.tensor import dims_pytorch2keras, perm_keras2pytorch, \
     _dim_make_positive, dim_pytorch2keras, _permute, _flatten, perm_pytorch2keras, perm_compose, \
     is_identity_perm, permute_pytorch2keras, _ensure_iterable, perm_identity
-from pytorch2keras.converters.ops import hard_sigmoid_pytorch_compatible, hard_swish_pytorch_compatible, \
+from nobuco.converters.ops import hard_sigmoid_pytorch_compatible, hard_swish_pytorch_compatible, \
     hard_tanh_pytorch_compatible
 
 
@@ -35,7 +35,7 @@ from pytorch2keras.converters.ops import hard_sigmoid_pytorch_compatible, hard_s
 def gru(self: nn.GRU, input, hx=None):
     assert not self.bidirectional
 
-    def swap_order(param):
+    def reorder(param):
         assert param.shape[-1] % 3 == 0
         p1, p2, p3 = np.split(param, 3, axis=-1)
         return np.concatenate([p2, p1, p3], axis=-1)
@@ -47,10 +47,10 @@ def gru(self: nn.GRU, input, hx=None):
         bias_ih = self.__getattr__(f'bias_ih_l{i}').detach().numpy()
         bias_hh = self.__getattr__(f'bias_hh_l{i}').detach().numpy()
 
-        weight_ih = swap_order(weight_ih)
-        weight_hh = swap_order(weight_hh)
-        bias_ih = swap_order(bias_ih)
-        bias_hh = swap_order(bias_hh)
+        weight_ih = reorder(weight_ih)
+        weight_hh = reorder(weight_hh)
+        bias_ih = reorder(bias_ih)
+        bias_hh = reorder(bias_hh)
 
         gru = keras.layers.GRU(
             units=self.hidden_size,
@@ -1125,10 +1125,10 @@ def view_as_real(input: Tensor):
 
 
 @converter(force_tensorflow_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def force_tensorflow_order(input):
-    return lambda input: input
+def force_tensorflow_order(inputs):
+    return lambda inputs: inputs
 
 
 @converter(force_pytorch_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def force_pytorch_order(input):
-    return lambda input: input
+def force_pytorch_order(inputs):
+    return lambda inputs: inputs

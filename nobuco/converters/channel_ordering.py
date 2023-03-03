@@ -3,9 +3,9 @@ from dataclasses import dataclass
 import tensorflow as tf
 import torch
 
-from pytorch2keras.commons import ChannelOrder
-from pytorch2keras.converters.tensor import _permute, perm_pytorch2keras, perm_keras2pytorch
-from pytorch2keras.util import replace_recursively_func
+from nobuco.commons import ChannelOrder
+from nobuco.converters.tensor import _permute, perm_pytorch2keras, perm_keras2pytorch
+from nobuco.util import replace_recursively_func
 
 
 def set_channel_order(tensor, channel_order: ChannelOrder):

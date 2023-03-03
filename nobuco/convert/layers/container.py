@@ -1,7 +1,7 @@
-from pytorch2keras.commons import TF_TENSOR_CLASSES
-from pytorch2keras.convert.layers.weight import WeightLayer
-from pytorch2keras.converters.channel_ordering import TensorPlaceholder, template_insert_recursively
-from pytorch2keras.util import collect_recursively
+from nobuco.commons import TF_TENSOR_CLASSES
+from nobuco.convert.layers.weight import WeightLayer
+from nobuco.converters.channel_ordering import TensorPlaceholder, template_insert_recursively
+from nobuco.util import collect_recursively
 
 
 class ConnectivityStatus:

@@ -1,8 +1,8 @@
 from sty import bg, ef, fg, rs
 
-from pytorch2keras.convert.layers.container import ConnectivityStatus
-from pytorch2keras.convert.validation import ValidationStatus
-from pytorch2keras.util import get_torch_tensor_id
+from nobuco.convert.layers.container import ConnectivityStatus
+from nobuco.convert.validation import ValidationStatus
+from nobuco.util import get_torch_tensor_id
 
 
 class ConsoleStylizer:

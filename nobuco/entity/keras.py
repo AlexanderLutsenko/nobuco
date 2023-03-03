@@ -1,7 +1,7 @@
 from typing import Collection
 
-from pytorch2keras.convert.validation import ValidationResult, ValidationStatus, ConversionResult
-from pytorch2keras.entity.pytorch import PytorchNode
+from nobuco.convert.validation import ValidationResult, ValidationStatus, ConversionResult
+from nobuco.entity.pytorch import PytorchNode
 from sty import bg, ef, fg, rs
 
 

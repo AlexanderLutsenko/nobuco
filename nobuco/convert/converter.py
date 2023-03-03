@@ -8,23 +8,23 @@ from torch import nn
 import tensorflow as tf
 from tensorflow import keras
 
-from pytorch2keras.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES, CONVERTED_OP_DICT
-from pytorch2keras.convert.layers.channel_order import ChangeOrderingLayer, SetOrderLayer
-from pytorch2keras.convert.layers.container import TransientContainer
-from pytorch2keras.convert.layers.stub import UnimplementedOpStub
-from pytorch2keras.converters.channel_ordering import t_pytorch2keras, set_channel_order
-from pytorch2keras.convert.validation import validate, ValidationStatus, ValidationResult, ConversionResult
-from pytorch2keras.util import get_torch_tensor_id, collect_recursively, replace_recursively_func, replace_recursively
-from pytorch2keras.entity.keras import KerasConvertedNode
-from pytorch2keras.entity.pytorch import PytorchNode, PytorchNodeHierarchy
-from pytorch2keras.trace.trace import Tracer
-from pytorch2keras.converters.node_converter import CONVERTER_DICT, Pytorch2KerasNodeConverter
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES, CONVERTED_OP_DICT
+from nobuco.convert.layers.channel_order import ChangeOrderingLayer, SetOrderLayer
+from nobuco.convert.layers.container import TransientContainer
+from nobuco.convert.layers.stub import UnimplementedOpStub
+from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order
+from nobuco.convert.validation import validate, ValidationStatus, ValidationResult, ConversionResult
+from nobuco.util import get_torch_tensor_id, collect_recursively, replace_recursively_func, replace_recursively
+from nobuco.entity.keras import KerasConvertedNode
+from nobuco.entity.pytorch import PytorchNode, PytorchNodeHierarchy
+from nobuco.trace.trace import Tracer
+from nobuco.converters.node_converter import CONVERTER_DICT, Pytorch2KerasNodeConverter
 
 # Load default converters
-from pytorch2keras.converters import impl
+from nobuco.converters import impl
 
 # Trace pytorch ops right away
-from pytorch2keras.vis.html_stylizer import HtmlStylizer
+from nobuco.vis.html_stylizer import HtmlStylizer
 
 Tracer.decorate_all()
 

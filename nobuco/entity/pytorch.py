@@ -4,11 +4,11 @@ from typing import Collection, List
 import torch
 from torch import nn
 
-from pytorch2keras.convert.validation import ValidationStatus
+from nobuco.convert.validation import ValidationStatus
 
-from pytorch2keras.converters.channel_ordering import make_template_recursively
-from pytorch2keras.util import collect_recursively, get_torch_tensor_id
-from pytorch2keras.vis.console_stylizer import ConsoleStylizer
+from nobuco.converters.channel_ordering import make_template_recursively
+from nobuco.util import collect_recursively, get_torch_tensor_id
+from nobuco.vis.console_stylizer import ConsoleStylizer
 
 
 class WrappedOp:

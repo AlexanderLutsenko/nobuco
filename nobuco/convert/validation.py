@@ -4,9 +4,9 @@ import math
 
 import torch
 
-from pytorch2keras.commons import ChannelOrder, TF_TENSOR_CLASSES
-from pytorch2keras.converters.channel_ordering import t_keras2pytorch, pytorch2keras_recursively
-from pytorch2keras.util import str_parents, collect_recursively
+from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
+from nobuco.converters.channel_ordering import t_keras2pytorch, pytorch2keras_recursively
+from nobuco.util import str_parents, collect_recursively
 
 
 class ValidationStatus(Enum):

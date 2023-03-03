@@ -7,8 +7,8 @@ import torch
 import torchvision
 from torch import nn
 
-from pytorch2keras.entity.pytorch import PytorchNode, WrappedOp, PytorchNodeHierarchy
-from pytorch2keras.util import collect_recursively, clone_torch_tensors_recursively
+from nobuco.entity.pytorch import PytorchNode, WrappedOp, PytorchNodeHierarchy
+from nobuco.util import collect_recursively, clone_torch_tensors_recursively
 
 
 class Tracer:
@@ -200,9 +200,9 @@ class Tracer:
         return hierarchy
 
     @staticmethod
-    def build_hierarchy(node_list:Collection[PytorchNode]) -> PytorchNodeHierarchy:
+    def build_hierarchy(node_list: Collection[PytorchNode]) -> PytorchNodeHierarchy:
 
-        def build(node_list:Collection[PytorchNode]) -> List[PytorchNodeHierarchy]:
+        def build(node_list: Collection[PytorchNode]) -> List[PytorchNodeHierarchy]:
             hierarchies = []
             while len(node_list) > 0:
                 node = node_list.pop(len(node_list) - 1)

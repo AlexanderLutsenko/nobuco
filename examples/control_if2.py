@@ -1,11 +1,11 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from pytorch2keras.convert.converter import pytorch_to_keras
-from pytorch2keras.commons import ChannelOrder, ChannelOrderingStrategy
-from pytorch2keras.converters.node_converter import converter
-from pytorch2keras.convert.layers.weight import WeightLayer
-from pytorch2keras.trace.trace import Tracer
+from nobuco.convert.converter import pytorch_to_keras
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco.converters.node_converter import converter
+from nobuco.convert.layers.weight import WeightLayer
+from nobuco.trace.trace import Tracer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter

@@ -1,7 +1,7 @@
-from pytorch2keras.commons import ChannelOrderingStrategy, ChannelOrder, TF_TENSOR_CLASSES
-from pytorch2keras.converters.channel_ordering import set_channel_order, get_channel_order
-from pytorch2keras.converters.tensor import _permute, perm_keras2pytorch, perm_pytorch2keras
-from pytorch2keras.util import collect_recursively, replace_recursively_func
+from nobuco.commons import ChannelOrderingStrategy, ChannelOrder, TF_TENSOR_CLASSES
+from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
+from nobuco.converters.tensor import _permute, perm_keras2pytorch, perm_pytorch2keras
+from nobuco.util import collect_recursively, replace_recursively_func
 
 
 class SetOrderLayer:
