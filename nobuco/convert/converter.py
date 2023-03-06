@@ -258,7 +258,6 @@ def pytorch_to_keras(
 
     args_tf = prepare_inputs_tf(args, inputs_channel_order)
     kwargs_tf = prepare_inputs_tf(kwargs, inputs_channel_order)
-    print('!!!', args_tf, kwargs_tf)
     outputs_tf = keras_op(*args_tf, **kwargs_tf)
     outputs_tf = postprocess_outputs_tf(outputs_tf, outputs_channel_order)
 
