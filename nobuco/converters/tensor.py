@@ -14,6 +14,7 @@ def _dims_make_positive(dims, n_dims, add_one=False):
 
 
 def dim_pytorch2keras(dim, num_dims):
+    dim = _dim_make_positive(dim, num_dims)
     if dim == 0:
         return dim
     elif dim == 1:

@@ -63,22 +63,29 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
         if t_tf.shape != t_pt.shape:
             raise Exception(f"Tensor shapes don't match: (Pytorch) {list(t_pt.shape)} vs {list(t_tf.shape)} (Tensorflow)")
 
+        if t_tf.dtype != t_pt.dtype:
+            raise Exception(f"Tensor dtypes don't match: (Pytorch) {t_pt.dtype} vs {t_tf.dtype} (Tensorflow)")
+
     def calc_diff(t1, t2):
         def calc_diff_numerical(t1, t2):
             diff = t1 - t2
-            if diff.numel() == 0:
-                return 0
-            else:
-                return diff.abs().max().detach().cpu().numpy()
+            return diff.abs().max().detach().cpu().numpy()
 
         def calc_diff_boolean(t1, t2):
             diff = t1 ^ t2
             return diff.to(torch.float32).max()
+
+        if t1.numel() == t2.numel() == 0:
+            return 0
 
         if t1.dtype == t2.dtype == torch.bool:
             return calc_diff_boolean(t1, t2)
         else:
             return calc_diff_numerical(t1, t2)
 
-    diff = max([calc_diff(t1, t2) for t1, t2 in zip(outputs_tf_converted, outputs_pt)])
+    diffs = [calc_diff(t1, t2) for t1, t2 in zip(outputs_tf_converted, outputs_pt)]
+    if len(diffs):
+        diff = max(diffs)
+    else:
+        diff = 0
     return diff

@@ -136,7 +136,8 @@ class PytorchNodeHierarchy:
             if isinstance(obj, torch.Tensor):
                 style = stylizer.connectivity_status_to_style(obj, self_connectivity_status, parent_connectivity_status, is_input)
                 name = tensor_name_assigner.get_name(obj)
-                return stylizer.stylize(f'tens{name}' + '{' + ','.join([str(s) for s in obj.shape]) + '}', style)
+                dtype = str(obj.dtype).split('.')[-1]
+                return stylizer.stylize(f'{dtype}_{name}' + '{' + ','.join([str(s) for s in obj.shape]) + '}', style)
             elif isinstance(obj, torch.Size):
                 return f'Size{tuple(obj)}'
             elif isinstance(obj, str):

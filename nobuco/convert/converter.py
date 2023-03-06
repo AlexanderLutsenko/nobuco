@@ -227,10 +227,11 @@ def pytorch_to_keras(
         constants_to_variables: bool = True,
         full_validation: bool = True,
         validation_tolerance=1e-4,
-        save_trace_html=True,
+        save_trace_html=False,
 ) -> keras.Model:
     start = time.time()
     node_hierarchy = Tracer.trace(module, inputs)
+    # print(node_hierarchy)
 
     keras_converted_node = convert_hierarchy(node_hierarchy, converter_dict,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,

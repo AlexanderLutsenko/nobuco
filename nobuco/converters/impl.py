@@ -3,6 +3,7 @@ from typing import Optional, Union, List, Tuple, Sequence, Any
 
 from tensorflow.python.ops.image_ops_impl import ResizeMethod
 from torch import Tensor
+from torch.nn.functional import DType
 from torch.types import _int, _bool, Number, _dtype, _size
 
 import tensorflow as tf
@@ -120,11 +121,11 @@ def lstm(self: nn.LSTM, input, hx=None):
 
 
 @converter(torch.cat, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def cat(tensors: Union[Tuple[Tensor, ...], List[Tensor]], dim, *, out: Optional[Tensor]=None):
+def cat(tensors: Union[Tuple[Tensor, ...], List[Tensor]], dim=0, *, out: Optional[Tensor]=None):
     num_dims = tensors[0].dim()
     dim_keras = dim_pytorch2keras(dim, num_dims)
 
-    def func(tensors, dim, *, out=None):
+    def func(tensors, dim=0, *, out=None):
         if get_channel_order(tensors[0]) == ChannelOrder.TENSORFLOW:
             return tf.concat(tensors, axis=dim_keras)
         else:
@@ -136,6 +137,17 @@ def cat(tensors: Union[Tuple[Tensor, ...], List[Tensor]], dim, *, out: Optional[
 def stack(tensors: Union[Tuple[Tensor, ...], List[Tensor]], dim: _int=0, *, out: Optional[Tensor]=None):
     def func(tensors, dim=0, *, out=None):
         return tf.stack(tensors, axis=dim)
+    return func
+
+
+@converter(torch.Tensor.split, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def split(self, split_size, dim=0):
+    num_dims = self.dim()
+
+    def func(self, split_size, dim=0):
+        if get_channel_order(self) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        return tf.split(self, num_or_size_splits=split_size, axis=dim)
     return func
 
 
@@ -157,6 +169,13 @@ def roll(input: Tensor, shifts: Union[_int, _size], dims: Union[_int, _size]=())
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dims = dim_pytorch2keras(dims, n_dims)
         return tf.roll(input, shift=shifts, axis=dims)
+    return func
+
+
+@converter(torch.Tensor.unbind, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def unbind(self, dim=0):
+    def func(self, dim=0):
+        return tf.unstack(self, axis=dim)
     return func
 
 
@@ -217,37 +236,6 @@ def abs(input: Tensor, *, out: Optional[Tensor]=None):
     def func(input, *, out=None):
         return tf.abs(input)
     return func
-
-
-# def conv2D(module: nn.Conv2d, input_tensors, args, kwargs):
-#     out_filters, in_filters, kh, kw = module.weight.shape
-#     weights = module.weight.detach().numpy()
-#     weights = weights.transpose((2, 3, 1, 0))
-#     biases = module.bias.detach().numpy()
-#
-#     dilations = module.dilation
-#     groups = module.groups
-#     kernel_shape = module.kernel_size
-#     padding = module.padding
-#     strides = module.stride
-#
-#     pad_layer = None
-#     ph, pw = padding
-#     if ph != 0 or pw != 0:
-#         if module.padding_mode == 'zeros':
-#             pad_layer = layers.ZeroPadding2D((ph, pw))
-#         else:
-#             raise Exception('Unsupported padding mode')
-#
-#     conv = layers.Conv2D(out_filters, kernel_shape,
-#                          strides=strides, padding='valid', dilation_rate=dilations, groups=groups,
-#                          weights=[weights, biases]
-#                          )
-#     if pad_layer is None:
-#         return conv
-#     else:
-#         return lambda x: conv(pad_layer(x))
-# rule_dict[nn.Conv2d] = Pytorch2KerasLambdaConverter(conv2D)
 
 
 @converter(F.conv1d)
@@ -372,7 +360,6 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
 
     if groups == 1:
         weights = weights.transpose((2, 3, 1, 0))
-    # elif groups == out_filters:
     elif groups == in_filters:
         weights = weights.transpose((2, 3, 0, 1))
     else:
@@ -398,7 +385,6 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
     if padding != (0, 0):
         pad = (dilation[0] * (kh - 1) - padding[0], dilation[1] * (kw - 1) - padding[1])
         pad_layer = keras.layers.ZeroPadding2D(pad)
-        # print('!!!', (kh, kw), pad, output_padding)
     else:
         pad_layer = None
     pad_layer = None
@@ -574,25 +560,65 @@ def dropout(self, input: Tensor):
     return keras.layers.Dropout(rate=self.p)
 
 
-@converter(nn.MaxPool2d)
-def maxPool2D(self, input: Tensor):
-    kernel_size = self.kernel_size
-    stride = self.stride
-    return keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride)
+# @converter(nn.MaxPool2d)
+# def maxPool2D(self, input: Tensor):
+#     kernel_size = self.kernel_size
+#     stride = self.stride
+#     return keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride)
 
 
 @converter(torch.max_pool2d)
 def max_pool_2d(input: Tensor, kernel_size: Union[_int, _size], stride: Union[_int, _size]=(), padding: Union[_int, _size]=0, dilation: Union[_int, _size]=1, ceil_mode: _bool=False):
+    if isinstance(kernel_size, numbers.Number):
+        kernel_size = (kernel_size, kernel_size)
+
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
+    if padding != (0, 0):
+        kh, kw = kernel_size
+        pad = (dilation[0] * (kh - 1) - padding[0], dilation[1] * (kw - 1) - padding[1])
+        pad_layer = keras.layers.ZeroPadding2D(pad)
+    else:
+        pad_layer = None
+
     def func(input, kernel_size, stride=(), padding=0, dilation=1, ceil_mode=False):
-        return keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride)(input)
+        if pad_layer is not None:
+            input = pad_layer(input)
+        return keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride, padding='valid')(input)
     return func
 
 
 @converter(F.avg_pool2d)
-def max_pool_2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
+def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
+    if isinstance(kernel_size, numbers.Number):
+        kernel_size = (kernel_size, kernel_size)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
+    if padding != (0, 0):
+        kh, kw = kernel_size
+        pad = ((kh - 1) - padding[0], (kw - 1) - padding[1])
+        pad_layer = keras.layers.ZeroPadding2D(pad)
+    else:
+        pad_layer = None
+
     def func(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
+        if pad_layer is not None:
+            input = pad_layer(input)
         return keras.layers.AvgPool2D(pool_size=kernel_size, strides=stride)(input)
     return func
+
+
+# @converter(F.avg_pool2d)
+# def max_pool_2d(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
+#     def func(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
+#         return keras.layers.AvgPool2D(pool_size=kernel_size, strides=stride)(input)
+#     return func
 
 
 @converter(F.adaptive_avg_pool2d)
@@ -663,7 +689,7 @@ def relu(self, input: Tensor):
 @converter(F.relu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def relu(input: Tensor, inplace: bool = False):
     def func(input, inplace=False):
-        return keras.layers.ReLU(input)
+        return tf.nn.relu(input)
     return func
 
 
@@ -697,6 +723,17 @@ def hardtanh(input: Tensor, min_val: float = -1.0, max_val: float = 1.0, inplace
 def hardswish(input: Tensor, inplace: bool = False):
     def func(input, inplace=False):
         return hard_swish_pytorch_compatible(input)
+    return func
+
+
+@converter(F.softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def softmax(input: Tensor, dim: Optional[int] = None, _stacklevel: int = 3, dtype: Optional[DType] = None):
+    num_dims = input.dim()
+
+    def func(input, dim=None, _stacklevel=3, dtype=None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        return tf.nn.softmax(input, axis=dim)
     return func
 
 
@@ -761,7 +798,7 @@ def rsub(self, other):
     return func
 
 
-@converter(torch.Tensor.__mul__, torch.Tensor.__imul__, torch.mul, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.__mul__, torch.Tensor.__imul__, torch.mul, torch.Tensor.__rmul__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def mul(input: Union[Tensor, Number], other: Union[Tensor, Number], *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return input * other
@@ -803,6 +840,14 @@ def sqrt(input: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
+@converter(torch.Tensor.rsqrt, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def rsqrt(self):
+    def func(self):
+        # return tf.math.rsqrt(self)
+        return 1 / tf.math.sqrt(self)
+    return func
+
+
 @converter(torch.Tensor.__pow__, torch.pow, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def pow(input: Tensor, exponent: Number, *, out: Optional[Tensor]=None):
     def func(input, exponent, *, out=None):
@@ -814,6 +859,81 @@ def pow(input: Tensor, exponent: Number, *, out: Optional[Tensor]=None):
 def rpow(self, other):
     def func(self, other):
         return other ** self
+    return func
+
+
+@converter(torch.exp, torch.Tensor.exp, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def exp(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out: Optional[Tensor]=None):
+        return tf.exp(input)
+    return func
+
+
+@converter(torch.log, torch.Tensor.log, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def log(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out: Optional[Tensor]=None):
+        return tf.experimental.numpy.log(input)
+    return func
+
+
+@converter(torch.log2, torch.Tensor.log2, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def log2(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out: Optional[Tensor]=None):
+        return tf.experimental.numpy.log2(input)
+    return func
+
+
+@converter(torch.floor, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def floor(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out=None):
+        return tf.floor(input)
+    return func
+
+
+@converter(torch.round, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def round(input: Tensor, *, decimals: _int, out=None):
+    assert decimals == 0
+
+    def func(input: Tensor, *, decimals: _int, out=None):
+        return tf.round(input)
+    return func
+
+
+@converter(torch.Tensor.round, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def round(self, decimals=0):
+    assert decimals == 0
+
+    def func(self, decimals=0):
+        return tf.round(self)
+    return func
+
+
+@converter(torch.clamp, torch.Tensor.clamp, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def clamp(input: Tensor, min: Optional[Number]=None, max: Optional[Number]=None, *, out: Optional[Tensor]=None):
+    def func(input, min=None, max=None, *, out=None):
+        return tf.keras.backend.clip(input, min_value=min, max_value=max)
+    return func
+
+
+@converter(torch.min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def min(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
+    n_dims = input.dim()
+
+    def func(input, dim=None, keepdim=False, *, out=None):
+        if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+        return tf.keras.backend.min(input, axis=dim, keepdims=keepdim)
+    return func
+
+
+@converter(torch.max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def max(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
+    n_dims = input.dim()
+
+    def func(input, dim=None, keepdim=False, *, out=None):
+        if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+        return tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
     return func
 
 
@@ -911,13 +1031,38 @@ def masked_fill(input: Tensor, mask: Tensor, value: Number):
     return func
 
 
+@converter(torch.Tensor.fill_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def fill_(self, value):
+    def func(self, value):
+        result = tf.fill(self.shape, value)
+        result = tf.cast(result, dtype=self.dtype)
+        return result
+    return func
+
+
+@converter(torch.meshgrid, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def meshgrid(*tensors, indexing: Optional[str] = None):
+    def func(*tensors, indexing=None):
+        return tf.meshgrid(*tensors, indexing=indexing)
+    return func
+
+
+@converter(None, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def getitem_indexed(self, indices):
+    def func(self, indices):
+        return tf.gather(self, indices, axis=0)
+    return func
+
+
 @converter(torch.Tensor.__getitem__, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def getitem(self, *slices):
     n_dims = self.dim()
 
-    if isinstance(slices[0], torch.Tensor) and slices[0].dtype == torch.bool:
-        mask = slices[0]
-        return masked_select(self, mask)
+    if isinstance(slices[0], torch.Tensor):
+        if slices[0].dtype == torch.bool:
+            return masked_select(self, slices[0])
+        elif slices[0].dtype == torch.int64:
+            return getitem_indexed(self, slices[0])
 
     slices = _flatten(slices)
 
@@ -1057,13 +1202,6 @@ def detach(self):
     return func
 
 
-@converter(torch.Tensor.detach, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def detach(self):
-    def func(self):
-        return tf.stop_gradient(self)
-    return func
-
-
 @converter(torch.Tensor.cpu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def cpu(self, memory_format=None):
     def func(self, memory_format=None):
@@ -1071,14 +1209,38 @@ def cpu(self, memory_format=None):
     return func
 
 
+def type_func(self, dtype=None, non_blocking=False, **kwargs):
+    if dtype == torch.float32:
+        tf_type = tf.float32
+    elif dtype == torch.float64:
+        tf_type = tf.float64
+    elif dtype == torch.int32:
+        tf_type = tf.int32
+    elif dtype == torch.int64:
+        tf_type = tf.int64
+    elif dtype == torch.bool:
+        tf_type = tf.bool
+    else:
+        raise Exception('Unsupported dtype: ', dtype)
+    return tf.cast(self, tf_type)
+
+
 @converter(torch.Tensor.type, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def type(self, dtype=None, non_blocking=False, **kwargs):
-    def func(self, dtype=None, non_blocking=False, **kwargs):
-        if dtype == torch.float32:
-            tf_type = tf.float32
+def type_converter(self, dtype=None, non_blocking=False, **kwargs):
+    return type_func
+
+
+@converter(torch.Tensor.to, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def to(self, device=None, dtype=None, non_blocking=False, copy=False, memory_format=torch.preserve_format):
+    def func(self, device=None, dtype=None, non_blocking=False, copy=False, memory_format=torch.preserve_format):
+        if dtype is not None:
+            return type_func(self, dtype=dtype, non_blocking=non_blocking)
+        elif isinstance(device, torch._C.dtype):
+            return type_func(self, dtype=device, non_blocking=non_blocking)
+        elif device is not None:
+            return self
         else:
-            raise Exception('Unsupported dtype: ', dtype)
-        return tf.cast(self, tf_type)
+            raise Exception('Unsupported params')
     return func
 
 
@@ -1107,6 +1269,51 @@ def lt(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
 def le(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.less_equal(input, other)
+    return func
+
+
+@converter(torch.eq, torch.equal, torch.Tensor.__eq__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def eq(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
+    def func(input, other, *, out=None):
+        return tf.equal(input, other)
+    return func
+
+
+@converter(torch.Tensor.__and__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def logical_and(input: Tensor, other):
+    def func(input, other):
+        return tf.logical_and(input, other)
+    return func
+
+
+@converter(torch.Tensor.__or__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def logical_or(input: Tensor, other):
+    def func(input, other):
+        return tf.logical_or(input, other)
+    return func
+
+
+@converter(torch.Tensor.topk, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def topk(self, k, dim=None, largest=True, sorted=True):
+    def func(self, k, dim=None, largest=True, sorted=True):
+        result = tf.math.top_k(self, k=k, sorted=sorted)
+        indices = tf.cast(result.indices, tf.int64)
+        return result.values, indices
+    return func
+
+
+@converter(torch.Tensor.sort, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def sort(self, dim=-1, descending=False):
+    n_dims = self.dim()
+
+    def func(self, dim=-1, descending=False):
+        if get_channel_order(self) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+        if descending:
+            direction = 'DESCENDING'
+        else:
+            direction = 'ASCENDING'
+        return tf.sort(self, axis=dim, direction=direction)
     return func
 
 
