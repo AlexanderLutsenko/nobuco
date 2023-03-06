@@ -67,13 +67,16 @@ class TransientContainer:
         return ConnectivityStatus(unused_inputs, unreached_outputs, unused_nodes, unprovided_inputs)
 
     def __call__(self, *args, training=False, **kwargs):
+        print('###', kwargs)
         inputs = collect_recursively((args, kwargs), TF_TENSOR_CLASSES)
+
         node_dict = self.constants_dict.copy()
 
         for input, name in zip(inputs, self.input_names):
             node_dict[name] = input
 
         for input_names, output_names, op, (args_template, kwargs_template) in (self.disconnected_tensors_descr_list + self.op_descr_list):
+            print('???', node_dict.keys())
             input_tensors = [node_dict[name] for name in input_names]
             args, kwargs = template_insert_recursively((args_template, kwargs_template), input_tensors)
             outputs = op(*args, **kwargs)

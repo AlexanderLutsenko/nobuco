@@ -220,7 +220,7 @@ def postprocess_outputs_tf(outputs, outputs_channel_order):
 
 def pytorch_to_keras(
         module: nn.Module,
-        inputs,
+        args=[], kwargs={},
         inputs_channel_order: Union[ChannelOrder, Dict[torch.Tensor, ChannelOrder]] = ChannelOrder.TENSORFLOW,
         outputs_channel_order: Union[ChannelOrder, Dict[int, ChannelOrder]] = None,
         converter_dict=CONVERTER_DICT,
@@ -230,7 +230,7 @@ def pytorch_to_keras(
         save_trace_html=False,
 ) -> keras.Model:
     start = time.time()
-    node_hierarchy = Tracer.trace(module, inputs)
+    node_hierarchy = Tracer.trace(module, args, kwargs)
     # print(node_hierarchy)
 
     keras_converted_node = convert_hierarchy(node_hierarchy, converter_dict,
@@ -256,11 +256,13 @@ def pytorch_to_keras(
 
     keras_op = keras_converted_node.keras_op
 
-    inputs_tf = prepare_inputs_tf(inputs, inputs_channel_order)
-    outputs_tf = keras_op(*inputs_tf)
+    args_tf = prepare_inputs_tf(args, inputs_channel_order)
+    kwargs_tf = prepare_inputs_tf(kwargs, inputs_channel_order)
+    print('!!!', args_tf, kwargs_tf)
+    outputs_tf = keras_op(*args_tf, **kwargs_tf)
     outputs_tf = postprocess_outputs_tf(outputs_tf, outputs_channel_order)
 
-    keras_model = keras.Model(inputs_tf, outputs_tf)
+    keras_model = keras.Model([*args_tf, kwargs_tf], outputs_tf)
 
     elapsed = time.time() - start
     print(f'Conversion complete. Elapsed time: {elapsed:.2f} sec.')

@@ -171,7 +171,7 @@ class Tracer:
                 setattr(op_cls, op.__name__, decorated)
 
     @staticmethod
-    def trace(module_or_function: Union[nn.Module, Callable], inputs) -> PytorchNodeHierarchy:
+    def trace(module_or_function: Union[nn.Module, Callable], args, kwargs) -> PytorchNodeHierarchy:
 
         ### Module tracing routines
         def apply_module_tracing_recursively(module):
@@ -193,7 +193,7 @@ class Tracer:
         else:
             module_or_function = Tracer.traceable()(module_or_function)
         with torch.no_grad():
-            module_or_function(*inputs)
+            module_or_function(*args, **kwargs)
         Tracer._tracing_enabled = False
 
         hierarchy = Tracer.build_hierarchy(Tracer._node_list)

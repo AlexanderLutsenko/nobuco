@@ -1,8 +1,10 @@
 import numbers
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+from keras.layers import LayerNormalization
 from tensorflow.python.ops.image_ops_impl import ResizeMethod
 from torch import Tensor
+from torch.nn import LayerNorm
 from torch.nn.functional import DType
 from torch.types import _int, _bool, Number, _dtype, _size
 
@@ -545,6 +547,39 @@ def batch_norm(input: Tensor,
     def func(input, *args, **kwargs):
         return bn(input)
         # return (input - running_mean) / (tf.sqrt(running_var + eps)) * weight + bias
+    return func
+
+
+@converter(F.layer_norm, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def layer_norm(input: Tensor,
+               normalized_shape: List[int],
+               weight: Optional[Tensor] = None,
+               bias: Optional[Tensor] = None,
+               eps: float = 1e-5
+               ):
+    assert len(normalized_shape) == 1
+
+    weight = weight.detach().numpy()
+    bias = bias.detach().numpy()
+    layer = keras.layers.LayerNormalization(axis=-1, epsilon=eps, weights=[weight, bias])
+
+    def func(input, *args, **kwargs):
+        return layer(input)
+    return func
+
+
+@converter(F.embedding, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def embedding(input: Tensor, weight: Tensor, padding_idx: Optional[int] = None, max_norm: Optional[float] = None,
+              norm_type: float = 2.0, scale_grad_by_freq: bool = False, sparse: bool = False):
+    # assert padding_idx == None and max_norm == None and norm_type == 2.0 and scale_grad_by_freq == False and sparse == False
+
+    input_dim, output_dim = weight.shape
+    weight = weight.detach().numpy()
+
+    layer = keras.layers.Embedding(input_dim, output_dim, weights=[weight])
+
+    def func(input, weight, padding_idx=None, max_norm=None, norm_type=2.0, scale_grad_by_freq=False, sparse=False):
+        return layer(input)
     return func
 
 
