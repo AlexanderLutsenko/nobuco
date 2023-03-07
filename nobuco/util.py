@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Callable, Tuple
 
 import torch
+from torch import nn
 
 
 def find_index(collection, el):
@@ -51,6 +52,10 @@ def get_torch_tensor_id(tensor):
         return id(tensor)
 
 
+def set_torch_tensor_id(tensor, id):
+    tensor.original_id = id
+
+
 # def clone_torch_tensors_recursively(obj, annotate=True):
 #     def replace_func(obj):
 #         if isinstance(obj, torch.Tensor):
@@ -92,7 +97,7 @@ def collect_recursively_func(obj, predicate: Callable[[object], bool]):
                 for k, v in obj.items():
                     collect(k)
                     collect(v)
-            elif hasattr(obj, '__dict__'):
+            elif hasattr(obj, '__dict__') and not isinstance(obj, nn.Module):
                 v = vars(obj)
                 collect(v)
 
@@ -117,10 +122,13 @@ def clone_torch_tensors_recursively(obj, annotate=True):
     collected = collect_recursively(obj, torch.Tensor)
 
     def replace_func(obj):
-        cloned = obj.clone()
-        if annotate:
-            cloned.original_id = get_torch_tensor_id(obj)
-        return cloned
+        if obj.is_leaf:
+            cloned = obj.clone()
+            if annotate:
+                set_torch_tensor_id(cloned, get_torch_tensor_id(obj))
+            return cloned
+        else:
+            return obj
 
     replace_dict = {id(c): replace_func(c) for c in collected}
     return deepcopy(obj, memo=replace_dict)

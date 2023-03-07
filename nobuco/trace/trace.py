@@ -65,18 +65,21 @@ class Tracer:
             args = deepcopy(args, memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
             kwargs = deepcopy(kwargs, memo={id(t): t for t in collect_recursively(kwargs, torch.Tensor)})
 
-            args_inner = deepcopy(args, memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
-            kwargs_inner = deepcopy(kwargs, memo={id(t): t for t in collect_recursively(kwargs, torch.Tensor)})
+            args_clone = clone_torch_tensors_recursively(args)
+            kwargs_clone = clone_torch_tensors_recursively(kwargs)
 
             wrapped_op = WrappedOp(self)
 
             Tracer._parent_list.append(wrapped_op)
             Tracer._tracing_enabled = True
-            outputs = forward_func(*args_inner, **kwargs_inner)
+            outputs = forward_func(*args, **kwargs)
             Tracer._tracing_enabled = False
             Tracer._parent_list = Tracer._parent_list[:-1]
 
-            node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args, kwargs, outputs)
+            # Protection from external modification
+            outputs_clone = clone_torch_tensors_recursively(outputs)
+
+            node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone)
             Tracer._node_list.append(node)
 
             Tracer._tracing_enabled = True
@@ -101,32 +104,29 @@ class Tracer:
                     args_clone = args
                     kwargs_clone = kwargs
                 else:
-                    # Sic!
-                    # This is protection from external modification
-                    args = clone_torch_tensors_recursively(args)
-                    kwargs = clone_torch_tensors_recursively(kwargs)
-
-                    # And this is to correctly handle in-place operations
                     args_clone = clone_torch_tensors_recursively(args)
                     kwargs_clone = clone_torch_tensors_recursively(kwargs)
 
                 Tracer._parent_list.append(wrapped_op)
                 Tracer._tracing_enabled = True
-                outputs = orig_method(*args_clone, **kwargs_clone)
+                outputs = orig_method(*args, **kwargs)
                 Tracer._tracing_enabled = False
                 Tracer._parent_list = Tracer._parent_list[:-1]
 
                 input_tensors = collect_recursively((args, kwargs), torch.Tensor)
+
                 output_tensors = collect_recursively(outputs, torch.Tensor)
                 if is_whitelist_op or (len(input_tensors) > 0 and len(output_tensors) > 0):
                     module_name = op_cls.__name__ if isinstance(op_cls, types.ModuleType) else f'{op_cls.__module__}.{op_cls.__name__}'
                     if module_suffix:
                         module_name += '.' + module_suffix
-                    node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args, kwargs, outputs)
+
+                    # Protection from external modification
+                    outputs_clone = clone_torch_tensors_recursively(outputs)
+
+                    node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone)
                     Tracer._node_list.append(node)
 
-                # Protection from external modification
-                outputs = clone_torch_tensors_recursively(outputs)
                 Tracer._tracing_enabled = True
             else:
                 outputs = orig_method(*args, **kwargs)

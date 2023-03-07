@@ -1,11 +1,8 @@
 import numbers
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
-from keras.layers import LayerNormalization
 from tensorflow.python.ops.image_ops_impl import ResizeMethod
 from torch import Tensor
-from torch.nn import LayerNorm
-from torch.nn.functional import DType
 from torch.types import _int, _bool, Number, _dtype, _size
 
 import tensorflow as tf
@@ -239,13 +236,25 @@ def flatten(self, start_dim=0, end_dim=-1):
     return func
 
 
-@converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Optional[_dtype] = None, out: Optional[Tensor] = None):
-    num_dims = len(input.shape)
+# @converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
+# def mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Optional[_dtype] = None, out: Optional[Tensor] = None):
+#     num_dims = len(input.shape)
+#
+#     def func(input, dim=None, keepdim=False, *, dtype=None, out=None):
+#         if isinstance(dim, numbers.Number):
+#             dim = [dim]
+#         if get_channel_order(input) == ChannelOrder.TENSORFLOW and dim is not None:
+#             dim = dims_pytorch2keras(dim, num_dims=num_dims)
+#         res = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
+#         return set_channel_order(res, ChannelOrder.PYTORCH)
+#     return func
 
+
+@converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Optional[_dtype] = None, out: Optional[Tensor] = None):
     def func(input, dim=None, keepdim=False, *, dtype=None, out=None):
-        if get_channel_order(input) == ChannelOrder.TENSORFLOW and dim is not None:
-            dim = dims_pytorch2keras(dim, num_dims=num_dims)
+        if isinstance(dim, numbers.Number):
+            dim = [dim]
         return tf.reduce_mean(input, axis=dim, keepdims=keepdim)
     return func
 
@@ -408,8 +417,6 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
         pad_layer = None
     pad_layer = None
 
-    # print('???', output_padding)
-
     if groups == 1:
         conv = keras.layers.Conv2DTranspose(out_filters,
                                             kernel_size=(kh, kw),
@@ -463,7 +470,7 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
         #
         # conv = lambda x: grouped_conv2d_transpose(x, out_filters*groups, kernel_size=(kh, kw), strides=stride, groups=groups, dilation=dilation)
 
-    # FIXME!!!
+    # FIXME!
     def func(input, *args, **kwargs):
         if pad_layer is not None:
             input = pad_layer(input)
@@ -472,7 +479,6 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
 
         if output_padding != (0, 0):
             x = x[:, output_padding[0]:, output_padding[1]:, :]
-
         return x
     return func
 
@@ -550,14 +556,14 @@ def einsum(*args: Any):
     def func(*args: Any):
         equation = args[0]
         operands = args[1:]
-        return tf.einsum(equation, *operands)
+        return keras.layers.Lambda(lambda operands: tf.einsum(equation, *operands))(operands)
     return func
 
 
-@converter(torch.Tensor.triu_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.Tensor.triu, torch.Tensor.triu_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def triu(self, diagonal=0):
     def func(self, diagonal=0):
-        return tf.experimental.numpy.triu(self, k=diagonal)
+        return keras.layers.Lambda(lambda x: tf.experimental.numpy.triu(x, k=diagonal))(self)
     return func
 
 
@@ -840,77 +846,56 @@ def sum(input: Tensor, dim: Sequence, keepdim: _bool=False, *, dtype: Optional[_
     return func
 
 
-@converter(torch.Tensor.__add__, torch.Tensor.__iadd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def add(input, other):
-    def func(input, other):
+@converter(torch.Tensor.add, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+def add(input, other, *args, **kwargs):
+    def func(input, other, *args, **kwargs):
         return input + other
     return func
 
 
-@converter(torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def add(self, other):
-    def func(self, other):
-        return self + other
-    return func
-
-
-@converter(torch.Tensor.add, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def add(self, other, *args, **kwargs):
-    def func(self, other, *args, **kwargs):
-        return self + other
-    return func
-
-
-@converter(torch.Tensor.__sub__, torch.Tensor.__isub__, torch.sub, torch.subtract, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.sub, torch.subtract, torch.Tensor.sub, torch.Tensor.__sub__, torch.Tensor.__isub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def sub(input: Union[Tensor, Number], other: Union[Tensor, Number], *, alpha: Optional[Number]=1, out: Optional[Tensor]=None):
     def func(input, other, *, alpha=1, out=None):
         return input - other
     return func
 
 
-@converter(torch.Tensor.sub, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def sub(self, other, *args, **kwargs):
-    def func(self, other, *args, **kwargs):
-        return self - other
-    return func
-
-
-@converter(torch.Tensor.__rsub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.__rsub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def rsub(self, other):
     def func(self, other):
         return other - self
     return func
 
 
-@converter(torch.Tensor.__mul__, torch.Tensor.__imul__, torch.mul, torch.Tensor.__rmul__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.mul, torch.Tensor.__mul__, torch.Tensor.__imul__, torch.Tensor.__rmul__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def mul(input: Union[Tensor, Number], other: Union[Tensor, Number], *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return input * other
     return func
 
 
-@converter(torch.Tensor.mul, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.mul, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def mul(self, value):
     def func(self, value):
         return self * value
     return func
 
 
-@converter(torch.Tensor.__truediv__, torch.Tensor.__idiv__, torch.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.__truediv__, torch.Tensor.__idiv__, torch.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def div(input: Union[Tensor, Number], other: Union[Tensor, Number], *, rounding_mode: Optional[str] = None, out: Optional[Tensor]=None):
     def func(input, other, *, rounding_mode=None, out=None):
         return input / other
     return func
 
 
-@converter(torch.Tensor.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def div(self, value, *args, **kwargs):
     def func(self, value, *args, **kwargs):
         return self / value
     return func
 
 
-@converter(torch.Tensor.__rdiv__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.__rdiv__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
 def rdiv(self, other):
     def func(self, other):
         return other / self
@@ -1137,11 +1122,11 @@ def masked_fill(input: Tensor, mask: Tensor, value: Number):
     return func
 
 
-@converter(torch.Tensor.fill_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def fill_(self, value):
-    def func(self, value):
-        result = tf.fill(self.shape, value)
-        result = tf.cast(result, dtype=self.dtype)
+@converter(torch.fill, torch.Tensor.fill_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def fill(input, value):
+    def func(input, value):
+        result = tf.fill(input.shape, value)
+        result = tf.cast(result, dtype=input.dtype)
         return result
     return func
 
@@ -1154,9 +1139,12 @@ def meshgrid(*tensors, indexing: Optional[str] = None):
 
 
 @converter(None, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def getitem_indexed(self, indices):
-    def func(self, indices):
-        return tf.gather(self, indices, axis=0)
+def getitem_indexed(self, *slices):
+    slices = _flatten(slices)
+    slices_combined = torch.stack(slices, dim=-1).numpy()
+
+    def func(self, *slices):
+        return tf.gather_nd(self, slices_combined)
     return func
 
 
@@ -1164,13 +1152,13 @@ def getitem_indexed(self, indices):
 def getitem(self, *slices):
     n_dims = self.dim()
 
+    slices = _flatten(slices)
+
     if isinstance(slices[0], torch.Tensor):
         if slices[0].dtype == torch.bool:
             return masked_select(self, slices[0])
         elif slices[0].dtype == torch.int64:
-            return getitem_indexed(self, slices[0])
-
-    slices = _flatten(slices)
+            return getitem_indexed(self, slices)
 
     def is_light(slices):
         return all(isinstance(slc, slice) for slc in slices)

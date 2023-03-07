@@ -29,17 +29,32 @@ class ChangeOrderingLayer:
         tf_assert_has_attr_recursively(args, 'channel_order')
         tf_assert_has_attr_recursively(kwargs, 'channel_order')
 
-        if self.channel_ordering_strategy == ChannelOrderingStrategy.MANUAL:
+        strategy = self.channel_ordering_strategy
+
+        if strategy == ChannelOrderingStrategy.MANUAL:
             outputs = self.func(*args, **kwargs)
-        elif self.channel_ordering_strategy == ChannelOrderingStrategy.OUTPUT_FORCE_PYTORCH_ORDER:
+        elif strategy == ChannelOrderingStrategy.OUTPUT_FORCE_PYTORCH_ORDER:
             outputs = self.func(*args, **kwargs)
             outputs = tf_annotate_recursively(outputs, channel_order=ChannelOrder.PYTORCH)
         else:
-            if self.channel_ordering_strategy == ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER:
+            if strategy == ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH:
+                def is_single_el(shape):
+                    return all(s == 1 for s in shape)
+
+                input_tensors = collect_recursively((args, kwargs), TF_TENSOR_CLASSES)
+                input_tensors_not_single = [t for t in input_tensors if is_single_el(t.shape) != 1]
+                # All tensors are of same dimensionality except tensors of size 1
+                all_same = len({len(t.shape) for t in input_tensors_not_single}) == 1
+                if all_same:
+                    strategy = ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS
+                else:
+                    strategy = ChannelOrderingStrategy.FORCE_PYTORCH_ORDER
+
+            if strategy == ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER:
                 channel_order = ChannelOrder.TENSORFLOW
-            elif self.channel_ordering_strategy == ChannelOrderingStrategy.FORCE_PYTORCH_ORDER:
+            elif strategy == ChannelOrderingStrategy.FORCE_PYTORCH_ORDER:
                 channel_order = ChannelOrder.PYTORCH
-            elif self.channel_ordering_strategy == ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS:
+            elif strategy == ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS:
                 input_tensors = collect_recursively((args, kwargs), TF_TENSOR_CLASSES)
                 num_reordered = sum(t.channel_order == ChannelOrder.TENSORFLOW for t in input_tensors)
                 num_unchanged = len(input_tensors) - num_reordered

@@ -147,7 +147,9 @@ You know the drill,
 - `MINIMUM_TRANSPOSITIONS`
   - The channel order is decided by a majority vote (whichever prevails among the inputs). This way the number of coercions (i.e. tensor transpositions) is kept to the minimum.
   It also means whenever there's only one input, it will be left untouched.
-  - Best choice for element-wise ops (most of activations).
+  - Best choice for single-input element-wise ops (most of activations).
+- `MINIMUM_TRANSPOSITIONS_OR_PYTORCH`
+  - -
 - `MANUAL`
   - You are on your own. In exchange for unrestricted freedom, you take responsibility to coerce input tensors to suitable channel order and to annotate output tensors with their order.
 

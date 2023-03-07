@@ -31,12 +31,20 @@ class ConversionResult:
 
 def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensors, op_type, tolerance=1e-4):
     try:
-        diff = validate_diff_default(keras_op, pytorch_op, input_args, input_kwargs, output_tensors)
+        diffs = validate_diff_default(keras_op, pytorch_op, input_args, input_kwargs, output_tensors)
+
+        if len(diffs):
+            for i, diff in enumerate(diffs):
+                if diff > tolerance or math.isnan(diff):
+                    warnings.warn(
+                        f'[{op_type}|{str_parents(node)}] conversion procedure might be incorrect: max. discrepancy for output #{i} is {diff:5f}',
+                        category=RuntimeWarning
+                    )
+            diff = max(diffs)
+        else:
+            diff = 0
+
         if diff > tolerance or math.isnan(diff):
-            warnings.warn(
-                f'[{op_type}|{str_parents(node)}] conversion procedure might be incorrect: max. discrepancy is {diff:5f}',
-                category=RuntimeWarning
-            )
             return diff, ValidationStatus.INACCURATE
         else:
             return diff, ValidationStatus.SUCCESS
@@ -84,8 +92,4 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
             return calc_diff_numerical(t1, t2)
 
     diffs = [calc_diff(t1, t2) for t1, t2 in zip(outputs_tf_converted, outputs_pt)]
-    if len(diffs):
-        diff = max(diffs)
-    else:
-        diff = 0
-    return diff
+    return diffs
