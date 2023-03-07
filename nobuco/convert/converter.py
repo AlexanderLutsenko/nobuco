@@ -14,7 +14,7 @@ from nobuco.convert.layers.container import TransientContainer
 from nobuco.convert.layers.stub import UnimplementedOpStub
 from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order
 from nobuco.convert.validation import validate, ValidationStatus, ValidationResult, ConversionResult
-from nobuco.util import get_torch_tensor_id, collect_recursively, replace_recursively_func, replace_recursively
+from nobuco.util import get_torch_tensor_id, collect_recursively, replace_recursively_func
 from nobuco.entity.keras import KerasConvertedNode
 from nobuco.entity.pytorch import PytorchNode, PytorchNodeHierarchy
 from nobuco.trace.trace import Tracer
@@ -178,19 +178,18 @@ def collect_conversion_results(keras_node: KerasConvertedNode) -> Dict[PytorchNo
 
 def prepare_inputs_tf(inputs_pt, inputs_channel_order):
 
-    def replace_func(obj: object) -> Tuple[bool, object]:
-        if isinstance(obj, torch.Tensor):
-            if isinstance(inputs_channel_order, Dict):
-                channel_order = inputs_channel_order.get(obj, ChannelOrder.TENSORFLOW)
-            else:
-                channel_order = inputs_channel_order
-            tens = t_pytorch2keras(obj, channel_order=channel_order)
-            input = set_channel_order(keras.Input(batch_shape=tens.shape), channel_order)
-            return True, input
-        else:
-            return False, None
+    def collect_func(obj):
+        return isinstance(obj, torch.Tensor)
 
-    return replace_recursively_func(inputs_pt, replace_func)
+    def replace_func(obj: torch.Tensor) -> torch.Tensor:
+        if isinstance(inputs_channel_order, Dict):
+            channel_order = inputs_channel_order.get(obj, ChannelOrder.TENSORFLOW)
+        else:
+            channel_order = inputs_channel_order
+        tens = t_pytorch2keras(obj, channel_order=channel_order)
+        return set_channel_order(keras.Input(batch_shape=tens.shape), channel_order)
+
+    return replace_recursively_func(inputs_pt, collect_func, replace_func)
 
 
 def postprocess_outputs_tf(outputs, outputs_channel_order):
@@ -261,7 +260,8 @@ def pytorch_to_keras(
     outputs_tf = keras_op(*args_tf, **kwargs_tf)
     outputs_tf = postprocess_outputs_tf(outputs_tf, outputs_channel_order)
 
-    keras_model = keras.Model([*args_tf, kwargs_tf], outputs_tf)
+    inputs_tf_flat = collect_recursively((args_tf, kwargs_tf), TF_TENSOR_CLASSES)
+    keras_model = keras.Model(inputs_tf_flat, outputs_tf)
 
     elapsed = time.time() - start
     print(f'Conversion complete. Elapsed time: {elapsed:.2f} sec.')

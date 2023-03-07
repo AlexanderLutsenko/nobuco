@@ -65,11 +65,14 @@ class Tracer:
             args = deepcopy(args, memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
             kwargs = deepcopy(kwargs, memo={id(t): t for t in collect_recursively(kwargs, torch.Tensor)})
 
+            args_inner = deepcopy(args, memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
+            kwargs_inner = deepcopy(kwargs, memo={id(t): t for t in collect_recursively(kwargs, torch.Tensor)})
+
             wrapped_op = WrappedOp(self)
 
             Tracer._parent_list.append(wrapped_op)
             Tracer._tracing_enabled = True
-            outputs = forward_func(*args, **kwargs)
+            outputs = forward_func(*args_inner, **kwargs_inner)
             Tracer._tracing_enabled = False
             Tracer._parent_list = Tracer._parent_list[:-1]
 

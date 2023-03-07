@@ -60,34 +60,42 @@ class ChangeOrderingLayer:
 
 
 def tf_set_order_recursively(obj, channel_order: ChannelOrder):
+
+    def collect_func(obj):
+        return isinstance(obj, TF_TENSOR_CLASSES)
+
     def replace_func(obj):
-        if isinstance(obj, TF_TENSOR_CLASSES):
-            if channel_order == ChannelOrder.TENSORFLOW and get_channel_order(obj) != ChannelOrder.TENSORFLOW:
-                n_dims = len(obj.shape)
-                obj = _permute(perm_pytorch2keras(n_dims))(obj)
-            elif channel_order == ChannelOrder.PYTORCH and get_channel_order(obj) != ChannelOrder.PYTORCH:
-                n_dims = len(obj.shape)
-                obj = _permute(perm_keras2pytorch(n_dims))(obj)
-            set_channel_order(obj, channel_order)
-            return True, obj
-        else:
-            return False, obj
-    return replace_recursively_func(obj, replace_func)
+        if channel_order == ChannelOrder.TENSORFLOW and get_channel_order(obj) != ChannelOrder.TENSORFLOW:
+            n_dims = len(obj.shape)
+            obj = _permute(perm_pytorch2keras(n_dims))(obj)
+        elif channel_order == ChannelOrder.PYTORCH and get_channel_order(obj) != ChannelOrder.PYTORCH:
+            n_dims = len(obj.shape)
+            obj = _permute(perm_keras2pytorch(n_dims))(obj)
+        set_channel_order(obj, channel_order)
+        return obj
+
+    return replace_recursively_func(obj, collect_func, replace_func)
 
 
 def tf_annotate_recursively(obj, channel_order):
+
+    def collect_func(obj):
+        return isinstance(obj, TF_TENSOR_CLASSES)
+
     def replace_func(obj):
-        if isinstance(obj, TF_TENSOR_CLASSES):
-            set_channel_order(obj, channel_order)
-            return True, obj
-        else:
-            return False, obj
-    return replace_recursively_func(obj, replace_func)
+        set_channel_order(obj, channel_order)
+        return obj
+
+    return replace_recursively_func(obj, collect_func, replace_func)
 
 
 def tf_assert_has_attr_recursively(obj, attr):
+
+    def collect_func(obj):
+        return isinstance(obj, TF_TENSOR_CLASSES)
+
     def replace_func(obj):
-        if isinstance(obj, TF_TENSOR_CLASSES):
-            assert hasattr(obj, attr)
-        return False, obj
-    return replace_recursively_func(obj, replace_func)
+        assert hasattr(obj, attr)
+        return obj
+
+    return replace_recursively_func(obj, collect_func, replace_func)

@@ -33,14 +33,14 @@ def t_pytorch2keras(tensor_pt, channel_order=ChannelOrder.PYTORCH):
 
 
 def pytorch2keras_recursively(obj, channel_order=ChannelOrder.PYTORCH):
-    def replace_func(obj):
-        if isinstance(obj, torch.Tensor):
-            tensor = t_pytorch2keras(obj, channel_order=channel_order)
-            return True, tensor
-        else:
-            return False, obj
 
-    return replace_recursively_func(obj, replace_func)
+    def collect_func(obj):
+        return isinstance(obj, torch.Tensor)
+
+    def replace_func(obj):
+        return t_pytorch2keras(obj, channel_order=channel_order)
+
+    return replace_recursively_func(obj, collect_func, replace_func)
 
 
 @dataclass
@@ -51,22 +51,24 @@ class TensorPlaceholder:
 def make_template_recursively(obj):
     i = 0
 
+    def collect_func(obj):
+        return isinstance(obj, torch.Tensor)
+
     def replace_func(obj):
-        if isinstance(obj, torch.Tensor):
-            nonlocal i
-            placeholder = TensorPlaceholder(i)
-            i += 1
-            return True, placeholder
-        else:
-            return False, obj
-    return replace_recursively_func(obj, replace_func)
+        nonlocal i
+        placeholder = TensorPlaceholder(i)
+        i += 1
+        return placeholder
+
+    return replace_recursively_func(obj, collect_func, replace_func)
 
 
 def template_insert_recursively(obj, tensors):
+
+    def collect_func(obj):
+        return isinstance(obj, TensorPlaceholder)
+
     def replace_func(obj):
-        if isinstance(obj, TensorPlaceholder):
-            tensor = tensors[obj.idx]
-            return True, tensor
-        else:
-            return False, obj
-    return replace_recursively_func(obj, replace_func)
+        return tensors[obj.idx]
+
+    return replace_recursively_func(obj, collect_func, replace_func)

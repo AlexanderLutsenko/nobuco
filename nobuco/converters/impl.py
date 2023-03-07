@@ -162,6 +162,23 @@ def repeat(self, *sizes):
     return func
 
 
+@converter(torch.Tensor.expand, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def expand(self, *sizes):
+    def get_broadcast_shape(sizes, tensor_shape):
+        tensor_shape = list(reversed(tensor_shape))
+        res = []
+        for i, s in enumerate(reversed(sizes)):
+            if s == -1:
+                s = tensor_shape[i]
+            res.append(s)
+        return list(reversed(res))
+    broadcast_shape = get_broadcast_shape(sizes, self.shape)
+
+    def func(self, *sizes):
+        return tf.broadcast_to(self, broadcast_shape)
+    return func
+
+
 @converter(torch.roll, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def roll(input: Tensor, shifts: Union[_int, _size], dims: Union[_int, _size]=()):
     assert isinstance(shifts, _int) and isinstance(dims, _int)
@@ -460,13 +477,19 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
     return func
 
 
-@converter(nn.Linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def linear(self, input: Tensor):
-    out_filters, in_filters = self.weight.shape
-    weights = self.weight.detach().numpy()
-    weights = weights.transpose(1, 0)
-    biases = self.bias.detach().numpy()
-    return keras.layers.Dense(out_filters, weights=[weights, biases])
+# @converter(nn.Linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+# def linear(self, input: Tensor):
+#     out_filters, in_filters = self.weight.shape
+#     weights = self.weight.detach().numpy()
+#     weights = weights.transpose(1, 0)
+#
+#     biases = self.bias
+#     if biases is not None:
+#         biases = self.bias.detach().numpy()
+#         params = [weights, biases]
+#     else:
+#         params = [weights]
+#     return keras.layers.Dense(out_filters, weights=params)
 
 
 @converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -474,7 +497,12 @@ def linear(input, weight, bias, out=None):
     out_filters, in_filters = weight.shape
     weights = weight.detach().numpy()
     weights = weights.transpose(1, 0)
-    biases = bias.detach().numpy()
+
+    if bias is not None:
+        biases = bias.detach().numpy()
+    else:
+        biases = np.zeros(shape=(out_filters,))
+
     layer = keras.layers.Dense(out_filters, weights=[weights, biases])
 
     def func(input, weight, bias, out=None):
@@ -489,24 +517,31 @@ def matmul(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
-@converter(torch.Tensor.matmul, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.Tensor.matmul, torch.Tensor.__matmul__, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def matmul(self, tensor2):
     def func(self, tensor2):
         return tf.linalg.matmul(self, tensor2)
     return func
 
 
-@converter(torch.dot, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.dot, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def dot(input: Tensor, tensor: Tensor, *, out: Optional[Tensor]=None):
     def func(input, tensor, *, out=None):
         return tf.linalg.tensordot(input, tensor, axes=1)
     return func
 
 
-@converter(torch.mv, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.mv, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def mv(input: Tensor, vec: Tensor, *, out: Optional[Tensor]=None):
     def func(input, vec, *, out=None):
         return tf.linalg.tensordot(input, vec, axes=1)
+    return func
+
+
+@converter(torch.bmm, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def bmm(input: Tensor, mat2: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, mat2, *, out=None):
+        return tf.linalg.matmul(input, mat2)
     return func
 
 
@@ -516,6 +551,13 @@ def einsum(*args: Any):
         equation = args[0]
         operands = args[1:]
         return tf.einsum(equation, *operands)
+    return func
+
+
+@converter(torch.Tensor.triu_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def triu(self, diagonal=0):
+    def func(self, diagonal=0):
+        return tf.experimental.numpy.triu(self, k=diagonal)
     return func
 
 
@@ -593,6 +635,13 @@ def identity(self, input: Tensor):
 @converter(torch.nn.modules.dropout.Dropout, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def dropout(self, input: Tensor):
     return keras.layers.Dropout(rate=self.p)
+
+
+@converter(F.dropout, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def dropout(input: Tensor, p: float = 0.5, training: bool = True, inplace: bool = False):
+    def func(input, p=0.5, training=True, inplace=False):
+        return keras.layers.Dropout(rate=p)(input)
+    return func
 
 
 # @converter(nn.MaxPool2d)
@@ -761,11 +810,11 @@ def hardswish(input: Tensor, inplace: bool = False):
     return func
 
 
-@converter(F.softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def softmax(input: Tensor, dim: Optional[int] = None, _stacklevel: int = 3, dtype: Optional[DType] = None):
+@converter(torch.softmax, torch.Tensor.softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def softmax(input: Tensor, dim: Union[str, None], *, dtype: Optional[_dtype]=None):
     num_dims = input.dim()
 
-    def func(input, dim=None, _stacklevel=3, dtype=None):
+    def func(input: Tensor, dim, *, dtype=None):
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, num_dims)
         return tf.nn.softmax(input, axis=dim)
@@ -934,6 +983,17 @@ def round(input: Tensor, *, decimals: _int, out=None):
     return func
 
 
+@converter(torch.norm, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
+    num_dims = input.dim()
+
+    def func(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        return tf.norm(input, ord=p, axis=dim, keepdims=keepdim)
+    return func
+
+
 @converter(torch.Tensor.round, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def round(self, decimals=0):
     assert decimals == 0
@@ -961,7 +1021,7 @@ def min(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tup
     return func
 
 
-@converter(torch.max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.max, torch.Tensor.max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def max(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
     n_dims = input.dim()
 
@@ -969,6 +1029,17 @@ def max(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tup
         if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, n_dims)
         return tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
+    return func
+
+
+@converter(torch.argmax, torch.Tensor.argmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def argmax(input: Tensor, dim: Optional[_int]=None, keepdim: _bool=False, *, out: Optional[Tensor]=None):
+    n_dims = input.dim()
+
+    def func(input, dim=None, keepdim=False, *, out=None):
+        if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+        return tf.keras.backend.argmax(input, axis=dim)
     return func
 
 
@@ -1039,7 +1110,7 @@ def moveaxis(input: Tensor, source: _size, destination: _size):
 def reshape(self, *shape):
     def func(self, *shape):
         shape = _flatten(shape)
-        return tf.reshape(self, shape)
+        return tf.reshape(self, tuple(shape))
     return func
 
 
@@ -1058,7 +1129,7 @@ def masked_select(input: Tensor, mask: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
-@converter(torch.masked_fill, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.masked_fill, torch.Tensor.masked_fill, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def masked_fill(input: Tensor, mask: Tensor, value: Number):
     def func(input, mask, value):
         value = tf.convert_to_tensor(value, dtype=input.dtype)
@@ -1138,6 +1209,16 @@ def getitem(self, *slices):
     return func
 
 
+@converter(torch.Tensor.__getattribute__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def getattribute(self, attribute):
+    if attribute == 'T':
+        def func(self, attribute):
+            return _permute_inner([1, 0])(self)
+    else:
+        raise Exception(f'Unsupported attribute: {attribute}')
+    return func
+
+
 @converter(torch.Tensor.narrow, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def narrow(self, dimension, start, length):
     n_dims = self.dim()
@@ -1184,30 +1265,6 @@ def unsqueeze(input, dim):
     return func
 
 
-# # FIXME
-# @converter(torch.Tensor.unfold, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-# def unfold(self, dimension, size, step):
-#     def func(self, dimension, size, step):
-#         x = self
-#         b, c, h, w, cplx = x.shape
-#         x = tf.reshape(x, shape=(b, c, h, w * cplx))
-#         n_dims = len(x.shape)
-#         dimension = dimension + 1
-#
-#         sizes = [1]*n_dims
-#         strides = [1]*n_dims
-#         rates = [1]*n_dims
-#
-#         sizes[dimension] = size
-#         strides[dimension] = step
-#         x = tf.image.extract_patches(x, sizes=sizes, strides=strides, rates=rates, padding='VALID')
-#
-#         x = tf.reshape(x, shape=(b, c, -1, size, w, cplx))
-#         x = tf.transpose(x, (0, 1, 2, 4, 5, 3))
-#         return x
-#     return func
-
-
 # FIXME
 @converter(torch.Tensor.unfold, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def unfold(self, dimension, size, step):
@@ -1227,6 +1284,13 @@ def unfold(self, dimension, size, step):
         x = tf.reshape(x, shape=[b, c, h, size, -1])
         x = tf.transpose(x, (0, 1, 2, 4, 3))
         return x
+    return func
+
+
+@converter(torch.Tensor.contiguous, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def contiguous(self, memory_format=None):
+    def func(self, memory_format=None):
+        return self
     return func
 
 
