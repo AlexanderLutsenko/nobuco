@@ -56,7 +56,7 @@ class TierStatus:
 
 
 class PytorchNode:
-    def __init__(self, wrapped_op: WrappedOp, module_name, parent_list, instance, input_args, input_kwargs, outputs):
+    def __init__(self, wrapped_op: WrappedOp, module_name, parent_list, instance, input_args, input_kwargs, outputs, is_inplace):
         self.wrapped_op = wrapped_op
         self.module_name = module_name
         self.parent_list = parent_list
@@ -64,6 +64,7 @@ class PytorchNode:
         self.input_args = input_args
         self.input_kwargs = input_kwargs
         self.outputs = outputs
+        self.is_inplace = is_inplace
 
     def make_inputs_template(self):
         args_template, kwargs_template = make_template_recursively((self.input_args, self.input_kwargs))
@@ -173,6 +174,7 @@ class PytorchNodeHierarchy:
         is_duplicate = None
         is_disconnected = None
         connectivity_status = None
+        is_inplace = None
 
         validation_result = validation_result_dict.get(self.node, None)
         if validation_result is not None:
@@ -186,6 +188,7 @@ class PytorchNodeHierarchy:
             if conversion_result.connectivity_status is not None:
                 connectivity_status = conversion_result.connectivity_status
                 is_disconnected = not conversion_result.connectivity_status.is_connected()
+            is_inplace = self.node.is_inplace
 
         result = ''
 
@@ -248,13 +251,15 @@ class PytorchNodeHierarchy:
 
             return res
 
-        if status == ValidationStatus.INACCURATE or is_disconnected:
+        if status == ValidationStatus.INACCURATE or is_disconnected or is_inplace:
             result += get_tier_str(tier_statuses, is_additional=True)
 
             if status == ValidationStatus.INACCURATE:
                 result += stylizer.stylize(f' (!) Max diff {validation_result.diff:.6f} ', stylizer.styles_join(style, stylizer.style_inverse)) + ' '
             if is_disconnected:
                 result += stylizer.stylize(f' (!) Subgraph disconnected ', stylizer.style_inverse) + ' '
+            if is_inplace:
+                result += stylizer.stylize(f' (!) Inplace ', stylizer.style_inplace) + ' '
             result += '\n'
 
         result += get_tier_str(tier_statuses)

@@ -783,6 +783,13 @@ def relu(input: Tensor, inplace: bool = False):
     return func
 
 
+@converter(torch.relu_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def relu_(input: Tensor):
+    def func(input):
+        return tf.nn.relu(input)
+    return func
+
+
 @converter(nn.LeakyReLU, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def leaky_relu(self, input: Tensor):
     return keras.layers.LeakyReLU(alpha=self.negative_slope)

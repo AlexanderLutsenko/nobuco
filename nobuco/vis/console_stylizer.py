@@ -52,5 +52,6 @@ class ConsoleStylizer:
     style_not_implemented = fg.red + ef.inverse
     style_bold = ef.bold
     style_inverse = ef.inverse
+    style_inplace = fg.blue + ef.inverse
     style_underl = ef.underl
     style_grey = fg.da_grey

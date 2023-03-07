@@ -57,6 +57,13 @@ class Tracer:
             return callable
 
     @staticmethod
+    def are_equal(tensors1, tensors2):
+        tensors1 = collect_recursively(tensors1, torch.Tensor)
+        tensors2 = collect_recursively(tensors2, torch.Tensor)
+        assert len(tensors1) == len(tensors2)
+        return all(torch.equal(t1, t2) for t1, t2 in zip(tensors1, tensors2))
+
+    @staticmethod
     def module_forward_tracing_decorator(forward_func):
 
         def forward(self, *args, **kwargs):
@@ -79,7 +86,9 @@ class Tracer:
             # Protection from external modification
             outputs_clone = clone_torch_tensors_recursively(outputs)
 
-            node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone)
+            is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
+
+            node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone, is_inplace)
             Tracer._node_list.append(node)
 
             Tracer._tracing_enabled = True
@@ -124,7 +133,9 @@ class Tracer:
                     # Protection from external modification
                     outputs_clone = clone_torch_tensors_recursively(outputs)
 
-                    node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone)
+                    is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
+
+                    node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone, is_inplace)
                     Tracer._node_list.append(node)
 
                 Tracer._tracing_enabled = True

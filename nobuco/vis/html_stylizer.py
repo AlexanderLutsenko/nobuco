@@ -77,5 +77,6 @@ class HtmlStylizer:
     style_not_implemented = {'color': '#ce0505', 'inverse': True}
     style_bold = {'bold': True}
     style_inverse = {'inverse': True}
+    style_inplace = {'color': '#063fdb', 'inverse': True}
     style_underl = {'underline': True}
     style_grey = {'color': '#656565'}
