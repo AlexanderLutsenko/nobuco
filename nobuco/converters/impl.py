@@ -1670,6 +1670,13 @@ def unique(input, sorted=True, return_inverse=False, return_counts=False, dim=No
     return func
 
 
+@converter(torch.clone, torch.Tensor.clone, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def clone(input: Tensor, *, memory_format=None):
+    def func(input: Tensor, *, memory_format=None):
+        return tf.identity(input)
+    return func
+
+
 @converter(torch.view_as_complex, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def view_as_complex(input: Tensor):
     def func(input):

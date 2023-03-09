@@ -8,7 +8,8 @@ import torchvision
 from torch import nn
 
 from nobuco.entity.pytorch import PytorchNode, WrappedOp, PytorchNodeHierarchy
-from nobuco.util import collect_recursively, clone_torch_tensors_recursively
+from nobuco.trace.tensor_storage import clone_torch_tensors_recursively_with_cache, TensorStorage
+from nobuco.util import collect_recursively
 
 
 class Tracer:
@@ -33,6 +34,8 @@ class Tracer:
     _tracing_enabled = False
     _parent_list = []
     _node_list = []
+
+    _tensor_storage: TensorStorage = None
 
     @staticmethod
     def traceable():
@@ -64,24 +67,19 @@ class Tracer:
         return all(torch.equal(t1, t2) for t1, t2 in zip(tensors1, tensors2))
 
     @staticmethod
-    def restore_tensors_recursively(src_tensors, tgt_tensors):
-        src_tensors = collect_recursively(src_tensors, torch.Tensor)
-        tgt_tensors = collect_recursively(tgt_tensors, torch.Tensor)
-        assert len(tgt_tensors) == len(tgt_tensors)
-        for src, tgt in zip(src_tensors, tgt_tensors):
-            src[:] = tgt
-
-    @staticmethod
     def module_forward_tracing_decorator(forward_func):
 
         def forward(self, *args, **kwargs):
             if Tracer._tracing_enabled:
                 Tracer._tracing_enabled = False
 
-                args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
-                args_clone, kwargs_clone = clone_torch_tensors_recursively((args, kwargs))
-
                 wrapped_op = WrappedOp(self)
+
+                # Protection from external modification
+                args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
+
+                # Inner function may change the input structure, ensure against that
+                args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
 
                 Tracer._parent_list.append(wrapped_op)
                 Tracer._tracing_enabled = True
@@ -90,12 +88,8 @@ class Tracer:
                 Tracer._parent_list = Tracer._parent_list[:-1]
 
                 # Protection from external modification
-                outputs_clone = clone_torch_tensors_recursively(outputs)
-
+                outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
                 is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
-                # if not is_inplace:
-                #     args_clone = args
-                #     kwargs_clone = kwargs
 
                 node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone, is_inplace)
                 Tracer._node_list.append(node)
@@ -105,38 +99,6 @@ class Tracer:
             else:
                 outputs = forward_func(*args, **kwargs)
             return outputs
-
-
-        # def forward(self, *args, **kwargs):
-        #     if Tracer._tracing_enabled:
-        #         Tracer._tracing_enabled = False
-        #
-        #         wrapped_op = WrappedOp(self)
-        #
-        #         args, kwargs = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, (torch.Tensor, nn.Module))})
-        #         args_reserve, kwargs_reserve = clone_torch_tensors_recursively((args, kwargs))
-        #
-        #         Tracer._parent_list.append(wrapped_op)
-        #         Tracer._tracing_enabled = True
-        #         outputs = forward_func(*args, **kwargs)
-        #         Tracer._tracing_enabled = False
-        #         Tracer._parent_list = Tracer._parent_list[:-1]
-        #
-        #         is_inplace = not Tracer.are_equal((args, kwargs), (args_reserve, kwargs_reserve))
-        #         if is_inplace:
-        #             print('??? forward inplace', self)
-        #             outputs = clone_torch_tensors_recursively(outputs)
-        #             Tracer.restore_tensors_recursively((args, kwargs), (args_reserve, kwargs_reserve))
-        #             args, kwargs = args_reserve, kwargs_reserve
-        #
-        #         node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args, kwargs, outputs, is_inplace)
-        #         Tracer._node_list.append(node)
-        #
-        #         Tracer._tracing_enabled = True
-        #         return outputs
-        #     else:
-        #         return forward_func(*args, **kwargs)
-
 
         forward.__undecorated_func__ = forward_func
         return forward
@@ -151,8 +113,11 @@ class Tracer:
 
                 wrapped_op = WrappedOp(orig_method)
 
+                # Protection from external modification
+                args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
+
+                # Inner function may change the input structure, ensure against that
                 args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
-                args_clone, kwargs_clone = clone_torch_tensors_recursively((args, kwargs))
 
                 num_input_tensors = len(collect_recursively((args, kwargs), torch.Tensor))
 
@@ -170,12 +135,8 @@ class Tracer:
                         module_name += '.' + module_suffix
 
                     # Protection from external modification
-                    outputs_clone = clone_torch_tensors_recursively(outputs)
-
+                    outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
                     is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
-                    # if not is_inplace:
-                    #     args_clone = args
-                    #     kwargs_clone = kwargs
 
                     node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone, is_inplace)
                     Tracer._node_list.append(node)
@@ -184,47 +145,6 @@ class Tracer:
             else:
                 outputs = orig_method(*args, **kwargs)
             return outputs
-
-
-        # def decorator(*args, **kwargs):
-        #     if Tracer._tracing_enabled:
-        #         Tracer._tracing_enabled = False
-        #
-        #         wrapped_op = WrappedOp(orig_method)
-        #
-        #         args, kwargs = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, (torch.Tensor, nn.Module))})
-        #         args_reserve, kwargs_reserve = clone_torch_tensors_recursively((args, kwargs))
-        #
-        #         num_input_tensors = len(collect_recursively((args, kwargs), torch.Tensor))
-        #
-        #         Tracer._parent_list.append(wrapped_op)
-        #         Tracer._tracing_enabled = True
-        #         outputs = orig_method(*args, **kwargs)
-        #         Tracer._tracing_enabled = False
-        #         Tracer._parent_list = Tracer._parent_list[:-1]
-        #
-        #         num_output_tensors = len(collect_recursively(outputs, torch.Tensor))
-        #
-        #         is_inplace = not Tracer.are_equal((args, kwargs), (args_reserve, kwargs_reserve))
-        #         if is_inplace:
-        #             print('!!! op inplace', orig_method)
-        #             outputs = clone_torch_tensors_recursively(outputs)
-        #             Tracer.restore_tensors_recursively((args, kwargs), (args_reserve, kwargs_reserve))
-        #             args, kwargs = args_reserve, kwargs_reserve
-        #
-        #         if is_whitelist_op or (num_input_tensors > 0 and num_output_tensors > 0):
-        #             module_name = op_cls.__name__ if isinstance(op_cls, types.ModuleType) else f'{op_cls.__module__}.{op_cls.__name__}'
-        #             if module_suffix:
-        #                 module_name += '.' + module_suffix
-        #
-        #             node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args, kwargs, outputs, is_inplace)
-        #             Tracer._node_list.append(node)
-        #
-        #         Tracer._tracing_enabled = True
-        #         return outputs
-        #     else:
-        #         return orig_method(*args, **kwargs)
-
 
         decorator.__undecorated_func__ = orig_method
         return decorator
@@ -285,12 +205,15 @@ class Tracer:
         Tracer._tracing_enabled = True
         Tracer._node_list = []
         Tracer._parent_list = []
+        Tracer._tensor_storage = TensorStorage()
+
         if isinstance(module_or_function, nn.Module):
             apply_module_tracing_recursively(module_or_function)
         else:
             module_or_function = Tracer.traceable()(module_or_function)
         with torch.no_grad():
             module_or_function(*args, **kwargs)
+
         Tracer._tracing_enabled = False
 
         hierarchy = Tracer.build_hierarchy(Tracer._node_list)
