@@ -19,7 +19,7 @@ class WeightLayer(tf.keras.layers.Layer):
     def create(cls, weight):
         const_layer = WeightLayer(weight.shape)
         const_layer.set_weights([weight])
-        const_layer = ChangeOrderingLayer(const_layer, channel_ordering_strategy=ChannelOrderingStrategy.OUTPUT_FORCE_PYTORCH_ORDER)
+        const_layer = ChangeOrderingLayer(const_layer, channel_ordering_strategy=ChannelOrderingStrategy.OUTPUT_FORCE_PYTORCH_ORDER, autocast=False)
         return const_layer
 
     def call(self, *args, **kwargs):

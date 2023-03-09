@@ -9,10 +9,21 @@
   - [x] Recurrent layers (LSTM, GRU)
   - [x] Arbitrary torch functions (except for slice assign, as there's no equivalent in tensorflow)
 - Simple
-- Easily extensible
+- Flexible
+- Extensible
 - Sanity-preserving, with clear mistake messaging
 
-### Essentials
+<!-- toc -->
+
+## Table of Contents
+- [Essentials](#essentials)
+- [Channel order magic](#channel-order-magic)
+- [Dynamic graphs](#dynamic-graphs)
+- [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
+
+<!-- tocstop -->
+
+## Essentials
 
 ---
 
@@ -37,7 +48,8 @@ dummy_image = torch.rand(size=(1, 3, 256, 256))
 pytorch_module = MyModule().eval()
 
 keras_model = pytorch_to_keras(
-    pytorch_module, [dummy_image],
+    pytorch_module, 
+    args=[dummy_image], kwargs=None,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
     outputs_channel_order=ChannelOrder.TENSORFLOW
 )
@@ -132,7 +144,7 @@ is to keep the system simple and customizable, make it clear where a problem com
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. Good thing Nobuco has you covered.
 
-### Channel ordering
+## Channel order magic
 
 ---
 So we've seen that `channel_ordering_strategy` argument, what does it mean, exactly? 
@@ -164,13 +176,22 @@ def force_tensorflow_order(inputs):
     return inputs
 
 @converter(force_tensorflow_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def force_tensorflow_order(inputs):
+def converter_force_tensorflow_order(inputs):
     return lambda inputs: inputs
 ````
 
+
 `force_pytorch_order` is defined analogously.
 
-### :construction: Advanced usage :construction:
+## Dynamic graphs
+
+---
+
+## So we put a converter inside your converter
+
+---
+
+## :construction: Advanced usage :construction:
 
 ---
 

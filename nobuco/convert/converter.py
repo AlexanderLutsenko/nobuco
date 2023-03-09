@@ -126,7 +126,8 @@ def convert_hierarchy(
         output_names = node.output_names
 
         keras_op, children_converted_nodes = converted_op_dict.get(node.get_op(), (None, []))
-        if reuse_layers and node.is_module() and keras_op is not None:
+        # if reuse_layers and node.is_module() and keras_op is not None:
+        if reuse_layers and keras_op is not None:
             conversion_result = ConversionResult(converted_manually=False, is_duplicate=True)
         elif has_converter(node, converter_dict):
             children_converted_nodes = []
@@ -151,7 +152,8 @@ def convert_hierarchy(
         else:
             validation_result = None
 
-        if reuse_layers and node.is_module():
+        # if reuse_layers and node.is_module():
+        if reuse_layers and node.is_module() and not isinstance(keras_op, TransientContainer):
             converted_op_dict[node.get_op()] = (keras_op, children_converted_nodes)
 
         keras_converted_node = KerasConvertedNode(keras_op, node, validation_result, conversion_result, input_names, output_names, children_converted_nodes)
@@ -208,7 +210,7 @@ def postprocess_outputs_tf(outputs, outputs_channel_order):
         else:
             strategy = ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS
 
-        ordering_layer = ChangeOrderingLayer(func=lambda x: x, channel_ordering_strategy=strategy)
+        ordering_layer = ChangeOrderingLayer(func=lambda x: x, channel_ordering_strategy=strategy, autocast=False)
         output = ordering_layer(output)
         processed.append(output)
 

@@ -273,7 +273,6 @@ class PytorchNodeHierarchy:
             '\n'
 
         if not is_duplicate:
-
             parent_output_names = set(self.node.output_names)
             has_parent_outputs_list = []
             for child in reversed(self.children):

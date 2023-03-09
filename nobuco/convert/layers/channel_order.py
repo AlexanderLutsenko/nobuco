@@ -1,6 +1,7 @@
 from nobuco.commons import ChannelOrderingStrategy, ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.tensor import _permute, perm_keras2pytorch, perm_pytorch2keras
+from nobuco.converters.type_cast import tf_cast_recursively
 from nobuco.util import collect_recursively, replace_recursively_func
 
 
@@ -21,13 +22,13 @@ class SetOrderLayer:
 
 
 class ChangeOrderingLayer:
-    def __init__(self, func, channel_ordering_strategy):
+    def __init__(self, func, channel_ordering_strategy, autocast):
         self.func = func
         self.channel_ordering_strategy = channel_ordering_strategy
+        self.autocast = autocast
 
     def __call__(self, *args, **kwargs):
-        tf_assert_has_attr_recursively(args, 'channel_order')
-        tf_assert_has_attr_recursively(kwargs, 'channel_order')
+        tf_assert_has_attr_recursively((args, kwargs), 'channel_order')
 
         strategy = self.channel_ordering_strategy
 
@@ -63,8 +64,11 @@ class ChangeOrderingLayer:
                 else:
                     channel_order = ChannelOrder.PYTORCH
 
-            args = tf_set_order_recursively(args, channel_order=channel_order)
-            kwargs = tf_set_order_recursively(kwargs, channel_order=channel_order)
+            args, kwargs = tf_set_order_recursively((args, kwargs), channel_order=channel_order)
+
+            if self.autocast:
+                args, kwargs = tf_cast_recursively((args, kwargs))
+
             outputs = self.func(*args, **kwargs)
             outputs = tf_annotate_recursively(outputs, channel_order=channel_order)
         tf_assert_has_attr_recursively(outputs, 'channel_order')

@@ -35,6 +35,7 @@ class Pytorch2KerasLambdaConverter(Pytorch2KerasNodeConverter):
 def converter(*ops,
               validate_func=validate_diff_default,
               channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER,
+              autocast: bool=False,
               converter_dict=None
               ):
     if converter_dict is None:
@@ -43,7 +44,7 @@ def converter(*ops,
     def channel_ordering_decorator(converter_func, channel_ordering_strategy):
         def decorator(*args, **kwargs):
             converter_result_func = converter_func(*args, **kwargs)
-            return ChangeOrderingLayer(converter_result_func, channel_ordering_strategy)
+            return ChangeOrderingLayer(converter_result_func, channel_ordering_strategy, autocast)
         return decorator
 
     def inner(convert_func: Callable) -> Callable:

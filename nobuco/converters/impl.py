@@ -24,13 +24,6 @@ from nobuco.converters.ops import hard_sigmoid_pytorch_compatible, hard_swish_py
     hard_tanh_pytorch_compatible
 
 
-# @converter(torch.zeros, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-# def zeros(*size: _int, names: Optional[Sequence[Union[str, None]]]=None, dtype: _dtype=None, layout: Optional[_layout]=strided, device: Union[_device, str, None]=None, pin_memory: _bool=False, requires_grad: _bool=False):
-#     def func(*args, **kwargs):
-#         return tf.zeros(shape=size)
-#     return func
-
-
 @converter(nn.GRU, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def gru(self: nn.GRU, input, hx=None):
     assert not self.bidirectional
@@ -169,10 +162,73 @@ def expand(self, *sizes):
                 s = tensor_shape[i]
             res.append(s)
         return list(reversed(res))
-    broadcast_shape = get_broadcast_shape(sizes, self.shape)
 
     def func(self, *sizes):
+        sizes = _flatten(sizes)
+        broadcast_shape = get_broadcast_shape(sizes, self.shape)
         return tf.broadcast_to(self, broadcast_shape)
+    return func
+
+
+@converter(torch.Tensor.expand_as, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def expand_as(self, other):
+    def get_broadcast_shape(sizes, tensor_shape):
+        tensor_shape = list(reversed(tensor_shape))
+        res = []
+        for i, s in enumerate(reversed(sizes)):
+            if s == -1:
+                s = tensor_shape[i]
+            res.append(s)
+        return list(reversed(res))
+
+    def func(self, other):
+        broadcast_shape = get_broadcast_shape(other.shape, self.shape)
+        return tf.broadcast_to(self, broadcast_shape)
+    return func
+
+
+@converter(torch.zeros_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def zeros_like(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+    def func(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        tf_type = dtype_pytorch2keras(dtype)
+        return tf.zeros_like(input, dtype=tf_type)
+    return func
+
+
+@converter(torch.Tensor.new_empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def new_empty(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+    def func(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+        if dtype is not None:
+            dtype = dtype_pytorch2keras(dtype)
+        else:
+            dtype = self.dtype
+        return tf.zeros(size, dtype=dtype)
+    return func
+
+
+@converter(torch.Tensor.new_full, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+    def func(self, size, fill_value, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+        if dtype is not None:
+            dtype = dtype_pytorch2keras(dtype)
+        else:
+            dtype = self.dtype
+        res = tf.fill(size, fill_value)
+        res = tf.cast(res, dtype)
+        return res
+    return func
+
+
+@converter(torch.full_like, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def full_like(input: Tensor, fill_value: Number, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+    def func(input: Tensor, fill_value: Number, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        if dtype is not None:
+            dtype = dtype_pytorch2keras(dtype)
+        else:
+            dtype = input.dtype
+        res = tf.fill(input.shape, fill_value)
+        res = tf.cast(res, dtype)
+        return res
     return func
 
 
@@ -222,32 +278,20 @@ def pad(input: Tensor, pad: List[int], mode: str = "constant", value: float = 0.
     return func
 
 
-@converter(nn.Flatten)
-def flatten(self, input: Tensor):
-    # FIXME start_dim, end_dim
-    return keras.layers.Flatten()
-
-
 @converter(torch.Tensor.flatten, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def flatten(self, start_dim=0, end_dim=-1):
-    # FIXME start_dim, end_dim
     def func(self, start_dim=0, end_dim=-1):
-        return tf.reshape(self, (*self.shape[:start_dim], -1))
+        start_shape = self.shape[:start_dim]
+
+        n_dims = len(self.shape)
+        end_dim = _dim_make_positive(end_dim, n_dims)
+        if end_dim < n_dims-1:
+            end_shape = self.shape[end_dim+1:]
+        else:
+            end_shape = []
+
+        return tf.reshape(self, (*start_shape, -1, *end_shape))
     return func
-
-
-# @converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-# def mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Optional[_dtype] = None, out: Optional[Tensor] = None):
-#     num_dims = len(input.shape)
-#
-#     def func(input, dim=None, keepdim=False, *, dtype=None, out=None):
-#         if isinstance(dim, numbers.Number):
-#             dim = [dim]
-#         if get_channel_order(input) == ChannelOrder.TENSORFLOW and dim is not None:
-#             dim = dims_pytorch2keras(dim, num_dims=num_dims)
-#         res = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
-#         return set_channel_order(res, ChannelOrder.PYTORCH)
-#     return func
 
 
 @converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -266,42 +310,125 @@ def abs(input: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
-@converter(F.conv1d)
-def conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None, stride: Union[_int, _size]=1, padding: str="valid", dilation: Union[_int, _size]=1, groups: _int=1):
-    out_filters, in_filters, kw = weight.shape
-    weights = weight.detach().numpy()
-    weights = weights.transpose((2, 1, 0))
+# @converter(F.conv1d)
+# def conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None, stride: Union[_int, _size]=1, padding: str="valid", dilation: Union[_int, _size]=1, groups: _int=1):
+#     out_filters, in_filters, kw = weight.shape
+#     weights = weight.detach().numpy()
+#     weights = weights.transpose((2, 1, 0))
+#
+#     if bias is not None:
+#         biases = bias.detach().numpy()
+#         params = [weights, biases]
+#         use_bias = True
+#     else:
+#         params = [weights]
+#         use_bias = False
+#
+#     if padding != 0:
+#         pad_layer = keras.layers.ZeroPadding1D(padding)
+#     else:
+#         pad_layer = None
+#
+#     conv = keras.layers.Conv1D(out_filters, kernel_size=kw,
+#                          strides=stride, padding='valid',
+#                          # dilation_rate=dilations, groups=groups,
+#                          use_bias=use_bias,
+#                          weights=params
+#                          )
+#
+#     def func(input, *args, **kwargs):
+#         if pad_layer is not None:
+#             input = pad_layer(input)
+#         return conv(input)
+#     return func
 
-    if bias is not None:
-        biases = bias.detach().numpy()
-        params = [weights, biases]
-        use_bias = True
-    else:
-        params = [weights]
-        use_bias = False
 
-    if padding != 0:
-        pad_layer = keras.layers.ZeroPadding1D(padding)
-    else:
-        pad_layer = None
+# @converter(F.conv2d)
+# def conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride: Union[_int, _size] = 1,
+#                     padding: str = "valid", dilation: Union[_int, _size] = 1, groups: _int = 1):
+#
+#     out_filters, in_filters, kh, kw = weight.shape
+#
+#     weights = weight.detach().numpy()
+#     if groups == out_filters and groups != 1:
+#         weights = tf.transpose(weights, (2, 3, 0, 1))
+#     elif groups == 1:
+#         weights = tf.transpose(weights, (2, 3, 1, 0))
+#     else:
+#         weights = tf.transpose(weights, (2, 3, 1, 0))
+#
+#     if bias is not None:
+#         biases = bias.detach().numpy()
+#         params = [weights, biases]
+#         use_bias = True
+#     else:
+#         params = [weights]
+#         use_bias = False
+#
+#     if padding != 0 and padding != (0, 0) and padding != 'valid':
+#         pad_layer = keras.layers.ZeroPadding2D(padding)
+#     else:
+#         pad_layer = None
+#
+#     if groups == out_filters and groups != 1:
+#         conv = keras.layers.DepthwiseConv2D(kernel_size=(kh, kw),
+#                                       strides=stride,
+#                                       padding='valid',
+#                                       dilation_rate=dilation,
+#                                       groups=groups,
+#                                       use_bias=use_bias,
+#                                       weights=params
+#                                       )
+#     elif groups == 1:
+#         conv = keras.layers.Conv2D(filters=out_filters,
+#                              kernel_size=(kh, kw),
+#                              strides=stride,
+#                              padding='valid',
+#                              dilation_rate=dilation,
+#                              groups=groups,
+#                              use_bias=use_bias,
+#                              weights=params
+#                              )
+#     else:
+#         def split_params(params, groups, axis):
+#             params_split = [np.split(p, groups, axis=axis) for p in params]
+#             return list(zip(*params_split))
+#
+#         params_split = split_params(params, groups, axis=-1)
+#
+#         def grouped_conv2d(inputs, filters, kernel_size, strides, groups, dilation=dilation):
+#             splits = tf.split(inputs, groups, axis=-1)
+#             convolved_splits = [
+#                 keras.layers.Conv2D(filters // groups,
+#                                     kernel_size=kernel_size,
+#                                     strides=strides,
+#                                     padding='valid',
+#                                     dilation_rate=dilation,
+#                                     use_bias=use_bias,
+#                                     weights=params_split[i]
+#                                     )(split)
+#                 for i, split in enumerate(splits)
+#             ]
+#             return tf.concat(convolved_splits, -1)
+#
+#         conv = lambda x: grouped_conv2d(x, out_filters, kernel_size=(kh, kw), strides=stride, groups=groups, dilation=dilation)
+#
+#     def func(input, *args, **kwargs):
+#         if pad_layer is not None:
+#             input = pad_layer(input)
+#         output = conv(input)
+#         return output
+#     return func
 
-    conv = keras.layers.Conv1D(out_filters, kernel_size=kw,
-                         strides=stride, padding='valid',
-                         # dilation_rate=dilations, groups=groups,
-                         use_bias=use_bias,
-                         weights=params
-                         )
 
-    def func(input, *args, **kwargs):
-        if pad_layer is not None:
-            input = pad_layer(input)
-        return conv(input)
-    return func
-
-
-@converter(F.conv2d)
-def conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride: Union[_int, _size] = 1,
-                    padding: str = "valid", dilation: Union[_int, _size] = 1, groups: _int = 1):
+@converter(nn.Conv2d)
+def conv2d(self, input: Tensor):
+    weight = self.weight
+    bias = self.bias
+    groups = self.groups
+    padding = self.padding
+    stride = self.stride
+    dilation = self.dilation
 
     out_filters, in_filters, kh, kw = weight.shape
 
@@ -369,7 +496,7 @@ def conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride:
 
         conv = lambda x: grouped_conv2d(x, out_filters, kernel_size=(kh, kw), strides=stride, groups=groups, dilation=dilation)
 
-    def func(input, *args, **kwargs):
+    def func(input):
         if pad_layer is not None:
             input = pad_layer(input)
         output = conv(input)
@@ -377,11 +504,15 @@ def conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride:
     return func
 
 
-# FIXME: not thoroughly tested
-@converter(F.conv_transpose2d)
-def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
-                     stride: Union[_int, _size]=1, padding: Union[_int, _size]=0, output_padding: Union[_int, _size]=0,
-                     groups: _int=1, dilation: Union[_int, _size]=1):
+@converter(nn.ConvTranspose2d)
+def convTranspose2d(self, input: Tensor, output_size: Optional[List[int]] = None):
+    weight = self.weight
+    bias = self.bias
+    groups = self.groups
+    padding = self.padding
+    stride = self.stride
+    dilation = self.dilation
+    output_padding = self.output_padding
 
     in_filters, out_filters, kh, kw = weight.shape
     weights = weight.detach().numpy()
@@ -447,31 +578,9 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
     else:
         raise Exception('Unsupprorted # groups:', groups)
 
-        # def split_params(params, groups, axis):
-        #     params_split = [np.split(p, groups, axis=axis) for p in params]
-        #     return list(zip(*params_split))
-        #
-        # params_split = split_params(params, groups, axis=-2)
-        #
-        # def grouped_conv2d_transpose(inputs, filters, kernel_size, strides, groups, dilation=dilation):
-        #     splits = tf.split(inputs, groups, axis=-1)
-        #     convolved_splits = [
-        #         keras.layers.Conv2DTranspose(filters // groups,
-        #                                      kernel_size=kernel_size,
-        #                                      strides=strides,
-        #                                      padding='same',
-        #                                      dilation_rate=dilation,
-        #                                      use_bias=use_bias,
-        #                                      weights=params_split[i]
-        #                                      )(split)
-        #         for i, split in enumerate(splits)
-        #     ]
-        #     return tf.concat(convolved_splits, -1)
-        #
-        # conv = lambda x: grouped_conv2d_transpose(x, out_filters*groups, kernel_size=(kh, kw), strides=stride, groups=groups, dilation=dilation)
+    def func(input: Tensor, output_size: Optional[List[int]] = None):
+        assert output_size is None
 
-    # FIXME!
-    def func(input, *args, **kwargs):
         if pad_layer is not None:
             input = pad_layer(input)
 
@@ -483,37 +592,143 @@ def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
     return func
 
 
-# @converter(nn.Linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-# def linear(self, input: Tensor):
-#     out_filters, in_filters = self.weight.shape
-#     weights = self.weight.detach().numpy()
-#     weights = weights.transpose(1, 0)
+# # FIXME: not thoroughly tested
+# @converter(F.conv_transpose2d)
+# def conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
+#                      stride: Union[_int, _size]=1, padding: Union[_int, _size]=0, output_padding: Union[_int, _size]=0,
+#                      groups: _int=1, dilation: Union[_int, _size]=1):
 #
-#     biases = self.bias
-#     if biases is not None:
-#         biases = self.bias.detach().numpy()
+#     in_filters, out_filters, kh, kw = weight.shape
+#     weights = weight.detach().numpy()
+#
+#     if groups == 1:
+#         weights = weights.transpose((2, 3, 1, 0))
+#     elif groups == in_filters:
+#         weights = weights.transpose((2, 3, 0, 1))
+#     else:
+#         weights = weights.transpose((2, 3, 1, 0))
+#
+#     if bias is not None:
+#         biases = bias.detach().numpy()
 #         params = [weights, biases]
+#         use_bias = True
 #     else:
 #         params = [weights]
-#     return keras.layers.Dense(out_filters, weights=params)
+#         use_bias = False
+#
+#     if isinstance(dilation, numbers.Number):
+#         dilation = (dilation, dilation)
+#
+#     if isinstance(padding, numbers.Number):
+#         padding = (padding, padding)
+#
+#     if isinstance(output_padding, numbers.Number):
+#         output_padding = (output_padding, output_padding)
+#
+#     if padding != (0, 0):
+#         pad = (dilation[0] * (kh - 1) - padding[0], dilation[1] * (kw - 1) - padding[1])
+#         pad_layer = keras.layers.ZeroPadding2D(pad)
+#     else:
+#         pad_layer = None
+#     pad_layer = None
+#
+#     if groups == 1:
+#         conv = keras.layers.Conv2DTranspose(out_filters,
+#                                             kernel_size=(kh, kw),
+#                                             strides=stride,
+#                                             padding='valid',
+#                                             dilation_rate=dilation,
+#                                             groups=1,
+#                                             use_bias=use_bias,
+#                                             weights=params
+#                                             )
+#     elif groups == in_filters and out_filters == 1:
+#         weights = params[0]
+#
+#         weights_full = np.zeros(shape=(*weights.shape[:-1], groups))
+#         for i in range(groups):
+#             weights_full[..., i, i] = weights[..., i, 0]
+#         params[0] = weights_full
+#
+#         conv = keras.layers.Conv2DTranspose(out_filters*groups,
+#                                             kernel_size=(kh, kw),
+#                                             strides=stride,
+#                                             padding='valid',
+#                                             dilation_rate=dilation,
+#                                             groups=1,
+#                                             use_bias=use_bias,
+#                                             weights=params
+#                                             )
+#     else:
+#         raise Exception('Unsupprorted # groups:', groups)
+#
+#         # def split_params(params, groups, axis):
+#         #     params_split = [np.split(p, groups, axis=axis) for p in params]
+#         #     return list(zip(*params_split))
+#         #
+#         # params_split = split_params(params, groups, axis=-2)
+#         #
+#         # def grouped_conv2d_transpose(inputs, filters, kernel_size, strides, groups, dilation=dilation):
+#         #     splits = tf.split(inputs, groups, axis=-1)
+#         #     convolved_splits = [
+#         #         keras.layers.Conv2DTranspose(filters // groups,
+#         #                                      kernel_size=kernel_size,
+#         #                                      strides=strides,
+#         #                                      padding='same',
+#         #                                      dilation_rate=dilation,
+#         #                                      use_bias=use_bias,
+#         #                                      weights=params_split[i]
+#         #                                      )(split)
+#         #         for i, split in enumerate(splits)
+#         #     ]
+#         #     return tf.concat(convolved_splits, -1)
+#         #
+#         # conv = lambda x: grouped_conv2d_transpose(x, out_filters*groups, kernel_size=(kh, kw), strides=stride, groups=groups, dilation=dilation)
+#
+#     # FIXME!
+#     def func(input, *args, **kwargs):
+#         if pad_layer is not None:
+#             input = pad_layer(input)
+#
+#         x = conv(input)
+#
+#         if output_padding != (0, 0):
+#             x = x[:, output_padding[0]:, output_padding[1]:, :]
+#         return x
+#     return func
 
 
-@converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def linear(input, weight, bias, out=None):
-    out_filters, in_filters = weight.shape
-    weights = weight.detach().numpy()
+@converter(nn.Linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def linear(self, input: Tensor):
+    out_filters, in_filters = self.weight.shape
+    weights = self.weight.detach().numpy()
     weights = weights.transpose(1, 0)
 
-    if bias is not None:
-        biases = bias.detach().numpy()
+    biases = self.bias
+    if biases is not None:
+        biases = self.bias.detach().numpy()
+        params = [weights, biases]
     else:
-        biases = np.zeros(shape=(out_filters,))
+        params = [weights]
+    return keras.layers.Dense(out_filters, weights=params)
 
-    layer = keras.layers.Dense(out_filters, weights=[weights, biases])
 
-    def func(input, weight, bias, out=None):
-        return layer(input)
-    return func
+# @converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+# def linear(input, weight, bias, out=None):
+#     out_filters, in_filters = weight.shape
+#     weights = weight.detach().numpy()
+#     weights = weights.transpose(1, 0)
+#
+#     if bias is not None:
+#         biases = bias.detach().numpy()
+#     else:
+#         biases = np.zeros(shape=(out_filters,))
+#
+#     layer = keras.layers.Dense(out_filters, weights=[weights, biases])
+#
+#     def func(input, weight, bias, out=None):
+#         return layer(input)
+#     return func
 
 
 @converter(torch.matmul, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -569,7 +784,7 @@ def triu(self, diagonal=0):
 
 # NB: tensorflow and pytorch implementations of batchnorm behave differently in train mode
 @converter(nn.BatchNorm1d, nn.BatchNorm2d)
-def batchNormalization(self, input: Tensor):
+def batchNorm1d(self, input: Tensor):
     momentum = self.momentum
     epsilon = self.eps
     weight = self.weight.detach().numpy()
@@ -581,21 +796,21 @@ def batchNormalization(self, input: Tensor):
     return layer
 
 
-@converter(F.batch_norm)
-def batch_norm(input: Tensor,
-               running_mean: Optional[Tensor], running_var: Optional[Tensor],
-               weight: Optional[Tensor] = None, bias: Optional[Tensor] = None,
-               training: bool = False, momentum: float = 0.1, eps: float = 1e-5):
-    weight = weight.detach().numpy()
-    bias = bias.detach().numpy()
-    running_mean = running_mean.detach().numpy()
-    running_var = running_var.detach().numpy()
-    bn = keras.layers.BatchNormalization(momentum=1 - momentum, epsilon=eps, weights=[weight, bias, running_mean, running_var])
-
-    def func(input, *args, **kwargs):
-        return bn(input)
-        # return (input - running_mean) / (tf.sqrt(running_var + eps)) * weight + bias
-    return func
+# @converter(F.batch_norm)
+# def batch_norm(input: Tensor,
+#                running_mean: Optional[Tensor], running_var: Optional[Tensor],
+#                weight: Optional[Tensor] = None, bias: Optional[Tensor] = None,
+#                training: bool = False, momentum: float = 0.1, eps: float = 1e-5):
+#     weight = weight.detach().numpy()
+#     bias = bias.detach().numpy()
+#     running_mean = running_mean.detach().numpy()
+#     running_var = running_var.detach().numpy()
+#     bn = keras.layers.BatchNormalization(momentum=1 - momentum, epsilon=eps, weights=[weight, bias, running_mean, running_var])
+#
+#     def func(input, *args, **kwargs):
+#         return bn(input)
+#         # return (input - running_mean) / (tf.sqrt(running_var + eps)) * weight + bias
+#     return func
 
 
 @converter(F.layer_norm, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -783,7 +998,7 @@ def relu(input: Tensor, inplace: bool = False):
     return func
 
 
-@converter(torch.relu_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.relu_, torch.Tensor.relu_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def relu_(input: Tensor):
     def func(input):
         return tf.nn.relu(input)
@@ -853,59 +1068,82 @@ def sum(input: Tensor, dim: Sequence, keepdim: _bool=False, *, dtype: Optional[_
     return func
 
 
-@converter(torch.Tensor.add, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.Tensor.add, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def add(input, other, *args, **kwargs):
     def func(input, other, *args, **kwargs):
         return input + other
     return func
 
 
-@converter(torch.sub, torch.subtract, torch.Tensor.sub, torch.Tensor.__sub__, torch.Tensor.__isub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.sub, torch.subtract, torch.Tensor.sub, torch.Tensor.__sub__, torch.Tensor.__isub__,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def sub(input: Union[Tensor, Number], other: Union[Tensor, Number], *, alpha: Optional[Number]=1, out: Optional[Tensor]=None):
     def func(input, other, *, alpha=1, out=None):
         return input - other
     return func
 
 
-@converter(torch.Tensor.__rsub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.Tensor.__rsub__,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def rsub(self, other):
     def func(self, other):
         return other - self
     return func
 
 
-@converter(torch.mul, torch.Tensor.__mul__, torch.Tensor.__imul__, torch.Tensor.__rmul__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.mul, torch.Tensor.__mul__, torch.Tensor.__imul__,
+           torch.Tensor.__rmul__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def mul(input: Union[Tensor, Number], other: Union[Tensor, Number], *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return input * other
     return func
 
 
-@converter(torch.Tensor.mul, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.Tensor.mul,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def mul(self, value):
     def func(self, value):
         return self * value
     return func
 
 
-@converter(torch.Tensor.__truediv__, torch.Tensor.__idiv__, torch.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.Tensor.__truediv__, torch.Tensor.__idiv__, torch.div,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def div(input: Union[Tensor, Number], other: Union[Tensor, Number], *, rounding_mode: Optional[str] = None, out: Optional[Tensor]=None):
     def func(input, other, *, rounding_mode=None, out=None):
         return input / other
     return func
 
 
-@converter(torch.Tensor.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.Tensor.div,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def div(self, value, *args, **kwargs):
     def func(self, value, *args, **kwargs):
         return self / value
     return func
 
 
-@converter(torch.Tensor.__rdiv__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+@converter(torch.Tensor.__rdiv__,
+           channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH,
+           autocast=True)
 def rdiv(self, other):
     def func(self, other):
         return other / self
+    return func
+
+
+@converter(torch.Tensor.copy_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+def copy_(self, src, non_blocking=False):
+    def func(self, src, non_blocking=False):
+        return self * 0 + src
     return func
 
 
@@ -1148,6 +1386,7 @@ def meshgrid(*tensors, indexing: Optional[str] = None):
 @converter(None, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def getitem_indexed(self, *slices):
     slices = _flatten(slices)
+    slices = torch.broadcast_tensors(*slices)
     slices_combined = torch.stack(slices, dim=-1).numpy()
 
     def func(self, *slices):
@@ -1303,7 +1542,7 @@ def cpu(self, memory_format=None):
     return func
 
 
-def type_func(self, dtype=None, non_blocking=False, **kwargs):
+def dtype_pytorch2keras(dtype):
     if dtype == torch.float32:
         tf_type = tf.float32
     elif dtype == torch.float64:
@@ -1314,8 +1553,15 @@ def type_func(self, dtype=None, non_blocking=False, **kwargs):
         tf_type = tf.int64
     elif dtype == torch.bool:
         tf_type = tf.bool
+    elif dtype is None:
+        tf_type = None
     else:
         raise Exception('Unsupported dtype: ', dtype)
+    return tf_type
+
+
+def type_func(self, dtype=None, non_blocking=False, **kwargs):
+    tf_type = dtype_pytorch2keras(dtype)
     return tf.cast(self, tf_type)
 
 
@@ -1408,6 +1654,19 @@ def sort(self, dim=-1, descending=False):
         else:
             direction = 'ASCENDING'
         return tf.sort(self, axis=dim, direction=direction)
+    return func
+
+
+@converter(torch.unique, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def unique(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
+    def func(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
+        assert len(input.shape) == 1
+        assert return_inverse is False
+
+        x, _ = tf.unique(input)
+        if sorted:
+            x = tf.sort(x)
+        return x
     return func
 
 
