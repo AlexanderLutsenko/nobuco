@@ -1,14 +1,14 @@
 from copy import deepcopy
 import torch
-from nobuco.util import collect_recursively, set_torch_tensor_id, get_torch_tensor_id
+from nobuco.util import collect_recursively, set_torch_tensor_id, get_torch_tensor_identifier
 
 
 class TensorStorage:
     def __init__(self):
-        self.storage: dict[int, list[torch.Tensor]] = {}
+        self.storage: dict[any, list[torch.Tensor]] = {}
 
     def make_key(self, tensor: torch.Tensor):
-        return get_torch_tensor_id(tensor)
+        return get_torch_tensor_identifier(tensor), tensor.dtype, tensor.shape
 
     def get(self, tensor):
         key = self.make_key(tensor)
@@ -30,7 +30,7 @@ def clone_torch_tensors_recursively_with_cache(obj, storage: TensorStorage, anno
 
     def clone(tensor):
         cloned = tensor.clone()
-        set_torch_tensor_id(cloned, get_torch_tensor_id(tensor))
+        set_torch_tensor_id(cloned, get_torch_tensor_identifier(tensor))
         return cloned
 
     def replace_func(tensor):
@@ -39,6 +39,7 @@ def clone_torch_tensors_recursively_with_cache(obj, storage: TensorStorage, anno
             cached = clone(tensor)
             storage.add(cached)
         return cached
+        # return clone(tensor)
 
     replace_dict = {id(c): replace_func(c) for c in collected}
     return deepcopy(obj, memo=replace_dict)

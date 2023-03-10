@@ -103,7 +103,6 @@ class Tracer:
         forward.__undecorated_func__ = forward_func
         return forward
 
-
     @staticmethod
     def op_tracing_decorator(orig_method, op_cls, module_suffix=None, is_whitelist_op=False):
 
@@ -133,6 +132,10 @@ class Tracer:
                     module_name = op_cls.__name__ if isinstance(op_cls, types.ModuleType) else f'{op_cls.__module__}.{op_cls.__name__}'
                     if module_suffix:
                         module_name += '.' + module_suffix
+
+                    # __setitem__ method is sorta special
+                    if '__setitem__' in str(orig_method):
+                        outputs = args[0]
 
                     # Protection from external modification
                     outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)

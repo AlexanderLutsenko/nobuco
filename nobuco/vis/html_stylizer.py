@@ -2,7 +2,7 @@ from typing import Dict
 
 from nobuco.convert.layers.container import ConnectivityStatus
 from nobuco.convert.validation import ValidationStatus
-from nobuco.util import get_torch_tensor_id
+from nobuco.util import get_torch_tensor_identifier
 
 
 class HtmlStylizer:
@@ -54,18 +54,18 @@ class HtmlStylizer:
         style = {}
         if self_status is not None:
             if is_input:
-                if get_torch_tensor_id(tensor) in self_status.unused_inputs:
+                if get_torch_tensor_identifier(tensor) in self_status.unused_inputs:
                     style = self.styles_join(style, self.style_grey)
             else:
-                if get_torch_tensor_id(tensor) in self_status.unreached_outputs:
+                if get_torch_tensor_identifier(tensor) in self_status.unreached_outputs:
                     style = self.styles_join(style, self.style_inverse)
 
         if parent_status is not None:
             if is_input:
-                if get_torch_tensor_id(tensor) in parent_status.unprovided_inputs:
+                if get_torch_tensor_identifier(tensor) in parent_status.unprovided_inputs:
                     style = self.styles_join(style, self.style_underl)
             else:
-                if get_torch_tensor_id(tensor) in parent_status.unused_nodes:
+                if get_torch_tensor_identifier(tensor) in parent_status.unused_nodes:
                     style = self.styles_join(style, self.style_grey)
         return style
 

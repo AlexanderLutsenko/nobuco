@@ -14,7 +14,8 @@ from nobuco.convert.layers.container import TransientContainer
 from nobuco.convert.layers.stub import UnimplementedOpStub
 from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order
 from nobuco.convert.validation import validate, ValidationStatus, ValidationResult, ConversionResult
-from nobuco.util import get_torch_tensor_id, collect_recursively, replace_recursively_func
+from nobuco.util import get_torch_tensor_identifier, collect_recursively, replace_recursively_func, \
+    clone_torch_tensors_recursively
 from nobuco.entity.keras import KerasConvertedNode
 from nobuco.entity.pytorch import PytorchNode, PytorchNodeHierarchy
 from nobuco.trace.trace import Tracer
@@ -59,7 +60,9 @@ def convert_node(node: PytorchNode, converter_dict: Dict[object, Pytorch2KerasNo
         if node.instance is not None:
             input_args = (node.instance, *input_args)
 
-        layer = converter(*input_args, **node.input_kwargs)
+        # clone the inputs to be on the safe side
+        input_args, input_kwargs = clone_torch_tensors_recursively((input_args, node.input_kwargs))
+        layer = converter(*input_args, **input_kwargs)
         return layer
     else:
         raise Exception('Unsupported op_type: {}'.format(node_type))
@@ -91,11 +94,11 @@ def convert_container(
         result = {}
         for hierarchy in node_hierarchies:
             for input_tensor in hierarchy.node.input_tensors:
-                input_id = get_torch_tensor_id(input_tensor)
+                input_id = get_torch_tensor_identifier(input_tensor)
                 if input_id in tensor_ids:
                     result[input_id] = input_tensor
         for tensor in output_tensors:
-            output_id = get_torch_tensor_id(tensor)
+            output_id = get_torch_tensor_identifier(tensor)
             if output_id in tensor_ids:
                 result[output_id] = tensor
         return result

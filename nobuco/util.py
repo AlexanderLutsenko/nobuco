@@ -1,3 +1,5 @@
+import random
+import time
 from copy import deepcopy
 from typing import Callable, Tuple
 
@@ -12,73 +14,18 @@ def find_index(collection, el):
     return None
 
 
-# def replace_recursively_func(obj, replace_func: Callable[[object], Tuple[bool, object]]):
-#     if isinstance(obj, (list, tuple)):
-#         result = []
-#         for el in obj:
-#             result.append(replace_recursively_func(el, replace_func))
-#         result = obj.__class__(result)
-#         return result
-#     elif isinstance(obj, dict):
-#         result = {}
-#         for k, v in obj.items():
-#             k = replace_recursively_func(k, replace_func)
-#             v = replace_recursively_func(v, replace_func)
-#             result[k] = v
-#         return result
-#
-#     ret, replacement = replace_func(obj)
-#     if ret:
-#         return replacement
-#     else:
-#         return obj
-#
-#
-# def replace_recursively(obj, replace_map):
-#     def replace_func(obj):
-#         if obj in replace_map.keys():
-#             replacement = replace_map[obj]
-#             return True, replacement
-#         else:
-#             return False, obj
-#
-#     return replace_recursively_func(obj, replace_func)
-
-
-def get_torch_tensor_id(tensor):
+# Tensor identifier contains time_ns to be truly unique, as tensors pop in and out of existence and `Two objects with non-overlapping lifetimes may have the same id() value`.
+def get_torch_tensor_identifier(tensor):
     if hasattr(tensor, 'original_id'):
         return tensor.original_id
     else:
-        return id(tensor)
+        tid = int(f'{time.time_ns()}{random.randint(0, 10^9)}')
+        tensor.original_id = tid
+        return tid
 
 
 def set_torch_tensor_id(tensor, id):
     tensor.original_id = id
-
-
-# def clone_torch_tensors_recursively(obj, annotate=True):
-#     def replace_func(obj):
-#         if isinstance(obj, torch.Tensor):
-#             cloned = obj.clone()
-#             if annotate:
-#                 cloned.original_id = get_torch_tensor_id(obj)
-#             return True, cloned
-#         else:
-#             return False, obj
-#
-#     return replace_recursively_func(obj, replace_func)
-
-
-# def collect_recursively(container, classes):
-#     result = []
-#
-#     def replace_func(obj):
-#         if isinstance(obj, classes):
-#             result.append(obj)
-#         return False, obj
-#
-#     replace_recursively_func(container, replace_func)
-#     return result
 
 
 def collect_recursively_func(obj, predicate: Callable[[object], bool]):
@@ -125,7 +72,7 @@ def clone_torch_tensors_recursively(obj, annotate=True):
         if obj.is_leaf:
             cloned = obj.clone()
             if annotate:
-                set_torch_tensor_id(cloned, get_torch_tensor_id(obj))
+                set_torch_tensor_id(cloned, get_torch_tensor_identifier(obj))
             return cloned
         else:
             return obj

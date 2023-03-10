@@ -7,7 +7,7 @@ from torch import nn
 from nobuco.convert.validation import ValidationStatus
 
 from nobuco.converters.channel_ordering import make_template_recursively
-from nobuco.util import collect_recursively, get_torch_tensor_id
+from nobuco.util import collect_recursively, get_torch_tensor_identifier
 from nobuco.vis.console_stylizer import ConsoleStylizer
 
 
@@ -38,7 +38,7 @@ class TensorNameAssigner():
             self.get_name(t)
 
     def get_name(self, tensor):
-        id = get_torch_tensor_id(tensor)
+        id = get_torch_tensor_identifier(tensor)
         name = self.name_dict.get(id, None)
         if name is None:
             name = self.last_name
@@ -84,11 +84,11 @@ class PytorchNode:
 
     @property
     def input_names(self):
-        return [get_torch_tensor_id(t) for t in self.input_tensors]
+        return [get_torch_tensor_identifier(t) for t in self.input_tensors]
 
     @property
     def output_names(self):
-        return [get_torch_tensor_id(t) for t in self.output_tensors]
+        return [get_torch_tensor_identifier(t) for t in self.output_tensors]
 
     def get_type(self):
         if isinstance(self.wrapped_op.op, torch.nn.Module):

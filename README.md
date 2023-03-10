@@ -7,17 +7,16 @@
 - Supports a wide range of architectures
   - [x] Control flow ops (If, While)
   - [x] Recurrent layers (LSTM, GRU)
-  - [x] Arbitrary torch functions (except for slice assign, as there's no equivalent in tensorflow)
+  - [x] Arbitrary torch functions (including slice assign!)
 - Simple
 - Flexible
-- Extensible
 - Sanity-preserving, with clear mistake messaging
 
 <!-- toc -->
 
 ## Table of Contents
 - [Essentials](#essentials)
-- [Channel order magic](#channel-order-magic)
+- [Channel order wizardry](#channel-order-wizardry)
 - [Dynamic graphs](#dynamic-graphs)
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 
@@ -73,7 +72,7 @@ Aaaand done! That's all it takes to... wait, what's that?
 </div>
 </code>
 
-It says it doesn't know how to handle hard sigmoid.
+Nobuco says it doesn't know how to handle hard sigmoid.
 Apparently, it's our job to provide a node converter for either `F.hardsigmoid` or the enclosing `Hardsigmoid` module (or the entire `MyModule`, but that makes little sense). Here, we'll go for the former.
 
 Conversion is done directly. No layers upon layers of abstraction, no obscure intermediate representation. A node converter is just a `Callable` that takes in the same arguments as the corresponding node and outputs an equivalent node in tensorflow. The converted node preserves the original node's signature, but pytorch tensors replaced with tensorflow counterparts (be that `tf.Tensor`, `KerasTensor`, `tf.Variable`, or `ResourceVariable`).
@@ -144,7 +143,7 @@ is to keep the system simple and customizable, make it clear where a problem com
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. Good thing Nobuco has you covered.
 
-## Channel order magic
+## Channel order wizardry
 
 ---
 So we've seen that `channel_ordering_strategy` argument, what does it mean, exactly? 
@@ -191,8 +190,6 @@ def converter_force_tensorflow_order(inputs):
 
 ---
 
-## :construction: Advanced usage :construction:
+### Acknowledgement
 
----
-
-This section is under construction, see examples.
+Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).

@@ -2,7 +2,7 @@ from sty import bg, ef, fg, rs
 
 from nobuco.convert.layers.container import ConnectivityStatus
 from nobuco.convert.validation import ValidationStatus
-from nobuco.util import get_torch_tensor_id
+from nobuco.util import get_torch_tensor_identifier
 
 
 class ConsoleStylizer:
@@ -31,18 +31,18 @@ class ConsoleStylizer:
         style = ''
         if self_status is not None:
             if is_input:
-                if get_torch_tensor_id(tensor) in self_status.unused_inputs:
+                if get_torch_tensor_identifier(tensor) in self_status.unused_inputs:
                     style += fg.da_grey
             else:
-                if get_torch_tensor_id(tensor) in self_status.unreached_outputs:
+                if get_torch_tensor_identifier(tensor) in self_status.unreached_outputs:
                     style += ef.inverse
 
         if parent_status is not None:
             if is_input:
-                if get_torch_tensor_id(tensor) in parent_status.unprovided_inputs:
+                if get_torch_tensor_identifier(tensor) in parent_status.unprovided_inputs:
                     style += ef.underl
             else:
-                if get_torch_tensor_id(tensor) in parent_status.unused_nodes:
+                if get_torch_tensor_identifier(tensor) in parent_status.unused_nodes:
                     style += fg.da_grey
         return style
 
