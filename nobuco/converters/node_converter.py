@@ -21,9 +21,10 @@ class Pytorch2KerasNodeConverter:
 
 
 class Pytorch2KerasLambdaConverter(Pytorch2KerasNodeConverter):
-    def __init__(self, convert_func, validate_func):
+    def __init__(self, convert_func, validate_func, reusable):
         self.convert_func = convert_func
         self.validate_func = validate_func
+        self.reusable = reusable
 
     def convert(self, *args, **kwargs):
         return self.convert_func(*args, **kwargs)
@@ -35,8 +36,9 @@ class Pytorch2KerasLambdaConverter(Pytorch2KerasNodeConverter):
 def converter(*ops,
               validate_func=validate_diff_default,
               channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER,
-              autocast: bool=False,
-              converter_dict=None
+              autocast: bool = False,
+              reusable = True,
+              converter_dict=None,
               ):
     if converter_dict is None:
         converter_dict = CONVERTER_DICT
@@ -49,7 +51,7 @@ def converter(*ops,
 
     def inner(convert_func: Callable) -> Callable:
         convert_func = channel_ordering_decorator(convert_func, channel_ordering_strategy)
-        node_converter = Pytorch2KerasLambdaConverter(convert_func, validate_func)
+        node_converter = Pytorch2KerasLambdaConverter(convert_func, validate_func, reusable)
         for op in ops:
             op = Tracer.op_unwrap(op)
             converter_dict[op] = node_converter

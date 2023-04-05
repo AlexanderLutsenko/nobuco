@@ -1,4 +1,3 @@
-# Nobuco
 
 ---
 
@@ -7,7 +6,7 @@
 - Supports a wide range of architectures
   - [x] Control flow ops (If, While)
   - [x] Recurrent layers (LSTM, GRU)
-  - [x] Arbitrary torch functions (including slice assign!)
+  - [x] Arbitrary torch functions
 - Simple
 - Flexible
 - Sanity-preserving, with clear mistake messaging
@@ -17,7 +16,8 @@
 ## Table of Contents
 - [Essentials](#essentials)
 - [Channel order wizardry](#channel-order-wizardry)
-- [Dynamic graphs](#dynamic-graphs)
+- [In-place operations](#in-place-operations)
+- [Going dynamic](#going-dynamic)
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 
 <!-- tocstop -->
@@ -32,10 +32,10 @@ Suppose we want to convert a pytorch module similar to this one:
 class MyModule(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=(3, 3), padding=(1, 1), stride=(2, 2))
+        self.conv = nn.Conv2d(3, 16, kernel_size=(3, 3), padding=(1, 1), stride=(2, 2))
 
     def forward(self, x):
-        x = self.conv1(x)
+        x = self.conv(x)
         x = nn.Hardsigmoid()(x)
         x = 1 - x[:, ::2] * x[:, 1::2]
         return x
@@ -47,7 +47,7 @@ dummy_image = torch.rand(size=(1, 3, 256, 256))
 pytorch_module = MyModule().eval()
 
 keras_model = pytorch_to_keras(
-    pytorch_module, 
+    pytorch_module, inputs and call the magic function
     args=[dummy_image], kwargs=None,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
     outputs_channel_order=ChannelOrder.TENSORFLOW
@@ -59,15 +59,15 @@ Aaaand done! That's all it takes to... wait, what's that?
 <code>
 <div style="overflow-x:scroll; white-space: nowrap">
 <font style="font-family: monospace">
-<text style="color:#ce0505">MyModule[__main__]</text>(<text style="">tens0{1,3,256,256}</text>) -> <text style="">tens8{1,8,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green">Conv2d[torch.nn.modules.conv]</text>(<text style="">tens0{1,3,256,256}</text>) -> <text style="">tens3{1,16,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">conv2d[torch.nn.functional]</text>(<text style="">tens0{1,3,256,256}</text>, <text style="text-decoration:underline">tens1{16,3,3,3}</text>, <text style="text-decoration:underline">tens2{16}</text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">tens3{1,16,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:#ce0505">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">tens3{1,16,128,128}</text>) -> <text style="">tens4{1,16,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:#ce0505">&nbsp;└·</text> <text style="background-color:#ce0505;color:white">hardsigmoid[torch.nn.functional]</text>(<text style="">tens3{1,16,128,128}</text>, False) -> <text style="">tens4{1,16,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">tens4{1,16,128,128}</text>, (:, ::2)) -> <text style="">tens5{1,8,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">tens4{1,16,128,128}</text>, (:, 1::2)) -> <text style="">tens6{1,8,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">tens5{1,8,128,128}</text>, <text style="">tens6{1,8,128,128}</text>) -> <text style="">tens7{1,8,128,128}</text><br>
-<text style="color:#ce0505">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">tens7{1,8,128,128}</text>, 1) -> <text style="">tens8{1,8,128,128}</text><br>
+<text style="color:#ce0505">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_8<1,8,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,256,256></text>, <text style="">float32_1<16,3,3,3></text>, <text style="">float32_2<16></text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:#ce0505">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">float32_3<1,16,128,128></text>) -> <text style="">float32_4<1,16,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:#ce0505">&nbsp;└·</text> <text style="background-color:#ce0505;color:white">hardsigmoid[torch.nn.functional]</text>(<text style="">float32_3<1,16,128,128></text>, False) -> <text style="">float32_4<1,16,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, ::2)) -> <text style="">float32_5<1,8,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, 1::2)) -> <text style="">float32_6<1,8,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">float32_5<1,8,128,128></text>, <text style="">float32_6<1,8,128,128></text>) -> <text style="">float32_7<1,8,128,128></text><br>
+<text style="color:#ce0505">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">float32_7<1,8,128,128></text>, 1) -> <text style="">float32_8<1,8,128,128></text><br>
 </font>
 </div>
 </code>
@@ -88,24 +88,24 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
 <code>
 <div style="overflow-x:scroll; white-space: nowrap">
 <font style="font-family: monospace">
-<text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.026256&nbsp;</text> <br>
-<text style="color:#b28c00">MyModule[__main__]</text>(<text style="">tens0{1,3,256,256}</text>) -> <text style="">tens8{1,8,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green">Conv2d[torch.nn.modules.conv]</text>(<text style="">tens0{1,3,256,256}</text>) -> <text style="">tens3{1,16,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">conv2d[torch.nn.functional]</text>(<text style="">tens0{1,3,256,256}</text>, <text style="text-decoration:underline">tens1{16,3,3,3}</text>, <text style="text-decoration:underline">tens2{16}</text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">tens3{1,16,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.040743&nbsp;</text> <br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">tens3{1,16,128,128}</text>) -> <text style="">tens4{1,16,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#b28c00;color:white;font-weight:bold">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.040743&nbsp;</text> <br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">&nbsp;└·</text> <text style="color:#b28c00;font-weight:bold">hardsigmoid[torch.nn.functional]</text>(<text style="">tens3{1,16,128,128}</text>, False) -> <text style="">tens4{1,16,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">tens4{1,16,128,128}</text>, (:, ::2)) -> <text style="">tens5{1,8,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">tens4{1,16,128,128}</text>, (:, 1::2)) -> <text style="">tens6{1,8,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">tens5{1,8,128,128}</text>, <text style="">tens6{1,8,128,128}</text>) -> <text style="">tens7{1,8,128,128}</text><br>
-<text style="color:#b28c00">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">tens7{1,8,128,128}</text>, 1) -> <text style="">tens8{1,8,128,128}</text><br>
+<text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.026240&nbsp;</text> <br>
+<text style="color:#b28c00">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_8<1,8,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,256,256></text>, <text style="">float32_1<16,3,3,3></text>, <text style="">float32_2<16></text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.038028&nbsp;</text> <br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">float32_3<1,16,128,128></text>) -> <text style="">float32_4<1,16,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#b28c00;color:white;font-weight:bold">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.038028&nbsp;</text> <br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">&nbsp;└·</text> <text style="color:#b28c00;font-weight:bold">hardsigmoid[torch.nn.functional]</text>(<text style="">float32_3<1,16,128,128></text>, False) -> <text style="">float32_4<1,16,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, ::2)) -> <text style="">float32_5<1,8,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, 1::2)) -> <text style="">float32_6<1,8,128,128></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">float32_5<1,8,128,128></text>, <text style="">float32_6<1,8,128,128></text>) -> <text style="">float32_7<1,8,128,128></text><br>
+<text style="color:#b28c00">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">float32_7<1,8,128,128></text>, 1) -> <text style="">float32_8<1,8,128,128></text><br>
 </font>
 </div>
 </code>
 
 It works, but the outputs don't quite match. Perhaps we should check on how [pytorch](https://pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [tensorflow](https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
-And sure enough, their implementations differ. Have to type in the formula manually I guess...
+And sure enough, their implementations differ. Have to type in the formula manually, I guess...
 
 
 ````python
@@ -117,22 +117,22 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
 <code>
 <div style="overflow-x:scroll; white-space: nowrap">
 <font style="font-family: monospace">
-<text style="color:green">MyModule[__main__]</text>(<text style="">tens0{1,3,256,256}</text>) -> <text style="">tens8{1,8,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">Conv2d[torch.nn.modules.conv]</text>(<text style="">tens0{1,3,256,256}</text>) -> <text style="">tens3{1,16,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">conv2d[torch.nn.functional]</text>(<text style="">tens0{1,3,256,256}</text>, <text style="text-decoration:underline">tens1{16,3,3,3}</text>, <text style="text-decoration:underline">tens2{16}</text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">tens3{1,16,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">tens3{1,16,128,128}</text>) -> <text style="">tens4{1,16,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">hardsigmoid[torch.nn.functional]</text>(<text style="">tens3{1,16,128,128}</text>, False) -> <text style="">tens4{1,16,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">tens4{1,16,128,128}</text>, (:, ::2)) -> <text style="">tens5{1,8,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">tens4{1,16,128,128}</text>, (:, 1::2)) -> <text style="">tens6{1,8,128,128}</text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">tens5{1,8,128,128}</text>, <text style="">tens6{1,8,128,128}</text>) -> <text style="">tens7{1,8,128,128}</text><br>
-<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">tens7{1,8,128,128}</text>, 1) -> <text style="">tens8{1,8,128,128}</text><br>
+<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_8<1,8,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,256,256></text>, <text style="">float32_1<16,3,3,3></text>, <text style="">float32_2<16></text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">float32_3<1,16,128,128></text>) -> <text style="">float32_4<1,16,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">hardsigmoid[torch.nn.functional]</text>(<text style="">float32_3<1,16,128,128></text>, False) -> <text style="">float32_4<1,16,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, ::2)) -> <text style="">float32_5<1,8,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, 1::2)) -> <text style="">float32_6<1,8,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">float32_5<1,8,128,128></text>, <text style="">float32_6<1,8,128,128></text>) -> <text style="">float32_7<1,8,128,128></text><br>
+<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">float32_7<1,8,128,128></text>, 1) -> <text style="">float32_8<1,8,128,128></text><br>
 </font>
 </div>
 </code>
 
 And the happy result:
 
-<div style="overflow-y:scroll; white-space:nowrap; height:500px; width:300px">
+<div style="overflow-y:scroll; white-space:nowrap; height:450px; width:250px">
 <img src="docs/tutorial.png">
 </div>
 
@@ -143,33 +143,89 @@ is to keep the system simple and customizable, make it clear where a problem com
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. Good thing Nobuco has you covered.
 
+
 ## Channel order wizardry
 
 ---
-So we've seen that `channel_ordering_strategy` argument, what does it mean, exactly? 
-You know the drill, 
+Some operations assume its input tensors have a channel dimension. 
+And as you probably know, pytorch and tensorflow do not agree on the layout of such tensors.
+Pytorch adopts channel-first layout (_B**C**H_, _B**C**HW_, etc.) 
+while tensorflow works efficiently with channel-last tensors (_BH**C**_, _BHW**C**_, ...).
+Transposing tensors between the two layouts incurs non-trivial overhead as generally, tensor data must be physically rearranged.
+In an effort to keep that overhead to the minimum, Nobuco does layout coercions _lazily_. 
+A couple of things are needed to make it possible:
 
+- Tensorflow tensors are augmented with an additional property which stores their channel order.
+- Node converters have requirements on what channel order their inputs must have. Said requirements are expressed with `channel_ordering_strategy` argument. 
+
+Channel ordering strategies are
 - `FORCE_TENSORFLOW_ORDER`
   - Input tensors will be coerced to tensorflow channel order.
   - Convenient for converting channel-aware operations (convolution, batchnorm).
 - `FORCE_PYTORCH_ORDER`
   - Input tensors entering the node will look exactly as they do in the original pytorch graph. 
-  - Use it when the node does not interpret its input tensors as having a channel dimension (matmul). 
+  - Use it when the node does not interpret its input tensors as having a channel dimension (linear, matmul). 
 - `MINIMUM_TRANSPOSITIONS`
   - The channel order is decided by a majority vote (whichever prevails among the inputs). This way the number of coercions (i.e. tensor transpositions) is kept to the minimum.
   It also means whenever there's only one input, it will be left untouched.
-  - Best choice for single-input element-wise ops (most of activations).
-- `MINIMUM_TRANSPOSITIONS_OR_PYTORCH`
-  - -
+  - Best choice for element-wise ops (most of activations).
 - `MANUAL`
-  - You are on your own. In exchange for unrestricted freedom, you take responsibility to coerce input tensors to suitable channel order and to annotate output tensors with their order.
+  - You are on your own. In exchange for unrestricted freedom, you take responsibility to coerce input tensors to suitable channel order and to also annotate output tensors with their order.
 
+The simple lazy approach makes wonders in most situations, but sometimes it produces suboptimal graphs.
+Consider the code below. Imagine this is some sort of text processing network. 
+It first applies a GRU layer which assumes the inputs do not have a channel dimension, so its input/output layouts are the same in both pytorch and tensorflow.
+But then, the outputs are passed to a couple of 1D convolutions which are channel-aware. 
+Because of that, a transpose op must be put in the converted graph.
 
-`force_tensorflow_order` and `force_pytorch_order`. 
+```python
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.gru = nn.GRU(32, 128, num_layers=1, batch_first=True, bidirectional=False)
+        self.conv1 = nn.Conv1d(12, 40, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv1d(12, 60, kernel_size=1, padding=0)
+
+    def forward(self, x):
+        x, hx = self.gru(x)
+        x1 = self.conv1(x)
+        x2 = self.conv2(x)
+        return x1, x2
+
+pytorch_module = MyModule().eval()
+
+inputs = [
+    torch.normal(0, 1, size=(1, 12, 32)),
+]
+
+keras_model = pytorch_to_keras(
+    pytorch_module, inputs,
+    inputs_channel_order=ChannelOrder.PYTORCH,
+)
+```
+
+The laziness shoots us in the foot here, and we get not one transpose but two:
+
+<div style="overflow-y:scroll; white-space:nowrap; height:250px; width:250px">
+<img src="docs/channel_ordering.png">
+</div>
+
+For such occasions, there's two brethren functions: `force_tensorflow_order` and `force_pytorch_order`.
+
+```python
+x, hx = self.gru(x)
+x = force_tensorflow_order(x)
+x1 = self.conv1(x)
+x2 = self.conv2(x)
+```
+
+<div style="overflow-y:scroll; white-space:nowrap; height:250px; width:250px">
+<img src="docs/channel_ordering_forced.png">
+</div>
 
 In case you are curious, the implementation is trivial:
 
-````python
+```python
 @Tracer.traceable()
 def force_tensorflow_order(inputs):
     return inputs
@@ -177,19 +233,259 @@ def force_tensorflow_order(inputs):
 @converter(force_tensorflow_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def converter_force_tensorflow_order(inputs):
     return lambda inputs: inputs
-````
-
+```
 
 `force_pytorch_order` is defined analogously.
 
-## Dynamic graphs
+
+## In-place operations
+
+---
+Nobuco can handle most situations where tensors are modified in-place. For instance, these will work just fine:
+
+```python
+class MyModule(nn.Module):
+    def forward(self, x):
+        x[:, 1:2, 16:25, 8::2] *= 2
+        torch.relu_(x)
+        return x
+```
+<code>
+<div style="overflow-x:scroll; white-space: nowrap">
+<font style="font-family: monospace">
+<text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2)) -> <text style="">float32_1<1,1,9,124></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__imul__[torch.Tensor]</text>(<text style="">float32_1<1,1,9,124></text>, 2) -> <text style="">float32_1<1,1,9,124></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__setitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2), <text style="">float32_1<1,1,9,124></text>) -> <text style="">float32_0<1,3,256,256></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">relu_[torch]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
+</font>
+</div>
+</code>
+
+However, applying in-place operation to a slice yields incorrect result. What gives?
+
+```python
+class MyModule(nn.Module):
+    def forward(self, x):
+        torch.relu_(x[:, 1:2, 16:25, 8::2])
+        return x
+```
+<code>
+<div style="overflow-x:scroll; white-space: nowrap">
+<font style="font-family: monospace">
+<text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;3.023901&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:#b28c00">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2)) -> <text style="color:#656565">float32_1<1,1,9,124></text><br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">relu_[torch]</text>(<text style="">float32_1<1,1,9,124></text>) -> <text style="color:#656565">float32_1<1,1,9,124></text><br>
+</font>
+</div>
+</code>
+
+You see, tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
+So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
+This copy is then passed to `relu` (which is not in-place either), and its result is not used anywhere. 
+As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations a not included in the graph.
+In fact, it's empty:
+
+<div style="overflow-y:scroll; white-space:nowrap; width:250px">
+<img src="docs/inplace_empty.png">
+</div>
+
+The easiest way of fixing this is to explicitly assign the result to the slice.
+Conveniently enough, most standard in-place operations in pytorch do return their modified arguments as outputs.
+
+```python
+class MyModule(nn.Module):
+    def forward(self, x):
+        x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
+        return x
+```
+<code>
+<div style="overflow-x:scroll; white-space: nowrap">
+<font style="font-family: monospace">
+<text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2)) -> <text style="">float32_1<1,1,9,124></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">relu_[torch]</text>(<text style="">float32_1<1,1,9,124></text>) -> <text style="">float32_1<1,1,9,124></text><br>
+<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">__setitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2), <text style="">float32_1<1,1,9,124></text>) -> <text style="">float32_0<1,3,256,256></text><br>
+</font>
+</div>
+</code>
+
+## :construction: Going dynamic :construction:
+
+---
+```python
+class ControlIf(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv_pre = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_true = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_false = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_shared = nn.Conv2d(300, 300, kernel_size=(1, 1))
+
+    def forward(self, x):
+        x = self.conv_pre(x)
+        if x.mean() > 0:
+            x = self.conv_true(x)
+            x = torch.tanh(x)
+            x = self.conv_shared(x)
+            x = x + 1
+        else:
+            x = self.conv_false(x)
+            x = torch.sigmoid(x)
+            x = self.conv_shared(x)
+            x = x - 1
+        x = self.conv_shared(x)
+        return x
+```
+
+```python
+class ControlIfKeras(tf.keras.layers.Layer):
+    def __init__(self, conv_pre, conv_true, conv_false, conv_shared, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.conv_pre = conv_pre
+        self.conv_true = conv_true
+        self.conv_false = conv_false
+        self.conv_shared = conv_shared
+
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "conv_pre": self.conv_pre,
+            "conv_true": self.conv_true,
+            "conv_false": self.conv_false,
+            "conv_shared": self.conv_shared,
+        })
+        return config
+
+    @tf.function
+    def call(self, x):
+        x = self.conv_pre(x)
+        if tf.reduce_mean(x) > 0:
+            x = self.conv_true(x)
+            x = tf.tanh(x)
+            x = self.conv_shared(x)
+            x = x + 1
+        else:
+            x = self.conv_false(x)
+            x = tf.sigmoid(x)
+            x = self.conv_shared(x)
+            x = x - 1
+        x = self.conv_shared(x)
+        return x
+
+
+@converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def converterControlIf(self, x):
+    order = ChannelOrder.TENSORFLOW
+    conv_pre = pytorch_to_keras(self.conv_pre, [x], inputs_channel_order=order, outputs_channel_order=order)
+    conv_true = pytorch_to_keras(self.conv_true, [x], inputs_channel_order=order, outputs_channel_order=order)
+    conv_false = pytorch_to_keras(self.conv_false, [x], inputs_channel_order=order, outputs_channel_order=order)
+    conv_shared = pytorch_to_keras(self.conv_shared, [x], inputs_channel_order=order, outputs_channel_order=order)
+    return ControlIfKeras(conv_pre, conv_true, conv_false, conv_shared)
+```
+
+<div style="overflow-y:scroll; white-space:nowrap; height:400px; width:200px">
+<img src="docs/control_if.png">
+</div>
+
+See [examples](/examples) for other ways to implement control flow ops.
+
+
+## :construction: So we put a converter inside your converter :construction: 
 
 ---
 
-## So we put a converter inside your converter
+```python
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = nn.Conv2d(3, 3, kernel_size=(3, 3), padding=(1, 1))
+
+    def forward(self, x):
+        x = self.conv(x)
+        x[x > 0] += 1
+        return x
+```
+
+<code>
+<div style="overflow-x:scroll; white-space: nowrap">
+<font style="font-family: monospace">
+<text style="color:#ce0505">MyModule[__main__]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,128,128></text>, <text style="">float32_1<3,3,3,3></text>, <text style="">float32_2<3></text>, (1, 1), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__gt__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, 0) -> <text style="">bool_4<1,3,128,128></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_5<24485></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__iadd__[torch.Tensor]</text>(<text style="">float32_5<24485></text>, 1) -> <text style="">float32_5<24485></text><br>
+<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:#ce0505">&nbsp;└·</text> <text style="color:#ce0505;font-weight:bold">__setitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>, <text style="">float32_5<24485></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+</font>
+</div>
+</code>
+
+```python
+class AddByMask(nn.Module):
+    def forward(self, x, mask):
+        x[mask] += 1
+        return x
+
+
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = nn.Conv2d(3, 3, kernel_size=(3, 3), padding=(1, 1))
+
+    def forward(self, x):
+        x = self.conv(x)
+        mask = x > 0
+        AddByMask()(x, mask)
+        return x
+```
+
+```python
+@converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
+def converterAddByMask(self, x, mask):
+    model_path = 'add_by_mask'
+    onnx_path = model_path + '.onnx'
+
+    # NB: onnx.export in implemented via tracing i.e. it may modify the inputs!
+    torch.onnx.export(self, (x, mask), onnx_path, opset_version=12, input_names=['input', 'mask'], dynamic_axes={'input': [0, 1, 2, 3]})
+
+    onnx_model = onnx.load(onnx_path)
+    tf_rep: TensorflowRep = prepare(onnx_model)
+    tf_rep.export_graph(model_path)
+    model = tf.keras.models.load_model(model_path)
+    return keras.layers.Lambda(lambda x, mask: model(input=x, mask=mask))
+```
+
+<code>
+<div style="overflow-x:scroll; white-space: nowrap">
+<font style="font-family: monospace">
+<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,128,128></text>, <text style="">float32_1<3,3,3,3></text>, <text style="">float32_2<3></text>, (1, 1), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__gt__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, 0) -> <text style="">bool_4<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">&nbsp;├·</text> <text style="color:green;font-weight:bold">AddByMask[__main__]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;│&nbsp;</text> <text style="">__getitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_5<24889></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;│&nbsp;</text> <text style="">__iadd__[torch.Tensor]</text>(<text style="">float32_5<24889></text>, 1) -> <text style="">float32_5<24889></text><br>
+<text style="color:green">&nbsp;└&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">__setitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>, <text style="">float32_5<24889></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+</font>
+</div>
+</code>
+
+The graph we got this way is not pretty, but it works. 
+
 
 ---
 
-### Acknowledgement
+### Acknowledgements
 
 Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).

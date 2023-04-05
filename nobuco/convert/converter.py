@@ -52,20 +52,15 @@ def find_unimplemented(hierarchy: PytorchNodeHierarchy, converter_dict: Dict[obj
             return PytorchNodeHierarchy(hierarchy.node, children_unimplemented)
 
 
-def convert_node(node: PytorchNode, converter_dict: Dict[object, Pytorch2KerasNodeConverter]) -> Callable:
-    node_type = node.get_type()
-    converter = converter_dict.get(node_type, None)
-    if converter is not None:
-        input_args = node.input_args
-        if node.instance is not None:
-            input_args = (node.instance, *input_args)
+def convert_node(node: PytorchNode, node_converter: Pytorch2KerasNodeConverter) -> Callable:
+    input_args = node.input_args
+    if node.instance is not None:
+        input_args = (node.instance, *input_args)
 
-        # clone the inputs to be on the safe side
-        input_args, input_kwargs = clone_torch_tensors_recursively((input_args, node.input_kwargs))
-        layer = converter(*input_args, **input_kwargs)
-        return layer
-    else:
-        raise Exception('Unsupported op_type: {}'.format(node_type))
+    # clone the inputs to be on the safe side
+    input_args, input_kwargs = clone_torch_tensors_recursively((input_args, node.input_kwargs))
+    layer = node_converter(*input_args, **input_kwargs)
+    return layer
 
 
 def convert_container(
@@ -129,12 +124,14 @@ def convert_hierarchy(
         output_names = node.output_names
 
         keras_op, children_converted_nodes = converted_op_dict.get(node.get_op(), (None, []))
-        # if reuse_layers and node.is_module() and keras_op is not None:
+        node_is_reusable = False
         if reuse_layers and keras_op is not None:
             conversion_result = ConversionResult(converted_manually=False, is_duplicate=True)
         elif has_converter(node, converter_dict):
             children_converted_nodes = []
-            keras_op = convert_node(node, converter_dict)
+            node_converter: Pytorch2KerasNodeConverter = converter_dict.get(node.get_type(), None)
+            node_is_reusable = node_converter.reusable
+            keras_op = convert_node(node, node_converter)
             conversion_result = ConversionResult(converted_manually=True)
         elif len(children) > 0:
             children_converted_nodes = [convert(child, converted_op_dict, reuse_layers, full_validation, depth + 1) for child in children]
@@ -155,8 +152,7 @@ def convert_hierarchy(
         else:
             validation_result = None
 
-        # if reuse_layers and node.is_module():
-        if reuse_layers and node.is_module() and not isinstance(keras_op, TransientContainer):
+        if reuse_layers and node_is_reusable and node.is_module() and not isinstance(keras_op, TransientContainer):
             converted_op_dict[node.get_op()] = (keras_op, children_converted_nodes)
 
         keras_converted_node = KerasConvertedNode(keras_op, node, validation_result, conversion_result, input_names, output_names, children_converted_nodes)

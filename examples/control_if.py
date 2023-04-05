@@ -74,7 +74,7 @@ class ControlIfKeras(tf.keras.layers.Layer):
 
 
 @converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def cond(self, x):
+def converterControlIf(self, x):
     order = ChannelOrder.TENSORFLOW
     conv_pre = pytorch_to_keras(self.conv_pre, [x], inputs_channel_order=order, outputs_channel_order=order)
     conv_true = pytorch_to_keras(self.conv_true, [x], inputs_channel_order=order, outputs_channel_order=order)
