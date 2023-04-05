@@ -1,6 +1,4 @@
 
----
-
 **No** **Bu**llshit **Co**nverter is a tool that lets you translate pytorch models into tensorflow graphs without losing your mind.
 
 - Supports a wide range of architectures
@@ -362,4 +360,4 @@ def converterAddByMask(self, x, mask):
 
 ### Acknowledgements
 
-Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).**
+Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).
