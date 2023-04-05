@@ -24,8 +24,6 @@
 
 ## Essentials
 
----
-
 Suppose we want to convert a pytorch module similar to this one:
 
 ````python
@@ -56,21 +54,7 @@ keras_model = pytorch_to_keras(
 
 Aaaand done! That's all it takes to... wait, what's that?
 
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="color:#ce0505">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_8<1,8,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_3<1,16,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,256,256></text>, <text style="">float32_1<16,3,3,3></text>, <text style="">float32_2<16></text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:#ce0505">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">float32_3<1,16,128,128></text>) -> <text style="">float32_4<1,16,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:#ce0505">&nbsp;└·</text> <text style="background-color:#ce0505;color:white">hardsigmoid[torch.nn.functional]</text>(<text style="">float32_3<1,16,128,128></text>, False) -> <text style="">float32_4<1,16,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, ::2)) -> <text style="">float32_5<1,8,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, 1::2)) -> <text style="">float32_6<1,8,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">float32_5<1,8,128,128></text>, <text style="">float32_6<1,8,128,128></text>) -> <text style="">float32_7<1,8,128,128></text><br>
-<text style="color:#ce0505">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">float32_7<1,8,128,128></text>, 1) -> <text style="">float32_8<1,8,128,128></text><br>
-</font>
-</div>
-</code>
+<img src="docs/essentials1.svg" width="100%">
 
 Nobuco says it doesn't know how to handle hard sigmoid.
 Apparently, it's our job to provide a node converter for either `F.hardsigmoid` or the enclosing `Hardsigmoid` module (or the entire `MyModule`, but that makes little sense). Here, we'll go for the former.
@@ -85,24 +69,7 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.keras.activations.hard_sigmoid(input)
 ````
 
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.026240&nbsp;</text> <br>
-<text style="color:#b28c00">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_8<1,8,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_3<1,16,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,256,256></text>, <text style="">float32_1<16,3,3,3></text>, <text style="">float32_2<16></text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.038028&nbsp;</text> <br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">float32_3<1,16,128,128></text>) -> <text style="">float32_4<1,16,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#b28c00;color:white;font-weight:bold">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;0.038028&nbsp;</text> <br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:#b28c00">&nbsp;└·</text> <text style="color:#b28c00;font-weight:bold">hardsigmoid[torch.nn.functional]</text>(<text style="">float32_3<1,16,128,128></text>, False) -> <text style="">float32_4<1,16,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, ::2)) -> <text style="">float32_5<1,8,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, 1::2)) -> <text style="">float32_6<1,8,128,128></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">float32_5<1,8,128,128></text>, <text style="">float32_6<1,8,128,128></text>) -> <text style="">float32_7<1,8,128,128></text><br>
-<text style="color:#b28c00">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">float32_7<1,8,128,128></text>, 1) -> <text style="">float32_8<1,8,128,128></text><br>
-</font>
-</div>
-</code>
+<img src="docs/essentials2.svg" width="100%">
 
 It works, but the outputs don't quite match. Perhaps we should check on how [pytorch](https://pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [tensorflow](https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
 And sure enough, their implementations differ. Have to type in the formula manually, I guess...
@@ -114,27 +81,11 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.clip_by_value(input/6 + 1/2, clip_value_min=0, clip_value_max=1)
 ````
 
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_8<1,8,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_3<1,16,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,256,256></text>, <text style="">float32_1<16,3,3,3></text>, <text style="">float32_2<16></text>, (2, 2), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">Hardsigmoid[torch.nn.modules.activation]</text>(<text style="">float32_3<1,16,128,128></text>) -> <text style="">float32_4<1,16,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">hardsigmoid[torch.nn.functional]</text>(<text style="">float32_3<1,16,128,128></text>, False) -> <text style="">float32_4<1,16,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, ::2)) -> <text style="">float32_5<1,8,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_4<1,16,128,128></text>, (:, 1::2)) -> <text style="">float32_6<1,8,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__mul__[torch.Tensor]</text>(<text style="">float32_5<1,8,128,128></text>, <text style="">float32_6<1,8,128,128></text>) -> <text style="">float32_7<1,8,128,128></text><br>
-<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">__rsub__[torch.Tensor]</text>(<text style="">float32_7<1,8,128,128></text>, 1) -> <text style="">float32_8<1,8,128,128></text><br>
-</font>
-</div>
-</code>
+<img src="docs/essentials3.svg" width="100%">
 
 And the happy result:
 
-<div style="overflow-y:scroll; white-space:nowrap; height:450px; width:250px">
-<img src="docs/tutorial.png">
-</div>
+<img src="docs/tutorial.png" width="30%">
 
 The example above is artificial but it illustrates the point.
 It's not feasible to provide a node converter for every existing pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
@@ -146,7 +97,6 @@ Reproducing the graph structure is a different matter entirely. Good thing Nobuc
 
 ## Channel order wizardry
 
----
 Some operations assume its input tensors have a channel dimension. 
 And as you probably know, pytorch and tensorflow do not agree on the layout of such tensors.
 Pytorch adopts channel-first layout (_B**C**H_, _B**C**HW_, etc.) 
@@ -206,9 +156,7 @@ keras_model = pytorch_to_keras(
 
 The laziness shoots us in the foot here, and we get not one transpose but two:
 
-<div style="overflow-y:scroll; white-space:nowrap; height:250px; width:250px">
-<img src="docs/channel_ordering.png">
-</div>
+<img src="docs/channel_ordering.png" width="30%">
 
 For such occasions, there's two brethren functions: `force_tensorflow_order` and `force_pytorch_order`.
 
@@ -219,9 +167,7 @@ x1 = self.conv1(x)
 x2 = self.conv2(x)
 ```
 
-<div style="overflow-y:scroll; white-space:nowrap; height:250px; width:250px">
-<img src="docs/channel_ordering_forced.png">
-</div>
+<img src="docs/channel_ordering_forced.png" width="30%">
 
 In case you are curious, the implementation is trivial:
 
@@ -240,7 +186,6 @@ def converter_force_tensorflow_order(inputs):
 
 ## In-place operations
 
----
 Nobuco can handle most situations where tensors are modified in-place. For instance, these will work just fine:
 
 ```python
@@ -250,20 +195,8 @@ class MyModule(nn.Module):
         torch.relu_(x)
         return x
 ```
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2)) -> <text style="">float32_1<1,1,9,124></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__imul__[torch.Tensor]</text>(<text style="">float32_1<1,1,9,124></text>, 2) -> <text style="">float32_1<1,1,9,124></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__setitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2), <text style="">float32_1<1,1,9,124></text>) -> <text style="">float32_0<1,3,256,256></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">relu_[torch]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
-</font>
-</div>
-</code>
+
+<img src="docs/inplace1.svg" width="100%">
 
 However, applying in-place operation to a slice yields incorrect result. What gives?
 
@@ -273,17 +206,8 @@ class MyModule(nn.Module):
         torch.relu_(x[:, 1:2, 16:25, 8::2])
         return x
 ```
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="background-color:#b28c00;color:white">&nbsp;(!)&nbsp;Max&nbsp;diff&nbsp;3.023901&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:#b28c00">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2)) -> <text style="color:#656565">float32_1<1,1,9,124></text><br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:#b28c00">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">relu_[torch]</text>(<text style="">float32_1<1,1,9,124></text>) -> <text style="color:#656565">float32_1<1,1,9,124></text><br>
-</font>
-</div>
-</code>
+
+<img src="docs/inplace2.svg" width="100%">
 
 You see, tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
 So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
@@ -291,9 +215,7 @@ This copy is then passed to `relu` (which is not in-place either), and its resul
 As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations a not included in the graph.
 In fact, it's empty:
 
-<div style="overflow-y:scroll; white-space:nowrap; width:250px">
-<img src="docs/inplace_empty.png">
-</div>
+<img src="docs/inplace_empty.png" width="30%">
 
 The easiest way of fixing this is to explicitly assign the result to the slice.
 Conveniently enough, most standard in-place operations in pytorch do return their modified arguments as outputs.
@@ -304,22 +226,11 @@ class MyModule(nn.Module):
         x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
         return x
 ```
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,256,256></text>) -> <text style="">float32_0<1,3,256,256></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2)) -> <text style="">float32_1<1,1,9,124></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">relu_[torch]</text>(<text style="">float32_1<1,1,9,124></text>) -> <text style="">float32_1<1,1,9,124></text><br>
-<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">__setitem__[torch.Tensor]</text>(<text style="">float32_0<1,3,256,256></text>, (:, 1:2, 16:25, 8::2), <text style="">float32_1<1,1,9,124></text>) -> <text style="">float32_0<1,3,256,256></text><br>
-</font>
-</div>
-</code>
 
-## :construction: Going dynamic :construction:
+<img src="docs/inplace3.svg" width="100%">
 
----
+## Going dynamic
+
 ```python
 class ControlIf(nn.Module):
     def __init__(self):
@@ -391,16 +302,12 @@ def converterControlIf(self, x):
     return ControlIfKeras(conv_pre, conv_true, conv_false, conv_shared)
 ```
 
-<div style="overflow-y:scroll; white-space:nowrap; height:400px; width:200px">
-<img src="docs/control_if.png">
-</div>
+<img src="docs/control_if.png" width="30%">
 
 See [examples](/examples) for other ways to implement control flow ops.
 
 
-## :construction: So we put a converter inside your converter :construction: 
-
----
+## So we put a converter inside your converter
 
 ```python
 class MyModule(nn.Module):
@@ -414,21 +321,7 @@ class MyModule(nn.Module):
         return x
 ```
 
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="color:#ce0505">MyModule[__main__]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,128,128></text>, <text style="">float32_1<3,3,3,3></text>, <text style="">float32_2<3></text>, (1, 1), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__gt__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, 0) -> <text style="">bool_4<1,3,128,128></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_5<24485></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__iadd__[torch.Tensor]</text>(<text style="">float32_5<24485></text>, 1) -> <text style="">float32_5<24485></text><br>
-<text style="color:#ce0505">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:#ce0505">&nbsp;└·</text> <text style="color:#ce0505;font-weight:bold">__setitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>, <text style="">float32_5<24485></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-</font>
-</div>
-</code>
+<img src="docs/converter_inside_converter1.svg" width="100%">
 
 ```python
 class AddByMask(nn.Module):
@@ -465,27 +358,8 @@ def converterAddByMask(self, x, mask):
     return keras.layers.Lambda(lambda x, mask: model(input=x, mask=mask))
 ```
 
-<code>
-<div style="overflow-x:scroll; white-space: nowrap">
-<font style="font-family: monospace">
-<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,128,128></text>, <text style="">float32_1<3,3,3,3></text>, <text style="">float32_2<3></text>, (1, 1), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__gt__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, 0) -> <text style="">bool_4<1,3,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
-<text style="color:green">&nbsp;├·</text> <text style="color:green;font-weight:bold">AddByMask[__main__]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;│&nbsp;</text> <text style="">__getitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_5<24889></text><br>
-<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;│&nbsp;</text> <text style="">__iadd__[torch.Tensor]</text>(<text style="">float32_5<24889></text>, 1) -> <text style="">float32_5<24889></text><br>
-<text style="color:green">&nbsp;└&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">__setitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>, <text style="">float32_5<24889></text>) -> <text style="">float32_3<1,3,128,128></text><br>
-</font>
-</div>
-</code>
-
-The graph we got this way is not pretty, but it works. 
-
-
----
+<img src="docs/converter_inside_converter2.svg" width="100%">
 
 ### Acknowledgements
 
-Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).
+Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).**

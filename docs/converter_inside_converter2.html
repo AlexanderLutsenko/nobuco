@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: monospace">
+<text style="color:green">MyModule[__main__]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,128,128></text>, <text style="">float32_1<3,3,3,3></text>, <text style="">float32_2<3></text>, (1, 1), (1, 1), (1, 1), 1) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">__gt__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, 0) -> <text style="">bool_4<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="background-color:#063fdb;color:white">&nbsp;(!)&nbsp;Inplace&nbsp;</text> <br>
+<text style="color:green">&nbsp;├·</text> <text style="color:green;font-weight:bold">AddByMask[__main__]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;│&nbsp;</text> <text style="">__getitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>) -> <text style="">float32_5<24889></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;│&nbsp;</text> <text style="">__iadd__[torch.Tensor]</text>(<text style="">float32_5<24889></text>, 1) -> <text style="">float32_5<24889></text><br>
+<text style="color:green">&nbsp;└&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">__setitem__[torch.Tensor]</text>(<text style="">float32_3<1,3,128,128></text>, <text style="">bool_4<1,3,128,128></text>, <text style="">float32_5<24889></text>) -> <text style="">float32_3<1,3,128,128></text><br>
+</body>
+</html>
