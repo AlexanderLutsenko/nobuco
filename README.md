@@ -43,7 +43,7 @@ dummy_image = torch.rand(size=(1, 3, 256, 256))
 pytorch_module = MyModule().eval()
 
 keras_model = pytorch_to_keras(
-    pytorch_module, inputs and call the magic function
+    pytorch_module,
     args=[dummy_image], kwargs=None,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
     outputs_channel_order=ChannelOrder.TENSORFLOW
