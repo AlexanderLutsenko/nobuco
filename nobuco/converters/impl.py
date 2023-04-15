@@ -871,12 +871,12 @@ def batchNorm1d(self, input: Tensor):
     running_mean = self.running_mean.detach().numpy()
     running_var = self.running_var.detach().numpy()
 
-    # layer = keras.layers.BatchNormalization(momentum=1 - momentum, epsilon=epsilon, weights=[weight, bias, running_mean, running_var])
-    # return layer
+    layer = keras.layers.BatchNormalization(momentum=1 - momentum, epsilon=epsilon, weights=[weight, bias, running_mean, running_var])
+    return layer
 
-    def func(input, *args, **kwargs):
-        return (input - running_mean) / (tf.sqrt(running_var + epsilon)) * weight + bias
-    return func
+    # def func(input, *args, **kwargs):
+    #     return (input - running_mean) / (tf.sqrt(running_var + epsilon)) * weight + bias
+    # return func
 
 
 # @converter(F.batch_norm)
@@ -917,8 +917,6 @@ def layer_norm(input: Tensor,
 @converter(F.embedding, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def embedding(input: Tensor, weight: Tensor, padding_idx: Optional[int] = None, max_norm: Optional[float] = None,
               norm_type: float = 2.0, scale_grad_by_freq: bool = False, sparse: bool = False):
-    # assert padding_idx == None and max_norm == None and norm_type == 2.0 and scale_grad_by_freq == False and sparse == False
-
     input_dim, output_dim = weight.shape
     weight = weight.detach().numpy()
 

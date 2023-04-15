@@ -1,3 +1,0 @@
-pytorch
-tensorflow
-sty

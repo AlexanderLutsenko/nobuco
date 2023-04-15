@@ -11,6 +11,11 @@
 
 <!-- toc -->
 
+## Installation
+```bash
+pip install nobuco
+```
+
 ## Table of Contents
 - [Essentials](#essentials)
 - [Channel order wizardry](#channel-order-wizardry)
@@ -36,6 +41,7 @@ class MyModule(nn.Module):
         x = 1 - x[:, ::2] * x[:, 1::2]
         return x
 ````
+
 The process is exactly what you would expect. Instantiate the module, create dummy inputs and call the magic function:
 
 ````python
@@ -72,7 +78,6 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
 It works, but the outputs don't quite match. Perhaps we should check on how [pytorch](https://pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [tensorflow](https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
 And sure enough, their implementations differ. Have to type in the formula manually, I guess...
 
-
 ````python
 @converter(F.hardsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def hardsigmoid(input: torch.Tensor, inplace: bool = False):
@@ -91,7 +96,6 @@ Best we can do without the converter constantly lacking essential functionality,
 is to keep the system simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. Good thing Nobuco has you covered.
-
 
 ## Channel order wizardry
 
@@ -181,7 +185,6 @@ def converter_force_tensorflow_order(inputs):
 
 `force_pytorch_order` is defined analogously.
 
-
 ## In-place operations
 
 Nobuco can handle most situations where tensors are modified in-place. For instance, these will work just fine:
@@ -229,6 +232,10 @@ class MyModule(nn.Module):
 
 ## Going dynamic
 
+Introducing python control flow statements into the compute graph is no easy feat.
+Tensorflow can do so via `tf.autograph`, but at a cost of [system's complexity](https://www.youtube.com/watch?v=NIEgzljyDyI) and with some notable [limitations](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/control_flow.md).
+Stuff like that is way above Nobuco's paygrade, so the module below cannot be properly handled without human intervention.
+
 ```python
 class ControlIf(nn.Module):
     def __init__(self):
@@ -253,6 +260,12 @@ class ControlIf(nn.Module):
         x = self.conv_shared(x)
         return x
 ```
+
+Of course, it's possible to translate the dynamic module into a tensorflow layer
+(don't forget to decorate it with `@tf.function` for autograph to kick in).
+But what if it contains inner modules, do we have to replicate them in tensorflow all by hand?
+Not unless you want to! 
+Just convert them separately and use the resulting graph inside the parent layer.
 
 ```python
 class ControlIfKeras(tf.keras.layers.Layer):
@@ -302,10 +315,14 @@ def converterControlIf(self, x):
 
 <img src="docs/control_if.png" width="30%">
 
-See [examples](/examples) for other ways to implement control flow ops.
-
+See [examples](/examples) for other ways to convert control flow ops.
 
 ## So we put a converter inside your converter
+
+One of the operations currently not supported is mask assign.
+There's no particular reason why, I just haven't done it yet (and your contribution is highly welcome!) 
+For now, let's use it as an excuse to explain the concept of nested converters.
+Like I said, for this module, conversion will fail:
 
 ```python
 class MyModule(nn.Module):
@@ -320,6 +337,12 @@ class MyModule(nn.Module):
 ```
 
 <img src="docs/converter_inside_converter1.svg" width="100%">
+
+In the previous section, we've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
+Can we embed some third-party converter? You bet! Why? Because it might just do what we need.
+Let's consider the standard route: pytorch -> onnx -> tensorflow, with the latter step done with [onnx-tf](https://github.com/onnx/onnx-tensorflow).
+This library likes transposing stuff so much, converting the whole graph with it may introduce intolerable inference overhead. Nonetheless, it does the job.
+A sensible tradeoff would be to wrap the problematic operation into its own `nn.Module` and give it a special treat, while handling everything else with Nobuco.
 
 ```python
 class AddByMask(nn.Module):
@@ -341,6 +364,10 @@ class MyModule(nn.Module):
 ```
 
 ```python
+import onnx
+from onnx_tf.backend import prepare
+
+
 @converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
 def converterAddByMask(self, x, mask):
     model_path = 'add_by_mask'
