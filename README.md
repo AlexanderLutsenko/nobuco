@@ -1,6 +1,6 @@
 <img src="docs/nobuco.png" width="100%">
 
-**No** **Bu**llshit **Co**nverter is a tool that lets you translate pytorch models into tensorflow graphs without losing your mind.
+**No** **Bu**llshit **Co**nverter is a tool that helps you translate pytorch models into tensorflow graphs without losing your mind.
 
 - Supports a wide range of architectures
   - [x] Control flow ops (If, While)
@@ -44,6 +44,12 @@ class MyModule(nn.Module):
 ````
 
 The process is exactly what you would expect. Instantiate the module, create dummy inputs and call the magic function:
+
+```python
+from nobuco.convert.converter import pytorch_to_keras
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco.convert.layers.weight import WeightLayer
+```
 
 ````python
 dummy_image = torch.rand(size=(1, 3, 256, 256))
@@ -94,7 +100,7 @@ And the happy result:
 The example above is artificial but it illustrates the point.
 It's not feasible to provide a node converter for every existing pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
 Best we can do without the converter constantly lacking essential functionality, being riddled with bugs, doing weird stuff and breaking apart with every other PT/TF release 
-is to keep the system simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
+is to keep the tool simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. Good thing Nobuco has you covered.
 
