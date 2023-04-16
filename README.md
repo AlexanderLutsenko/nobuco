@@ -1,3 +1,4 @@
+<img src="docs/nobuco.png" width="100%">
 
 **No** **Bu**llshit **Co**nverter is a tool that lets you translate pytorch models into tensorflow graphs without losing your mind.
 
@@ -120,7 +121,7 @@ Channel ordering strategies are
 - `MINIMUM_TRANSPOSITIONS`
   - The channel order is decided by a majority vote (whichever prevails among the inputs). This way the number of coercions (i.e. tensor transpositions) is kept to the minimum.
   It also means whenever there's only one input, it will be left untouched.
-  - Best choice for element-wise ops (most of activations).
+  - Best choice for element-wise ops (most activations).
 - `MANUAL`
   - You are on your own. In exchange for unrestricted freedom, you take responsibility to coerce input tensors to suitable channel order and to also annotate output tensors with their order.
 
@@ -213,7 +214,7 @@ class MyModule(nn.Module):
 You see, tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
 So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
 This copy is then passed to `relu` (which is not in-place either), and its result is not used anywhere. 
-As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations a not included in the graph.
+As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations are excluded from the graph.
 In fact, it's empty:
 
 <img src="docs/inplace_empty.png" width="30%">
@@ -263,7 +264,7 @@ class ControlIf(nn.Module):
 
 Of course, it's possible to translate the dynamic module into a tensorflow layer
 (don't forget to decorate it with `@tf.function` for autograph to kick in).
-But what if it contains inner modules, do we have to replicate them in tensorflow all by hand?
+But what if it contains inner modules, do you replicate them in tensorflow all by hand?
 Not unless you want to! 
 Just convert them separately and use the resulting graph inside the parent layer.
 
