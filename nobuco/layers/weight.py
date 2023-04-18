@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from nobuco.commons import ChannelOrderingStrategy
-from nobuco.convert.layers.channel_order import ChangeOrderingLayer
+from nobuco.layers.channel_order import ChangeOrderingLayer
 
 
 class WeightLayer(tf.keras.layers.Layer):

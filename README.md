@@ -1,4 +1,6 @@
-<img src="docs/nobuco.png" width="100%">
+<p align="center">
+<img src="docs/nobuco.png">
+</p>
 
 **No** **Bu**llshit **Co**nverter is a tool that helps you translate pytorch models into tensorflow graphs without losing your mind.
 
@@ -12,9 +14,10 @@
 
 <!-- toc -->
 
-## Installation
+## Installation <img src="https://img.shields.io/pypi/v/nobuco?color=blue&style=flat-square">
+
 ```bash
-pip install nobuco
+pip install -U nobuco
 ```
 
 ## Table of Contents
@@ -46,16 +49,16 @@ class MyModule(nn.Module):
 The process is exactly what you would expect. Instantiate the module, create dummy inputs and call the magic function:
 
 ```python
-from nobuco.convert.converter import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
-from nobuco.convert.layers.weight import WeightLayer
+import nobuco
+from nobuco import ChannelOrder, ChannelOrderingStrategy
+from nobuco.layers.weight import WeightLayer
 ```
 
 ````python
 dummy_image = torch.rand(size=(1, 3, 256, 256))
 pytorch_module = MyModule().eval()
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[dummy_image], kwargs=None,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
@@ -75,7 +78,7 @@ Conversion is done directly. No layers upon layers of abstraction, no obscure in
 This should do the trick:
 
 ````python
-@converter(F.hardsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@nobuco.converter(F.hardsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.keras.activations.hard_sigmoid(input)
 ````
@@ -86,7 +89,7 @@ It works, but the outputs don't quite match. Perhaps we should check on how [pyt
 And sure enough, their implementations differ. Have to type in the formula manually, I guess...
 
 ````python
-@converter(F.hardsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@nobuco.converter(F.hardsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.clip_by_value(input/6 + 1/2, clip_value_min=0, clip_value_max=1)
 ````
@@ -95,14 +98,16 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
 
 And the happy result:
 
+<p align="center">
 <img src="docs/tutorial.png" width="30%">
+</p>
 
 The example above is artificial but it illustrates the point.
 It's not feasible to provide a node converter for every existing pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
 Best we can do without the converter constantly lacking essential functionality, being riddled with bugs, doing weird stuff and breaking apart with every other PT/TF release 
 is to keep the tool simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
 Usually it's easy for a human to translate an isolated operation from one framework to another.
-Reproducing the graph structure is a different matter entirely. Good thing Nobuco has you covered.
+Reproducing the graph structure is a different matter entirely. For that, Nobuco has you covered!
 
 ## Channel order wizardry
 
@@ -157,7 +162,7 @@ inputs = [
     torch.normal(0, 1, size=(1, 12, 32)),
 ]
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.PYTORCH,
 )
@@ -165,27 +170,31 @@ keras_model = pytorch_to_keras(
 
 The laziness shoots us in the foot here, and we get not one transpose but two:
 
+<p align="center">
 <img src="docs/channel_ordering.png" width="30%">
+</p>
 
 For such occasions, there's two brethren functions: `force_tensorflow_order` and `force_pytorch_order`.
 
 ```python
 x, hx = self.gru(x)
-x = force_tensorflow_order(x)
+x = nobuco.force_tensorflow_order(x)
 x1 = self.conv1(x)
 x2 = self.conv2(x)
 ```
 
+<p align="center">
 <img src="docs/channel_ordering_forced.png" width="30%">
+</p>
 
 In case you are curious, the implementation is trivial:
 
 ```python
-@Tracer.traceable()
+@nobuco.traceable
 def force_tensorflow_order(inputs):
     return inputs
 
-@converter(force_tensorflow_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+@nobuco.converter(force_tensorflow_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def converter_force_tensorflow_order(inputs):
     return lambda inputs: inputs
 ```
@@ -223,7 +232,9 @@ This copy is then passed to `relu` (which is not in-place either), and its resul
 As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations are excluded from the graph.
 In fact, it's empty:
 
+<p align="center">
 <img src="docs/inplace_empty.png" width="30%">
+</p>
 
 The easiest way of fixing this is to explicitly assign the result to the slice.
 Conveniently enough, most standard in-place operations in pytorch do return their modified arguments as outputs.
@@ -241,16 +252,16 @@ class MyModule(nn.Module):
 
 Introducing python control flow statements into the compute graph is no easy feat.
 Tensorflow can do so via `tf.autograph`, but at a cost of [system's complexity](https://www.youtube.com/watch?v=NIEgzljyDyI) and with some notable [limitations](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/control_flow.md).
-Stuff like that is way above Nobuco's paygrade, so the module below cannot be properly handled without human intervention.
+Stuff like that is way above Nobuco's paygrade, so the following module cannot be properly handled without human intervention.
 
 ```python
 class ControlIf(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv_pre = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_true = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_false = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_shared = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_pre = nn.Conv2d(3, 16, kernel_size=(1, 1))
+        self.conv_true = nn.Conv2d(16, 32, kernel_size=(1, 1))
+        self.conv_false = nn.Conv2d(16, 32, kernel_size=(1, 1))
+        self.conv_shared = nn.Conv2d(32, 32, kernel_size=(1, 1))
 
     def forward(self, x):
         x = self.conv_pre(x)
@@ -310,17 +321,22 @@ class ControlIfKeras(tf.keras.layers.Layer):
         return x
 
 
-@converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+@nobuco.converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def converterControlIf(self, x):
     order = ChannelOrder.TENSORFLOW
-    conv_pre = pytorch_to_keras(self.conv_pre, [x], inputs_channel_order=order, outputs_channel_order=order)
-    conv_true = pytorch_to_keras(self.conv_true, [x], inputs_channel_order=order, outputs_channel_order=order)
-    conv_false = pytorch_to_keras(self.conv_false, [x], inputs_channel_order=order, outputs_channel_order=order)
-    conv_shared = pytorch_to_keras(self.conv_shared, [x], inputs_channel_order=order, outputs_channel_order=order)
-    return ControlIfKeras(conv_pre, conv_true, conv_false, conv_shared)
+    kwargs = {'inputs_channel_order': order, 'outputs_channel_order': order, 'return_outputs_pt': True}
+    
+    conv_pre, out_pre = nobuco.pytorch_to_keras(self.conv_pre, [x], **kwargs)
+    conv_true, out_true = nobuco.pytorch_to_keras(self.conv_true, [out_pre], **kwargs)
+    conv_false, out_false = nobuco.pytorch_to_keras(self.conv_false, [out_pre], **kwargs)
+    conv_shared, _ = nobuco.pytorch_to_keras(self.conv_shared, [out_true], **kwargs)
+    layer = ControlIfKeras(conv_pre, conv_true, conv_false, conv_shared)
+    return layer
 ```
 
+<p align="center">
 <img src="docs/control_if.png" width="30%">
+</p>
 
 See [examples](/examples) for other ways to convert control flow ops.
 
@@ -375,8 +391,8 @@ import onnx
 from onnx_tf.backend import prepare
 
 
-@converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
-def converterAddByMask(self, x, mask):
+@nobuco.converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
+def converter_AddByMask(self, x, mask):
     model_path = 'add_by_mask'
     onnx_path = model_path + '.onnx'
 

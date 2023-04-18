@@ -1,10 +1,9 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from nobuco.convert.converter import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
-from nobuco.converters.node_converter import converter
-from nobuco.convert.layers.weight import WeightLayer
+import nobuco
+from nobuco import ChannelOrder, ChannelOrderingStrategy
+from nobuco.layers.weight import WeightLayer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
@@ -17,10 +16,10 @@ from torch import nn
 class ControlIf(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv_pre = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_true = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_false = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_shared = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_pre = nn.Conv2d(3, 16, kernel_size=(1, 1))
+        self.conv_true = nn.Conv2d(16, 32, kernel_size=(1, 1))
+        self.conv_false = nn.Conv2d(16, 32, kernel_size=(1, 1))
+        self.conv_shared = nn.Conv2d(32, 32, kernel_size=(1, 1))
 
     def forward(self, x):
         x = self.conv_pre(x)
@@ -73,27 +72,28 @@ class ControlIfKeras(tf.keras.layers.Layer):
         return x
 
 
-@converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+@nobuco.converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def converterControlIf(self, x):
     order = ChannelOrder.TENSORFLOW
-    conv_pre = pytorch_to_keras(self.conv_pre, [x], inputs_channel_order=order, outputs_channel_order=order)
-    conv_true = pytorch_to_keras(self.conv_true, [x], inputs_channel_order=order, outputs_channel_order=order)
-    conv_false = pytorch_to_keras(self.conv_false, [x], inputs_channel_order=order, outputs_channel_order=order)
-    conv_shared = pytorch_to_keras(self.conv_shared, [x], inputs_channel_order=order, outputs_channel_order=order)
+    kwargs = {'inputs_channel_order': order, 'outputs_channel_order': order, 'return_outputs_pt': True}
+
+    conv_pre, out_pre = nobuco.pytorch_to_keras(self.conv_pre, [x], **kwargs)
+    conv_true, out_true = nobuco.pytorch_to_keras(self.conv_true, [out_pre], **kwargs)
+    conv_false, out_false = nobuco.pytorch_to_keras(self.conv_false, [out_pre], **kwargs)
+    conv_shared, _ = nobuco.pytorch_to_keras(self.conv_shared, [out_true], **kwargs)
     layer = ControlIfKeras(conv_pre, conv_true, conv_false, conv_shared)
     return layer
 
 
 inputs = [
-    torch.normal(0, 1, size=(1, 300, 32, 32)),
+    torch.normal(0, 1, size=(1, 3, 128, 128)),
 ]
 pytorch_module = ControlIf().eval()
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
 )
-
 
 model_path = 'control_if'
 keras_model.save(model_path + '.h5')

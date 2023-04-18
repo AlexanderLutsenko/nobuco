@@ -1,9 +1,9 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from nobuco.convert.converter import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
-from nobuco.converters.node_converter import converter
+import nobuco
+from nobuco import ChannelOrder, ChannelOrderingStrategy
+from nobuco.layers.weight import WeightLayer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteKerasModelConverterV2
@@ -34,8 +34,8 @@ class MyModule(nn.Module):
         return x
 
 
-@converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
-def converterAddByMask(self, x, mask):
+@nobuco.converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
+def converter_AddByMask(self, x, mask):
     model_path = 'add_by_mask'
     onnx_path = model_path + '.onnx'
 
@@ -54,7 +54,7 @@ args = [
 ]
 pytorch_module = MyModule().eval()
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=args,
     inputs_channel_order=ChannelOrder.TENSORFLOW,

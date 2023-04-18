@@ -1,7 +1,7 @@
-from sty import bg, ef, fg, rs
+from sty import ef, fg, rs
 
-from nobuco.convert.layers.container import ConnectivityStatus
-from nobuco.convert.validation import ValidationStatus
+from nobuco.converters.validation import ValidationStatus
+from nobuco.layers.container import ConnectivityStatus
 from nobuco.util import get_torch_tensor_identifier
 
 

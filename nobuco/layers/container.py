@@ -1,5 +1,5 @@
 from nobuco.commons import TF_TENSOR_CLASSES
-from nobuco.convert.layers.weight import WeightLayer
+from nobuco.layers.weight import WeightLayer
 from nobuco.converters.channel_ordering import TensorPlaceholder, template_insert_recursively
 from nobuco.util import collect_recursively
 

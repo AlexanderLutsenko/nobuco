@@ -1,4 +1,3 @@
-import random
 import time
 import warnings
 from typing import Callable, Dict, Collection, Optional, List, Union, Tuple
@@ -8,25 +7,25 @@ from torch import nn
 import tensorflow as tf
 from tensorflow import keras
 
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES, CONVERTED_OP_DICT
-from nobuco.convert.layers.channel_order import ChangeOrderingLayer, SetOrderLayer
-from nobuco.convert.layers.container import TransientContainer
-from nobuco.convert.layers.stub import UnimplementedOpStub
-from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order
-from nobuco.convert.validation import validate, ValidationStatus, ValidationResult, ConversionResult
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
+from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order, t_keras2pytorch
+from nobuco.converters.validation import validate, ValidationResult, ConversionResult
+from nobuco.layers.channel_order import ChangeOrderingLayer
+from nobuco.layers.container import TransientContainer
+from nobuco.layers.stub import UnimplementedOpStub
 from nobuco.util import get_torch_tensor_identifier, collect_recursively, replace_recursively_func, \
     clone_torch_tensors_recursively
 from nobuco.entity.keras import KerasConvertedNode
 from nobuco.entity.pytorch import PytorchNode, PytorchNodeHierarchy
 from nobuco.trace.trace import Tracer
 from nobuco.converters.node_converter import CONVERTER_DICT, Pytorch2KerasNodeConverter
-
-# Load default converters
-from nobuco.converters import impl
-
-# Trace pytorch ops right away
 from nobuco.vis.html_stylizer import HtmlStylizer
 
+# Load default converters
+# noinspection PyUnresolvedReferences
+from nobuco.node_converters import *
+
+# Trace pytorch ops right away
 Tracer.decorate_all()
 
 
@@ -228,10 +227,10 @@ def pytorch_to_keras(
         full_validation: bool = True,
         validation_tolerance=1e-4,
         save_trace_html=False,
-) -> keras.Model:
+        return_outputs_pt=False
+) -> Union[keras.Model, Tuple[keras.Model, object]]:
     start = time.time()
     node_hierarchy = Tracer.trace(module, args, kwargs)
-    # print(node_hierarchy)
 
     keras_converted_node = convert_hierarchy(node_hierarchy, converter_dict,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
@@ -266,4 +265,9 @@ def pytorch_to_keras(
 
     elapsed = time.time() - start
     print(f'Conversion complete. Elapsed time: {elapsed:.2f} sec.')
-    return keras_model
+
+    if return_outputs_pt:
+        outputs_pt = node_hierarchy.node.outputs
+        return keras_model, outputs_pt
+    else:
+        return keras_model

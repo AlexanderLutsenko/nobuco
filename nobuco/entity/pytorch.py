@@ -4,7 +4,7 @@ from typing import Collection, List
 import torch
 from torch import nn
 
-from nobuco.convert.validation import ValidationStatus
+from nobuco.converters.validation import ValidationStatus
 
 from nobuco.converters.channel_ordering import make_template_recursively
 from nobuco.util import collect_recursively, get_torch_tensor_identifier

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import tensorflow as tf
 import torch
 
-from nobuco.commons import ChannelOrder
+from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.tensor import _permute, perm_pytorch2keras, perm_keras2pytorch
 from nobuco.util import replace_recursively_func
 
@@ -18,7 +18,7 @@ def get_channel_order(tensor) -> ChannelOrder:
 
 
 def t_keras2pytorch(tensor_tf, restore_channel_order=False):
-    if restore_channel_order and tensor_tf.channel_order == ChannelOrder.TENSORFLOW:
+    if restore_channel_order and get_channel_order(tensor_tf) == ChannelOrder.TENSORFLOW:
         tensor_tf = _permute(perm_keras2pytorch(len(tensor_tf.shape)))(tensor_tf)
     tensor_pt = torch.as_tensor(tensor_tf.numpy())
     return tensor_pt
@@ -39,6 +39,17 @@ def pytorch2keras_recursively(obj, channel_order=ChannelOrder.PYTORCH):
 
     def replace_func(obj):
         return t_pytorch2keras(obj, channel_order=channel_order)
+
+    return replace_recursively_func(obj, collect_func, replace_func)
+
+
+def keras2pytorch_recursively(obj, restore_channel_order=False):
+
+    def collect_func(obj):
+        return isinstance(obj, TF_TENSOR_CLASSES)
+
+    def replace_func(obj):
+        return t_keras2pytorch(obj, restore_channel_order=restore_channel_order)
 
     return replace_recursively_func(obj, collect_func, replace_func)
 

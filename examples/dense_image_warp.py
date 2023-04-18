@@ -1,10 +1,9 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from nobuco.convert.converter import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
-from nobuco.converters.node_converter import converter
-from nobuco.convert.layers.weight import WeightLayer
+import nobuco
+from nobuco import ChannelOrder, ChannelOrderingStrategy
+from nobuco.layers.weight import WeightLayer
 
 import tensorflow as tf
 import tensorflow_addons
@@ -36,7 +35,7 @@ class DenseImageWarp(nn.Module):
         return F.grid_sample(image, grid, mode='bilinear', padding_mode='border', align_corners=True)
 
 
-@converter(DenseImageWarp, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+@nobuco.converter(DenseImageWarp, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def dense_image_warp(self, image: Tensor, flow: Tensor):
     def func(image, flow):
         return keras.layers.Lambda(lambda args: tensorflow_addons.image.dense_image_warp(args[0], args[1]))([image, flow])
@@ -51,7 +50,7 @@ flow = torch.rand(size=(1, 2, h, w))
 inputs = [image, flow]
 pytorch_module = DenseImageWarp().eval()
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
 )

@@ -1,11 +1,9 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from nobuco.convert.converter import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
-from nobuco.converters.node_converter import converter
-from nobuco.convert.layers.weight import WeightLayer
-from nobuco.trace.trace import Tracer
+import nobuco
+from nobuco import ChannelOrder, ChannelOrderingStrategy
+from nobuco.layers.weight import WeightLayer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
@@ -18,26 +16,26 @@ from torch import nn
 class ControlIf(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv_pre = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_true = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_false = nn.Conv2d(300, 300, kernel_size=(1, 1))
-        self.conv_shared = nn.Conv2d(300, 300, kernel_size=(1, 1))
+        self.conv_pre = nn.Conv2d(3, 16, kernel_size=(1, 1))
+        self.conv_true = nn.Conv2d(16, 32, kernel_size=(1, 1))
+        self.conv_false = nn.Conv2d(16, 32, kernel_size=(1, 1))
+        self.conv_shared = nn.Conv2d(32, 32, kernel_size=(1, 1))
 
-    @Tracer.traceable()
+    @nobuco.traceable
     def branch_true(self, x):
         x = self.conv_true(x)
         x = torch.tanh(x)
         x = self.conv_shared(x)
         return x + 1
 
-    @Tracer.traceable()
+    @nobuco.traceable
     def branch_false(self, x):
         x = self.conv_false(x)
         x = torch.sigmoid(x)
         x = self.conv_shared(x)
         return x - 1
 
-    @Tracer.traceable()
+    @nobuco.traceable
     def cond(self, inputs):
         pred, x = inputs
         if pred:
@@ -69,20 +67,18 @@ class Cond(tf.keras.layers.Layer):
     @tf.function
     def call(self, inputs):
         pred, x = inputs
-        return tf.cond(pred, true_fn=lambda: self.branch_true(x), false_fn=lambda: self.branch_false(x))
-
-        # if pred:
-        #     return self.branch_true(x)
-        # else:
-        #     return self.branch_false(x)
+        if pred:
+            return self.branch_true(x)
+        else:
+            return self.branch_false(x)
 
 
-@converter(ControlIf.cond, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+@nobuco.converter(ControlIf.cond, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def cond(self, inputs):
     pred, x = inputs
     order = ChannelOrder.TENSORFLOW
-    branch_true = pytorch_to_keras(self.branch_true, [x], inputs_channel_order=order, outputs_channel_order=order)
-    branch_false = pytorch_to_keras(self.branch_false, [x], inputs_channel_order=order, outputs_channel_order=order)
+    branch_true = nobuco.pytorch_to_keras(self.branch_true, [x], inputs_channel_order=order, outputs_channel_order=order)
+    branch_false = nobuco.pytorch_to_keras(self.branch_false, [x], inputs_channel_order=order, outputs_channel_order=order)
     cond = Cond(branch_true, branch_false)
 
     def func(self, inputs):
@@ -91,11 +87,11 @@ def cond(self, inputs):
 
 
 inputs = [
-    torch.normal(0, 1, size=(1, 300, 32, 32)),
+    torch.normal(0, 1, size=(1, 3, 128, 128)),
 ]
 pytorch_module = ControlIf().eval()
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.TENSORFLOW,
 )

@@ -1,8 +1,7 @@
 from typing import Collection
 
-from nobuco.convert.validation import ValidationResult, ValidationStatus, ConversionResult
+from nobuco.converters.validation import ValidationResult, ConversionResult
 from nobuco.entity.pytorch import PytorchNode
-from sty import bg, ef, fg, rs
 
 
 class KerasConvertedNode:

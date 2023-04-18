@@ -12,6 +12,26 @@ from nobuco.trace.tensor_storage import clone_torch_tensors_recursively_with_cac
 from nobuco.util import collect_recursively
 
 
+# def traceable():
+#     def inner(func_to_trace: Callable) -> Callable:
+#         if Tracer.is_decorated(func_to_trace):
+#             return func_to_trace
+#         else:
+#             module_suffix = func_to_trace.__qualname__
+#             module_suffix = '.'.join(module_suffix.split('.')[:-1])
+#             return Tracer.op_tracing_decorator(func_to_trace, inspect.getmodule(func_to_trace), module_suffix=module_suffix)
+#     return inner
+
+
+def traceable(func_to_trace: Callable):
+    if Tracer.is_decorated(func_to_trace):
+        return func_to_trace
+    else:
+        module_suffix = func_to_trace.__qualname__
+        module_suffix = '.'.join(module_suffix.split('.')[:-1])
+        return Tracer.op_tracing_decorator(func_to_trace, inspect.getmodule(func_to_trace), module_suffix=module_suffix)
+
+
 class Tracer:
     
     op_tracing_classes = [
@@ -36,17 +56,6 @@ class Tracer:
     _node_list = []
 
     _tensor_storage: TensorStorage = None
-
-    @staticmethod
-    def traceable():
-        def inner(func_to_trace: Callable) -> Callable:
-            if Tracer.is_decorated(func_to_trace):
-                return func_to_trace
-            else:
-                module_suffix = func_to_trace.__qualname__
-                module_suffix = '.'.join(module_suffix.split('.')[:-1])
-                return Tracer.op_tracing_decorator(func_to_trace, inspect.getmodule(func_to_trace), module_suffix=module_suffix)
-        return inner
 
     @staticmethod
     def is_decorated(callable) -> bool:
@@ -213,7 +222,7 @@ class Tracer:
         if isinstance(module_or_function, nn.Module):
             apply_module_tracing_recursively(module_or_function)
         else:
-            module_or_function = Tracer.traceable()(module_or_function)
+            module_or_function = traceable(module_or_function)
         with torch.no_grad():
             module_or_function(*args, **kwargs)
 

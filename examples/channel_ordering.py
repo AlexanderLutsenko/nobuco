@@ -1,12 +1,9 @@
 import os
-
-from nobuco.funcs import force_tensorflow_order
-
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from nobuco.convert.converter import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
-from nobuco.convert.layers.weight import WeightLayer
+import nobuco
+from nobuco import ChannelOrder, ChannelOrderingStrategy
+from nobuco.layers.weight import WeightLayer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
@@ -25,7 +22,7 @@ class MyModule(nn.Module):
 
     def forward(self, x):
         x, hx = self.gru(x)
-        x = force_tensorflow_order(x)
+        x = nobuco.force_tensorflow_order(x)
         x1 = self.conv1(x)
         x2 = self.conv2(x)
         return x1, x2
@@ -37,7 +34,7 @@ inputs = [
     torch.normal(0, 1, size=(1, 12, 32)),
 ]
 
-keras_model = pytorch_to_keras(
+keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.PYTORCH,
 )

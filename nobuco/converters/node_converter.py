@@ -1,8 +1,8 @@
 from typing import Callable
 
-from nobuco.convert.layers.channel_order import ChangeOrderingLayer
-from nobuco.convert.validation import validate_diff_default
+from nobuco.converters.validation import validate_diff_default
 from nobuco.commons import ChannelOrderingStrategy
+from nobuco.layers.channel_order import ChangeOrderingLayer
 from nobuco.trace.trace import Tracer
 
 CONVERTER_DICT = {}
