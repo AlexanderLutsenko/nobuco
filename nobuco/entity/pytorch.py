@@ -144,7 +144,9 @@ class PytorchNodeHierarchy:
             elif isinstance(obj, str):
                 return f'"{str(obj)}"'
             elif isinstance(obj, slice):
-                return f"{str(obj.start) if obj.start is not None else ''}:{obj.stop if obj.stop is not None else ''}{f':{obj.step}' if obj.step is not None else ''}"
+                return f"{to_str(obj.start, connectivity_status, parent_connectivity_status, is_input) if obj.start is not None else ''}:" \
+                       f"{to_str(obj.stop, connectivity_status, parent_connectivity_status, is_input) if obj.stop is not None else ''}" \
+                       f"{f':{to_str(obj.step, connectivity_status, parent_connectivity_status, is_input)}' if obj.step is not None else ''}"
             elif isinstance(obj, type(Ellipsis)):
                 return "..."
             elif isinstance(obj, list):

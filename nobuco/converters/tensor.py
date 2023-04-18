@@ -39,7 +39,6 @@ def perm_compose(perm_next, perm_prev):
     res = [None] * len(perm_prev)
     for i2, i1 in enumerate(perm_next):
         res[i2] = perm_prev[i1]
-
     return res
 
 
@@ -59,6 +58,10 @@ def dims_pytorch2keras(dims, num_dims):
 
 def permute_pytorch2keras(xs):
     return perm_compose(perm_pytorch2keras(len(xs)), xs)
+
+
+def permute_keras2pytorch(xs):
+    return perm_compose(perm_keras2pytorch(len(xs)), xs)
 
 
 def is_identity_perm(perm):

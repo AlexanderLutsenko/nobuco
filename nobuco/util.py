@@ -44,6 +44,10 @@ def collect_recursively_func(obj, predicate: Callable[[object], bool]):
                 for k, v in obj.items():
                     collect(k)
                     collect(v)
+            elif isinstance(obj, slice):
+                collect(obj.start)
+                collect(obj.stop)
+                collect(obj.step)
             elif hasattr(obj, '__dict__') and not isinstance(obj, nn.Module):
                 v = vars(obj)
                 collect(v)

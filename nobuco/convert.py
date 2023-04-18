@@ -3,6 +3,7 @@ import warnings
 from typing import Callable, Dict, Collection, Optional, List, Union, Tuple
 
 import torch
+from nobuco.converters.tensor import permute_pytorch2keras
 from torch import nn
 import tensorflow as tf
 from tensorflow import keras
@@ -176,7 +177,7 @@ def collect_conversion_results(keras_node: KerasConvertedNode) -> Dict[PytorchNo
     return conversion_result_dict
 
 
-def prepare_inputs_tf(inputs_pt, inputs_channel_order):
+def prepare_inputs_tf(inputs_pt, inputs_channel_order, input_shapes):
 
     def collect_func(obj):
         return isinstance(obj, torch.Tensor)
@@ -186,8 +187,17 @@ def prepare_inputs_tf(inputs_pt, inputs_channel_order):
             channel_order = inputs_channel_order.get(obj, ChannelOrder.TENSORFLOW)
         else:
             channel_order = inputs_channel_order
+
         tens = t_pytorch2keras(obj, channel_order=channel_order)
-        return set_channel_order(keras.Input(batch_shape=tens.shape), channel_order)
+
+        if input_shapes is not None and obj in input_shapes:
+            shape = input_shapes.get(obj)
+            if channel_order == ChannelOrder.TENSORFLOW:
+                shape = permute_pytorch2keras(shape)
+        else:
+            shape = tens.shape
+
+        return set_channel_order(keras.Input(batch_shape=shape), channel_order)
 
     return replace_recursively_func(inputs_pt, collect_func, replace_func)
 
@@ -220,6 +230,7 @@ def postprocess_outputs_tf(outputs, outputs_channel_order):
 def pytorch_to_keras(
         module: nn.Module,
         args=[], kwargs={},
+        input_shapes: Dict[torch.Tensor, Collection[Optional[int]]] = None,
         inputs_channel_order: Union[ChannelOrder, Dict[torch.Tensor, ChannelOrder]] = ChannelOrder.TENSORFLOW,
         outputs_channel_order: Union[ChannelOrder, Dict[int, ChannelOrder]] = None,
         converter_dict=CONVERTER_DICT,
@@ -255,8 +266,7 @@ def pytorch_to_keras(
 
     keras_op = keras_converted_node.keras_op
 
-    args_tf = prepare_inputs_tf(args, inputs_channel_order)
-    kwargs_tf = prepare_inputs_tf(kwargs, inputs_channel_order)
+    args_tf, kwargs_tf = prepare_inputs_tf((args, kwargs), inputs_channel_order, input_shapes)
     outputs_tf = keras_op(*args_tf, **kwargs_tf)
     outputs_tf = postprocess_outputs_tf(outputs_tf, outputs_channel_order)
 

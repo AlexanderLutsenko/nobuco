@@ -94,6 +94,13 @@ def converter_rdiv(self, other):
     return func
 
 
+@converter(torch.floor_divide, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+def converter_floor_divide(input: Union[Tensor, Number], other: Union[Tensor, Number], *, out: Optional[Tensor]=None):
+    def func(input: Union[Tensor, Number], other: Union[Tensor, Number], *, out: Optional[Tensor]=None):
+        return input // other
+    return func
+
+
 @converter(torch.sqrt, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_sqrt(input: Tensor, *, out: Optional[Tensor]=None):
     def func(input, *, out=None):
