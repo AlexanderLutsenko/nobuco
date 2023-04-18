@@ -321,7 +321,7 @@ def conv1d(self, input: Tensor):
 
     out_filters, in_filters, kw = weight.shape
     weights = weight.detach().numpy()
-    weights = weights.transpose((2, 1, 0))
+    weights = weights.transpose((2, 0, 1))
 
     if bias is not None:
         biases = bias.detach().numpy()
@@ -389,37 +389,76 @@ def conv1d(self, input: Tensor):
     return func
 
 
-# @converter(F.conv1d)
-# def conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None, stride: Union[_int, _size]=1, padding: str="valid", dilation: Union[_int, _size]=1, groups: _int=1):
-#     out_filters, in_filters, kw = weight.shape
-#     weights = weight.detach().numpy()
-#     weights = weights.transpose((2, 1, 0))
-#
-#     if bias is not None:
-#         biases = bias.detach().numpy()
-#         params = [weights, biases]
-#         use_bias = True
-#     else:
-#         params = [weights]
-#         use_bias = False
-#
-#     if padding != 0:
-#         pad_layer = keras.layers.ZeroPadding1D(padding)
-#     else:
-#         pad_layer = None
-#
-#     conv = keras.layers.Conv1D(out_filters, kernel_size=kw,
-#                          strides=stride, padding='valid',
-#                          # dilation_rate=dilations, groups=groups,
-#                          use_bias=use_bias,
-#                          weights=params
-#                          )
-#
-#     def func(input, *args, **kwargs):
-#         if pad_layer is not None:
-#             input = pad_layer(input)
-#         return conv(input)
-#     return func
+@converter(F.conv1d)
+def conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None, stride: Union[_int, _size]=1, padding: str="valid", dilation: Union[_int, _size]=1, groups: _int=1):
+    out_filters, in_filters, kw = weight.shape
+    weights = weight.detach().numpy()
+    weights = weights.transpose((2, 0, 1))
+
+    if bias is not None:
+        biases = bias.detach().numpy()
+        params = [weights, biases]
+        use_bias = True
+    else:
+        params = [weights]
+        use_bias = False
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding,)
+    if padding != (0,) and padding != 'valid':
+        pad_layer = keras.layers.ZeroPadding1D(padding[0])
+    else:
+        pad_layer = None
+
+    if groups == out_filters and groups != 1:
+        conv = keras.layers.DepthwiseConv1D(kernel_size=kw,
+                                      strides=stride,
+                                      padding='valid',
+                                      dilation_rate=dilation,
+                                      groups=groups,
+                                      use_bias=use_bias,
+                                      weights=params
+                                      )
+    elif groups == 1:
+        conv = keras.layers.Conv1D(filters=out_filters,
+                             kernel_size=kw,
+                             strides=stride,
+                             padding='valid',
+                             dilation_rate=dilation,
+                             groups=groups,
+                             use_bias=use_bias,
+                             weights=params
+                             )
+    else:
+        def split_params(params, groups, axis):
+            params_split = [np.split(p, groups, axis=axis) for p in params]
+            return list(zip(*params_split))
+
+        params_split = split_params(params, groups, axis=-1)
+
+        def grouped_conv1d(inputs, filters, kernel_size, strides, groups, dilation=dilation):
+            splits = tf.split(inputs, groups, axis=-1)
+            convolved_splits = [
+                keras.layers.Conv1D(filters // groups,
+                                    kernel_size=kernel_size,
+                                    strides=strides,
+                                    padding='valid',
+                                    dilation_rate=dilation,
+                                    use_bias=use_bias,
+                                    weights=params_split[i]
+                                    )(split)
+                for i, split in enumerate(splits)
+            ]
+            return tf.concat(convolved_splits, -1)
+
+        conv = lambda x: grouped_conv1d(x, out_filters, kernel_size=kw, strides=stride, groups=groups, dilation=dilation)
+
+    def func(input, *args, **kwargs):
+        if pad_layer is not None:
+            input = pad_layer(input)
+        output = conv(input)
+        return output
+    return func
 
 
 @converter(nn.Conv2d)
@@ -1436,7 +1475,8 @@ def reshape(input, *shape):
 @converter(torch.masked_select, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def masked_select(input: Tensor, mask: Tensor, *, out: Optional[Tensor]=None):
     def func(input, mask, *, out=None):
-        return tf.boolean_mask(input, mask)
+        # return tf.boolean_mask(input, mask)
+        return input[mask]
     return func
 
 
@@ -1866,6 +1906,20 @@ def unique(input, sorted=True, return_inverse=False, return_counts=False, dim=No
         if sorted:
             x = tf.sort(x)
         return x
+    return func
+
+
+@converter(torch.isnan, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def isnan(input: Tensor):
+    def func(input):
+        return tf.math.is_nan(input)
+    return func
+
+
+@converter(torch.Tensor.__invert__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def invert(input: Tensor):
+    def func(input):
+        return tf.math.logical_not(input)
     return func
 
 

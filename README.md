@@ -114,7 +114,7 @@ Transposing tensors between the two layouts incurs non-trivial overhead as gener
 In an effort to keep that overhead to the minimum, Nobuco does layout coercions _lazily_. 
 A couple of things are needed to make it possible:
 
-- Tensorflow tensors are augmented with an additional property which stores their channel order.
+- Tensorflow tensors are augmented with an additional property which stores their channel order, either pytorch (channel first) or tensorflow (channel last) style.
 - Node converters have requirements on what channel order their inputs must have. Said requirements are expressed with `channel_ordering_strategy` argument. 
 
 Channel ordering strategies are
@@ -384,7 +384,7 @@ def converterAddByMask(self, x, mask):
     torch.onnx.export(self, (x, mask), onnx_path, opset_version=12, input_names=['input', 'mask'], dynamic_axes={'input': [0, 1, 2, 3]})
 
     onnx_model = onnx.load(onnx_path)
-    tf_rep: TensorflowRep = prepare(onnx_model)
+    tf_rep = prepare(onnx_model)
     tf_rep.export_graph(model_path)
     model = tf.keras.models.load_model(model_path)
     return keras.layers.Lambda(lambda x, mask: model(input=x, mask=mask))
