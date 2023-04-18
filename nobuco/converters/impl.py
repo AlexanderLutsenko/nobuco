@@ -321,7 +321,10 @@ def conv1d(self, input: Tensor):
 
     out_filters, in_filters, kw = weight.shape
     weights = weight.detach().numpy()
-    weights = weights.transpose((2, 0, 1))
+    if groups == out_filters and groups != 1:
+        weights = tf.transpose(weights, (2, 0, 1))
+    else:
+        weights = tf.transpose(weights, (2, 1, 0))
 
     if bias is not None:
         biases = bias.detach().numpy()
@@ -393,7 +396,10 @@ def conv1d(self, input: Tensor):
 def conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None, stride: Union[_int, _size]=1, padding: str="valid", dilation: Union[_int, _size]=1, groups: _int=1):
     out_filters, in_filters, kw = weight.shape
     weights = weight.detach().numpy()
-    weights = weights.transpose((2, 0, 1))
+    if groups == out_filters and groups != 1:
+        weights = tf.transpose(weights, (2, 0, 1))
+    else:
+        weights = tf.transpose(weights, (2, 1, 0))
 
     if bias is not None:
         biases = bias.detach().numpy()
@@ -475,8 +481,6 @@ def conv2d(self, input: Tensor):
     weights = weight.detach().numpy()
     if groups == out_filters and groups != 1:
         weights = tf.transpose(weights, (2, 3, 0, 1))
-    elif groups == 1:
-        weights = tf.transpose(weights, (2, 3, 1, 0))
     else:
         weights = tf.transpose(weights, (2, 3, 1, 0))
 
@@ -553,8 +557,6 @@ def conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride:
     weights = weight.detach().numpy()
     if groups == out_filters and groups != 1:
         weights = tf.transpose(weights, (2, 3, 0, 1))
-    elif groups == 1:
-        weights = tf.transpose(weights, (2, 3, 1, 0))
     else:
         weights = tf.transpose(weights, (2, 3, 1, 0))
 
