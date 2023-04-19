@@ -56,6 +56,11 @@ def converter_type(self, dtype=None, non_blocking=False, **kwargs):
     return type_func
 
 
+@converter(torch.Tensor.float, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_type(self, memory_format=None):
+    return lambda x: type_func(x, dtype=torch.float32)
+
+
 @converter(torch.Tensor.to, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_to(self, device=None, dtype=None, non_blocking=False, copy=False, memory_format=torch.preserve_format):
     def func(self, device=None, dtype=None, non_blocking=False, copy=False, memory_format=torch.preserve_format):

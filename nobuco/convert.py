@@ -197,7 +197,8 @@ def prepare_inputs_tf(inputs_pt, inputs_channel_order, input_shapes):
         else:
             shape = tens.shape
 
-        return set_channel_order(keras.Input(batch_shape=shape), channel_order)
+        print()
+        return set_channel_order(keras.backend.placeholder(shape=shape), channel_order)
 
     return replace_recursively_func(inputs_pt, collect_func, replace_func)
 

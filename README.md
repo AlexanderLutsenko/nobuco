@@ -1,5 +1,6 @@
 <p align="center">
 <img src="docs/nobuco.png">
+<sup><a href="https://www.behance.net/diliajl">diliajl</a></sup>
 </p>
 
 **No** **Bu**llshit **Co**nverter is a tool that helps you translate pytorch models into tensorflow graphs without losing your mind.
@@ -25,6 +26,8 @@ pip install -U nobuco
 - [Channel order wizardry](#channel-order-wizardry)
 - [In-place operations](#in-place-operations)
 - [Going dynamic](#going-dynamic)
+  - [Control flows](#control-flows)
+  - [Dynamic shapes](#dynamic-shapes)
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 
 <!-- tocstop -->
@@ -250,6 +253,7 @@ class MyModule(nn.Module):
 
 ## Going dynamic
 
+### Control flows
 Introducing python control flow statements into the compute graph is no easy feat.
 Tensorflow can do so via `tf.autograph`, but at a cost of [system's complexity](https://www.youtube.com/watch?v=NIEgzljyDyI) and with some notable [limitations](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/control_flow.md).
 Stuff like that is way above Nobuco's paygrade, so the following module cannot be properly handled without human intervention.
@@ -339,6 +343,9 @@ def converterControlIf(self, x):
 </p>
 
 See [examples](/examples) for other ways to convert control flow ops.
+
+### Dynamic shapes
+:construction: See [examples/dynamic_shape](https://github.com/AlexanderLutsenko/nobuco/blob/master/examples/dynamic_shape.py) :construction:
 
 ## So we put a converter inside your converter
 
