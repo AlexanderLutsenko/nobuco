@@ -1,4 +1,5 @@
 import torch
+from torch import Tensor
 
 import tensorflow as tf
 from nobuco.converters.tensor import permute_pytorch2keras, permute_keras2pytorch
@@ -31,12 +32,12 @@ def converter_force_pytorch_order(inputs):
 
 
 @traceable
-def shape(x):
+def shape(x: Tensor):
     return tuple(torch.tensor(d, dtype=torch.int32) for d in x.shape)
 
 
 @converter(shape, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_shape(x):
+def converter_shape(x: Tensor):
     def func(x):
         shape = tf.unstack(tf.shape(x))
         if get_channel_order(x) == ChannelOrder.TENSORFLOW:

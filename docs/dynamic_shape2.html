@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: monospace">
+<text style="color:green">DynamicShape[__main__]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_10<1,16,86,86></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">Conv2d[torch.nn.modules.conv]</text>(<text style="">float32_0<1,3,128,128></text>) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">&nbsp;└·</text> <text style="">conv2d[torch.nn.functional]</text>(<text style="">float32_0<1,3,128,128></text>, <text style="">float32_1<16,3,1,1></text>, <text style="">float32_2<16></text>, (1, 1), (0, 0), (1, 1), 1) -> <text style="">float32_3<1,16,128,128></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green;font-weight:bold">shape[nobuco.funcs]</text>(<text style="">float32_3<1,16,128,128></text>) -> (<text style="color:#656565">int32_4<></text>, <text style="color:#656565">int32_5<></text>, <text style="">int32_6<></text>, <text style="">int32_7<></text>)<br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">__floordiv__[torch.Tensor]</text>(<text style="">int32_6<></text>, 3) -> <text style="">int32_8<></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">floor_divide[torch]</text>(<text style="">int32_6<></text>, 3) -> <text style="">int32_8<></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">__floordiv__[torch.Tensor]</text>(<text style="">int32_7<></text>, 3) -> <text style="">int32_9<></text><br>
+<text style="color:green">&nbsp;│&nbsp;</text> <text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">floor_divide[torch]</text>(<text style="">int32_7<></text>, 3) -> <text style="">int32_9<></text><br>
+<text style="color:green">&nbsp;└·</text> <text style="color:green;font-weight:bold">__getitem__[torch.Tensor]</text>(<text style="">float32_3<1,16,128,128></text>, (:, :, <text style="">int32_8<></text>:, <text style="">int32_9<></text>:)) -> <text style="">float32_10<1,16,86,86></text><br>
+</body>
+</html>

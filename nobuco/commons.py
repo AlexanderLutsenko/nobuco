@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow.python.keras.engine.keras_tensor import KerasTensor
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
+CONVERTER_DICT = {}
 
 CONVERTED_OP_DICT = {}
 

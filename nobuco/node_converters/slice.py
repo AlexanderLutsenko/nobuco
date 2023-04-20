@@ -114,7 +114,7 @@ def slice_assign(sliced_tensor, assigned_tensor, *slice_args, verbose=0):
     return sliced_tensor_updated
 
 
-@converter(None, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def getitem_indexed(self, *slices):
     slices = _flatten(slices)
     slices = torch.broadcast_tensors(*slices)

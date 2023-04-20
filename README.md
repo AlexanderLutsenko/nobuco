@@ -29,6 +29,8 @@ pip install -U nobuco
   - [Control flows](#control-flows)
   - [Dynamic shapes](#dynamic-shapes)
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
+- [More nice things](#more-nice-things)
+  - [Nobuco knowledge base](#nobuco-knowledge-base)
 
 <!-- tocstop -->
 
@@ -76,7 +78,9 @@ Aaaand done! That's all it takes to... wait, what's that?
 Nobuco says it doesn't know how to handle hard sigmoid.
 Apparently, it's our job to provide a node converter for either `F.hardsigmoid` or the enclosing `Hardsigmoid` module (or the entire `MyModule`, but that makes little sense). Here, we'll go for the former.
 
-Conversion is done directly. No layers upon layers of abstraction, no obscure intermediate representation. A node converter is just a `Callable` that takes in the same arguments as the corresponding node and outputs an equivalent node in tensorflow. The converted node preserves the original node's signature, but pytorch tensors replaced with tensorflow counterparts (be that `tf.Tensor`, `KerasTensor`, `tf.Variable`, or `ResourceVariable`).
+Conversion is done directly. No layers upon layers of abstraction, no obscure intermediate representation. 
+A node converter is just a `Callable` that takes in the same arguments as the corresponding node in pytorch and outputs an equivalent node in tensorflow. 
+The converted node preserves the original node's signature, but pytorch tensors replaced with tensorflow counterparts (be that `tf.Tensor`, `KerasTensor`, `tf.Variable`, or `ResourceVariable`).
 
 This should do the trick:
 
@@ -196,6 +200,7 @@ In case you are curious, the implementation is trivial:
 @nobuco.traceable
 def force_tensorflow_order(inputs):
     return inputs
+
 
 @nobuco.converter(force_tensorflow_order, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
 def converter_force_tensorflow_order(inputs):
@@ -326,7 +331,7 @@ class ControlIfKeras(tf.keras.layers.Layer):
 
 
 @nobuco.converter(ControlIf, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def converterControlIf(self, x):
+def converter_ControlIf(self, x):
     order = ChannelOrder.TENSORFLOW
     kwargs = {'inputs_channel_order': order, 'outputs_channel_order': order, 'return_outputs_pt': True}
     
@@ -339,13 +344,87 @@ def converterControlIf(self, x):
 ```
 
 <p align="center">
-<img src="docs/control_if.png" width="30%">
+<img src="docs/control_if.png" width="25%">
 </p>
 
 See [examples](/examples) for other ways to convert control flow ops.
 
 ### Dynamic shapes
-:construction: See [examples/dynamic_shape](https://github.com/AlexanderLutsenko/nobuco/blob/master/examples/dynamic_shape.py) :construction:
+
+What if we wanted out module to accept images of arbitrary height and width?
+Can we have that? Let's try:
+
+```python
+class DynamicShape(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = nn.Conv2d(3, 16, kernel_size=(1, 1))
+
+    def forward(self, x):
+        x = self.conv(x)
+
+        # Produces static shape
+        b, c, h, w = x.shape
+
+        x = x[:, :, h//3:, w//3:]
+        return x
+
+
+input = torch.normal(0, 1, size=(1, 3, 128, 128))
+pytorch_module = DynamicShape().eval()
+
+keras_model = nobuco.pytorch_to_keras(
+    pytorch_module,
+    args=[input],
+    input_shapes={input: (None, 3, None, None)}, # Annotate dynamic axes with None
+    inputs_channel_order=ChannelOrder.TENSORFLOW,
+    outputs_channel_order=ChannelOrder.TENSORFLOW,
+)
+```
+
+Something's not right. We don't see shape extraction ops in the debug output or the graph:
+
+<img src="docs/dynamic_shape1.svg" width="100%">
+
+<p align="center">
+<img src="docs/dynamic_shape1.png" width="15%">
+</p>
+
+That's not surprising, actually. 
+In pytorch, tensor shape is a tuple of regular integers, not tensors, so it's quite difficult to track them.
+`nobuco.shape` solves this problem.
+This function returns tensors, much like [`tf.shape`](https://www.tensorflow.org/api_docs/python/tf/shape) does:
+
+```python
+# Allows for dynamic shape
+b, c, h, w = nobuco.shape(x)
+```
+
+<img src="docs/dynamic_shape2.svg" width="100%">
+
+<p align="center">
+<img src="docs/dynamic_shape2.png" width="30%">
+</p>
+
+Also, take a moment to appreciate how elegant the solution is. 
+`nobuco.shape` is a one-liner that simply replaces each integer in shape tuple with a scalar tensor.
+No special treatment required!
+
+```python
+@traceable
+def shape(x: Tensor):
+    return tuple(torch.tensor(d, dtype=torch.int32) for d in x.shape)
+
+
+@converter(shape, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_shape(x: Tensor):
+    def func(x):
+        shape = tf.unstack(tf.shape(x))
+        if get_channel_order(x) == ChannelOrder.TENSORFLOW:
+            shape = permute_keras2pytorch(shape)
+        return tuple(shape)
+    return func
+```
 
 ## So we put a converter inside your converter
 
@@ -414,6 +493,44 @@ def converter_AddByMask(self, x, mask):
 ```
 
 <img src="docs/converter_inside_converter2.svg" width="100%">
+
+## More nice things
+
+### Nobuco knowledge base
+
+Don't want to convert anything but looking for a tensorflow equivalent of a certain pytorch node (operation or module)?
+Nobuco already implements quite a few node converters, most written in concise and (hopefully) understandable way.
+These are located in [nobuco/node_converters](https://github.com/AlexanderLutsenko/nobuco/tree/master/nobuco/node_converters),
+and there's a utility function to help you find what you need:
+
+
+```python
+node = torch.Tensor.repeat
+# node = F.relu_
+# node = nn.Conv2d
+
+location_link, source_code = nobuco.locate_converter(node)
+print('Converter location:')
+print(location_link)
+print('Converter source code:')
+print(source_code)
+```
+
+```console
+Converter location:
+File "/home/user/anaconda3/envs/nb/lib/python3.9/site-packages/nobuco/node_converters/tensor_manipulation.py", line 141
+
+Converter source code:
+@converter(torch.Tensor.repeat, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_repeat(self, *sizes):
+    def func(self, *sizes):
+        if get_channel_order(self) == ChannelOrder.TENSORFLOW:
+            sizes = permute_pytorch2keras(sizes)
+        return tf.tile(self, sizes)
+    return func
+```
+
+---
 
 ### Acknowledgements
 

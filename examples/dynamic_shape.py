@@ -13,7 +13,7 @@ import torch
 from torch import nn
 
 
-class MyModule(nn.Module):
+class DynamicShape(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv = nn.Conv2d(3, 16, kernel_size=(1, 1))
@@ -32,14 +32,15 @@ class MyModule(nn.Module):
 
 
 input = torch.normal(0, 1, size=(1, 3, 128, 128))
-pytorch_module = MyModule().eval()
+pytorch_module = DynamicShape().eval()
 
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[input],
-    input_shapes={input: (None, 3, None, None)},
+    input_shapes={input: (None, 3, None, None)}, # Annotate dynamic axes with None
     inputs_channel_order=ChannelOrder.TENSORFLOW,
     outputs_channel_order=ChannelOrder.TENSORFLOW,
+    save_trace_html=True,
 )
 
 model_path = 'dynamic_shape'
