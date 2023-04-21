@@ -1,4 +1,5 @@
 import inspect
+import traceback
 import types
 from copy import deepcopy
 from typing import List, Collection, Callable, Union
@@ -10,17 +11,6 @@ from torch import nn
 from nobuco.entity.pytorch import PytorchNode, WrappedOp, PytorchNodeHierarchy
 from nobuco.trace.tensor_storage import clone_torch_tensors_recursively_with_cache, TensorStorage
 from nobuco.util import collect_recursively
-
-
-# def traceable():
-#     def inner(func_to_trace: Callable) -> Callable:
-#         if Tracer.is_decorated(func_to_trace):
-#             return func_to_trace
-#         else:
-#             module_suffix = func_to_trace.__qualname__
-#             module_suffix = '.'.join(module_suffix.split('.')[:-1])
-#             return Tracer.op_tracing_decorator(func_to_trace, inspect.getmodule(func_to_trace), module_suffix=module_suffix)
-#     return inner
 
 
 def traceable(func_to_trace: Callable):
@@ -100,7 +90,8 @@ class Tracer:
                 outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
                 is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
 
-                node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone, is_inplace)
+                summary: traceback.FrameSummary = traceback.extract_stack()[-3]
+                node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone, is_inplace, summary)
                 Tracer._node_list.append(node)
 
                 Tracer._tracing_enabled = True
@@ -150,7 +141,8 @@ class Tracer:
                     outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
                     is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
 
-                    node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone, is_inplace)
+                    summary: traceback.FrameSummary = traceback.extract_stack()[-2]
+                    node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone, is_inplace, summary)
                     Tracer._node_list.append(node)
 
                 Tracer._tracing_enabled = True

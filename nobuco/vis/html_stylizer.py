@@ -1,7 +1,7 @@
 from typing import Dict
 
 from nobuco.converters.validation import ValidationStatus
-from nobuco.layers.container import ConnectivityStatus
+from nobuco.commons import ConnectivityStatus
 from nobuco.util import get_torch_tensor_identifier
 
 

@@ -6,6 +6,7 @@ import torch
 
 from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import t_keras2pytorch, pytorch2keras_recursively
+from nobuco.locate.link import get_link_to_obj
 from nobuco.util import str_parents, collect_recursively
 
 
@@ -22,11 +23,20 @@ class ValidationResult:
 
 
 class ConversionResult:
-    def __init__(self, converted_manually, is_implemented=True, is_duplicate=False, connectivity_status=None):
+    def __init__(self, converted_manually, is_implemented=True, is_duplicate=False, connectivity_status=None, converter=None):
         self.converted_manually = converted_manually
         self.is_implemented = is_implemented
         self.is_duplicate = is_duplicate
         self.connectivity_status = connectivity_status
+        self.converter = converter
+
+    def get_converter_link(self):
+        if self.converter is None:
+            return None
+        else:
+            convert_func = self.converter.convert_func
+            location_link = get_link_to_obj(convert_func)
+            return location_link
 
 
 def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensors, op_type, tolerance=1e-4):
@@ -40,6 +50,7 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
                         f'[{op_type}|{str_parents(node)}] conversion procedure might be incorrect: max. discrepancy for output #{i} is {diff:5f}',
                         category=RuntimeWarning
                     )
+                    pass
             diff = max(diffs)
         else:
             diff = 0

@@ -21,6 +21,12 @@ except Exception:
     pass
 
 
+class TraceLevel(Enum):
+    NEVER = 0
+    DEFAULT = 1
+    ALWAYS = 2
+
+
 class ChannelOrder(Enum):
     PYTORCH = 1
     CHANNEL_FIRST = 1
@@ -36,3 +42,14 @@ class ChannelOrderingStrategy(Enum):
     MINIMUM_TRANSPOSITIONS_OR_PYTORCH = 4
     MANUAL = 5
     OUTPUT_FORCE_PYTORCH_ORDER = 6
+
+
+class ConnectivityStatus:
+    def __init__(self, unused_inputs, unreached_outputs, unused_nodes, unprovided_inputs):
+        self.unused_inputs = unused_inputs
+        self.unreached_outputs = unreached_outputs
+        self.unused_nodes = unused_nodes
+        self.unprovided_inputs = unprovided_inputs
+
+    def is_connected(self):
+        return len(self.unreached_outputs) == 0

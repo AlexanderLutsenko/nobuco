@@ -135,7 +135,7 @@ def converter_getitem(self, *slices):
         if slices[0].dtype == torch.bool:
             return converter_masked_select(self, slices[0])
         elif slices[0].dtype == torch.int64:
-            return getitem_indexed(self, slices)
+            return getitem_indexed.convert(self, slices)
 
     def is_light(slices):
         return all(isinstance(slc, slice) for slc in slices)

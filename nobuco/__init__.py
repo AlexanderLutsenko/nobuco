@@ -1,5 +1,5 @@
 from nobuco.funcs import force_tensorflow_order, force_pytorch_order, shape
-from nobuco.locate import locate_converter
+from nobuco.locate.locate import locate_converter
 from nobuco.trace.trace import traceable
 
 from nobuco.converters.node_converter import converter

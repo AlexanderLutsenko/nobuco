@@ -1,18 +1,7 @@
-from nobuco.commons import TF_TENSOR_CLASSES
+from nobuco.commons import TF_TENSOR_CLASSES, ConnectivityStatus
 from nobuco.layers.weight import WeightLayer
 from nobuco.converters.channel_ordering import TensorPlaceholder, template_insert_recursively
 from nobuco.util import collect_recursively
-
-
-class ConnectivityStatus:
-    def __init__(self, unused_inputs, unreached_outputs, unused_nodes, unprovided_inputs):
-        self.unused_inputs = unused_inputs
-        self.unreached_outputs = unreached_outputs
-        self.unused_nodes = unused_nodes
-        self.unprovided_inputs = unprovided_inputs
-
-    def is_connected(self):
-        return len(self.unreached_outputs) == 0
 
 
 class TransientContainer:

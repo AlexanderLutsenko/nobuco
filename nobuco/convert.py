@@ -8,7 +8,7 @@ from torch import nn
 import tensorflow as tf
 from tensorflow import keras
 
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES, TraceLevel
 from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order, t_keras2pytorch
 from nobuco.converters.validation import validate, ValidationResult, ConversionResult
 from nobuco.layers.channel_order import ChangeOrderingLayer
@@ -32,6 +32,10 @@ Tracer.decorate_all()
 
 def has_converter(node: PytorchNode, converter_dict: Dict[object, Pytorch2KerasNodeConverter]) -> bool:
     return node.get_type() in converter_dict.keys()
+
+
+def find_converter(node: PytorchNode, converter_dict: Dict[object, Pytorch2KerasNodeConverter]) -> Optional[Pytorch2KerasNodeConverter]:
+    return converter_dict.get(node.get_type(), None)
 
 
 def find_unimplemented(hierarchy: PytorchNodeHierarchy, converter_dict: Dict[object, Pytorch2KerasNodeConverter]) -> Optional[PytorchNodeHierarchy]:
@@ -114,7 +118,8 @@ def convert_hierarchy(
         reuse_layers: bool = True,
         full_validation: bool = True,
         tolerance=1e-4,
-        constants_to_variables: bool = True) -> KerasConvertedNode:
+        constants_to_variables: bool = True,
+) -> KerasConvertedNode:
 
     def convert(hierarchy: PytorchNodeHierarchy, converted_op_dict:Dict, reuse_layers: bool, full_validation: bool, depth):
         node = hierarchy.node
@@ -123,16 +128,18 @@ def convert_hierarchy(
         input_names = node.input_names
         output_names = node.output_names
 
+        converter = find_converter(node, converter_dict)
+
         keras_op, children_converted_nodes = converted_op_dict.get(node.get_op(), (None, []))
         node_is_reusable = False
         if reuse_layers and keras_op is not None:
-            conversion_result = ConversionResult(converted_manually=False, is_duplicate=True)
+            conversion_result = ConversionResult(converted_manually=False, is_duplicate=True, converter=converter)
         elif has_converter(node, converter_dict):
             children_converted_nodes = []
             node_converter: Pytorch2KerasNodeConverter = converter_dict.get(node.get_type(), None)
             node_is_reusable = node_converter.reusable
             keras_op = convert_node(node, node_converter)
-            conversion_result = ConversionResult(converted_manually=True)
+            conversion_result = ConversionResult(converted_manually=True, converter=converter)
         elif len(children) > 0:
             children_converted_nodes = [convert(child, converted_op_dict, reuse_layers, full_validation, depth + 1) for child in children]
             keras_op = convert_container(node, children, children_converted_nodes, input_names, output_names, node.output_tensors, constants_to_variables=constants_to_variables)
@@ -140,11 +147,11 @@ def convert_hierarchy(
             connectivity_status = keras_op.get_connectivity_status()
             if not connectivity_status.is_connected():
                 warnings.warn(f'[{node.get_type()} : {keras_op}] is disconnected!', category=RuntimeWarning)
-            conversion_result = ConversionResult(converted_manually=False, connectivity_status=connectivity_status)
+            conversion_result = ConversionResult(converted_manually=False, connectivity_status=connectivity_status, converter=converter)
         else:
             children_converted_nodes = []
             keras_op = UnimplementedOpStub(node.get_op())
-            conversion_result = ConversionResult(converted_manually=False, is_implemented=False)
+            conversion_result = ConversionResult(converted_manually=False, is_implemented=False, converter=converter)
 
         if full_validation or depth == 0:
             diff, status = validate(node, node.wrapped_op.op, keras_op, node.input_args, node.input_kwargs, node.output_tensors, node.get_type(), tolerance=tolerance)
@@ -239,7 +246,8 @@ def pytorch_to_keras(
         full_validation: bool = True,
         validation_tolerance=1e-4,
         save_trace_html=False,
-        return_outputs_pt=False
+        return_outputs_pt=False,
+        debug_traces: TraceLevel = TraceLevel.DEFAULT,
 ) -> Union[keras.Model, Tuple[keras.Model, object]]:
     start = time.time()
     node_hierarchy = Tracer.trace(module, args, kwargs)
@@ -252,17 +260,23 @@ def pytorch_to_keras(
     validation_result_dict = collect_validation_results(keras_converted_node)
     conversion_result_dict = collect_conversion_results(keras_converted_node)
 
-    print(node_hierarchy.__str__(validation_result_dict=validation_result_dict, conversion_result_dict=conversion_result_dict, with_legend=True))
+    vis_params = {
+        'validation_result_dict': validation_result_dict,
+        'conversion_result_dict': conversion_result_dict,
+        'debug_traces': debug_traces,
+    }
+
+    print(node_hierarchy.__str__(with_legend=True, **vis_params))
 
     if save_trace_html:
-        html = node_hierarchy.__str__(validation_result_dict=validation_result_dict, conversion_result_dict=conversion_result_dict, with_legend=True, stylizer=HtmlStylizer())
+        html = node_hierarchy.__str__(with_legend=True, stylizer=HtmlStylizer(), **vis_params)
         with open('trace.html', 'w') as f:
             f.write(html)
 
     unimplemented_hierarchy = find_unimplemented(node_hierarchy, converter_dict)
     if unimplemented_hierarchy is not None:
         print('Unimplemented nodes:')
-        print(unimplemented_hierarchy.__str__(validation_result_dict=validation_result_dict, conversion_result_dict=conversion_result_dict))
+        print(unimplemented_hierarchy.__str__(**vis_params))
         raise Exception('Unimplemented nodes')
 
     keras_op = keras_converted_node.keras_op

@@ -1,9 +1,12 @@
+import inspect
 import time
 from typing import Collection, List
 
 import torch
+from nobuco.locate.link import get_link_to_obj
 from torch import nn
 
+from nobuco.commons import TraceLevel
 from nobuco.converters.validation import ValidationStatus
 
 from nobuco.converters.channel_ordering import make_template_recursively
@@ -56,7 +59,7 @@ class TierStatus:
 
 
 class PytorchNode:
-    def __init__(self, wrapped_op: WrappedOp, module_name, parent_list, instance, input_args, input_kwargs, outputs, is_inplace):
+    def __init__(self, wrapped_op: WrappedOp, module_name, parent_list, instance, input_args, input_kwargs, outputs, is_inplace, traceback_summary):
         self.wrapped_op = wrapped_op
         self.module_name = module_name
         self.parent_list = parent_list
@@ -65,6 +68,7 @@ class PytorchNode:
         self.input_kwargs = input_kwargs
         self.outputs = outputs
         self.is_inplace = is_inplace
+        self.traceback_summary = traceback_summary
 
     def make_inputs_template(self):
         args_template, kwargs_template = make_template_recursively((self.input_args, self.input_kwargs))
@@ -114,7 +118,8 @@ class PytorchNodeHierarchy:
                 validation_result_dict=None, conversion_result_dict=None,
                 with_legend=False, parent_connectivity_status=None,
                 tensor_name_assigner: TensorNameAssigner = None,
-                stylizer=None
+                stylizer=None,
+                debug_traces: TraceLevel = TraceLevel.NEVER,
                 ) -> str:
 
         if tier_statuses is None:
@@ -264,6 +269,27 @@ class PytorchNodeHierarchy:
                 result += stylizer.stylize(f' (!) Inplace ', stylizer.style_inplace) + ' '
             result += '\n'
 
+        are_problems = status == ValidationStatus.FAIL or status == ValidationStatus.INACCURATE or is_disconnected
+
+        if debug_traces == TraceLevel.ALWAYS or (debug_traces == TraceLevel.DEFAULT and are_problems):
+            result += get_tier_str(tier_statuses, is_additional=True)
+            summary = self.node.traceback_summary
+            result += stylizer.stylize(f' I ', stylizer.style_grey) + stylizer.stylize(f' File "{summary.filename}", line {summary.lineno}', stylizer.style_grey) + ' '
+            result += '\n'
+
+            link = get_link_to_obj(self.node.get_op().__class__)
+            if link is not None:
+                result += get_tier_str(tier_statuses, is_additional=True)
+                result += stylizer.stylize(f' D ', stylizer.style_grey) + stylizer.stylize(f' {link} ', stylizer.style_grey) + ' '
+                result += '\n'
+
+            if conversion_result is not None:
+                converter_link = conversion_result.get_converter_link()
+                if converter_link is not None:
+                    result += get_tier_str(tier_statuses, is_additional=True)
+                    result += stylizer.stylize(f' C ', style) + stylizer.stylize(f' {converter_link} ', stylizer.style_grey) + ' '
+                    result += '\n'
+
         result += get_tier_str(tier_statuses)
         result += \
             stylizer.stylize(
@@ -291,7 +317,8 @@ class PytorchNodeHierarchy:
                                         validation_result_dict, conversion_result_dict,
                                         with_legend=False, parent_connectivity_status=connectivity_status,
                                         tensor_name_assigner=tensor_name_assigner,
-                                        stylizer=stylizer
+                                        stylizer=stylizer,
+                                        debug_traces=debug_traces,
                                         )
         if tier == 0:
             result = stylizer.postprocess(result)

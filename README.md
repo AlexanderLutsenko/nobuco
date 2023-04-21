@@ -292,7 +292,7 @@ Of course, it's possible to translate the dynamic module into a tensorflow layer
 (don't forget to decorate it with `@tf.function` for autograph to kick in).
 But what if it contains inner modules, do you replicate them in tensorflow all by hand?
 Not unless you want to! 
-Just convert them separately and use the resulting graph inside the parent layer.
+Just convert them separately and use the resulting graphs inside the parent layer.
 
 ```python
 class ControlIfKeras(tf.keras.layers.Layer):
@@ -351,7 +351,7 @@ See [examples](/examples) for other ways to convert control flow ops.
 
 ### Dynamic shapes
 
-What if we wanted out module to accept images of arbitrary height and width?
+What if we wanted our module to accept images of arbitrary height and width?
 Can we have that? Let's try:
 
 ```python
