@@ -116,6 +116,12 @@ is to keep the tool simple and customizable, make it clear where a problem comes
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. For that, Nobuco has you covered!
 
+https://user-images.githubusercontent.com/2457934/233740603-cc11acc5-cd6b-48c8-b089-ff3ead772dd0.mp4
+
+<p align="center">
+To ease debugging, Nobuco lets you jump right where the node was [I]nvoked, [D]efined and [C]onverted
+</p>
+
 ## Channel order wizardry
 
 Some operations assume its input tensors have a channel dimension. 
@@ -482,7 +488,7 @@ def converter_AddByMask(self, x, mask):
     model_path = 'add_by_mask'
     onnx_path = model_path + '.onnx'
 
-    # NB: onnx.export in implemented via tracing i.e. it may modify the inputs!
+    # NB: onnx.export is implemented via tracing i.e. it may modify the inputs!
     torch.onnx.export(self, (x, mask), onnx_path, opset_version=12, input_names=['input', 'mask'], dynamic_axes={'input': [0, 1, 2, 3]})
 
     onnx_model = onnx.load(onnx_path)
