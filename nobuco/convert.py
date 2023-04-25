@@ -237,7 +237,8 @@ def postprocess_outputs_tf(outputs, outputs_channel_order):
 
 def pytorch_to_keras(
         module: nn.Module,
-        args=[], kwargs={},
+        args: List[object] = None,
+        kwargs: Dict[str, object] = None,
         input_shapes: Dict[torch.Tensor, Collection[Optional[int]]] = None,
         inputs_channel_order: Union[ChannelOrder, Dict[torch.Tensor, ChannelOrder]] = ChannelOrder.TENSORFLOW,
         outputs_channel_order: Union[ChannelOrder, Dict[int, ChannelOrder]] = None,
@@ -249,6 +250,13 @@ def pytorch_to_keras(
         return_outputs_pt=False,
         debug_traces: TraceLevel = TraceLevel.DEFAULT,
 ) -> Union[keras.Model, Tuple[keras.Model, object]]:
+
+    if args is None:
+        args = []
+
+    if kwargs is None:
+        kwargs = {}
+
     start = time.time()
     node_hierarchy = Tracer.trace(module, args, kwargs)
 
