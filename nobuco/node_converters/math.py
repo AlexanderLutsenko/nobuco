@@ -59,6 +59,17 @@ def converter_mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Op
             return out
     return func
 
+@converter(torch.sin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+def converter_sin(input, *args, **kwargs):
+    def func(input, *args, **kwargs):
+        return tf.math.sin(input)
+    return func
+
+@converter(torch.cos, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH)
+def converter_cos(input, *args, **kwargs):
+    def func(input, *args, **kwargs):
+        return tf.math.cos(input)
+    return func
 
 @converter(torch.Tensor.add, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_add(input, other, *args, **kwargs):
