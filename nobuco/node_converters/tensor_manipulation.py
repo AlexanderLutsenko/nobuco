@@ -138,6 +138,17 @@ def converter_split(self, split_size, dim=0):
     return func
 
 
+@converter(torch.Tensor.chunk, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_chunk(self, chunks, dim=0):
+    num_dims = self.dim()
+
+    def func(self, chunks, dim=0):
+        if get_channel_order(self) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        return tf.split(self, num_or_size_splits=chunks, axis=dim)
+    return func
+
+
 @converter(torch.Tensor.repeat, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_repeat(self, *sizes):
     def func(self, *sizes):

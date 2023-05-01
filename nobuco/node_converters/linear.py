@@ -1,7 +1,7 @@
+from numbers import Number
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
 from nobuco.converters.tensor import dim_pytorch2keras
-
 from nobuco.converters.channel_ordering import get_channel_order
 from torch import Tensor
 
@@ -10,6 +10,8 @@ from tensorflow import keras
 import torch
 import torch.nn.functional as F
 from torch import nn
+
+import numpy as np
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
@@ -30,22 +32,23 @@ def converter_Linear(self, input: Tensor):
     return keras.layers.Dense(out_filters, weights=params)
 
 
-# @converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-# def converter_linear(input, weight, bias, out=None):
-#     out_filters, in_filters = weight.shape
-#     weights = weight.detach().numpy()
-#     weights = weights.transpose(1, 0)
-#
-#     if bias is not None:
-#         biases = bias.detach().numpy()
-#     else:
-#         biases = np.zeros(shape=(out_filters,))
-#
-#     layer = keras.layers.Dense(out_filters, weights=[weights, biases])
-#
-#     def func(input, weight, bias, out=None):
-#         return layer(input)
-#     return func
+@converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_linear(input, weight, bias, out=None):
+    out_filters, in_filters = weight.shape
+    weights = weight.detach().numpy()
+    weights = weights.transpose(1, 0)
+
+    if bias is not None:
+        biases = bias.detach().numpy()
+        params = [weights, biases]
+    else:
+        params = [weights]
+
+    layer = keras.layers.Dense(out_filters, weights=params)
+
+    def func(input, weight, bias, out=None):
+        return layer(input)
+    return func
 
 
 @converter(torch.matmul, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -80,6 +83,13 @@ def converter_mv(input: Tensor, vec: Tensor, *, out: Optional[Tensor]=None):
 def converter_bmm(input: Tensor, mat2: Tensor, *, out: Optional[Tensor]=None):
     def func(input, mat2, *, out=None):
         return tf.linalg.matmul(input, mat2)
+    return func
+
+
+@converter(torch.baddbmm, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_baddbmm(input: Tensor, batch1: Tensor, batch2: Tensor, *, beta: Number=1, alpha: Number=1, out: Optional[Tensor]=None):
+    def func(input: Tensor, batch1, batch2, *, beta=1, alpha=1, out=None):
+        return beta*input + alpha*tf.linalg.matmul(batch1, batch2)
     return func
 
 
