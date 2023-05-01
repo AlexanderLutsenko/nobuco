@@ -19,41 +19,43 @@ def converter_sum(input: Tensor, dim: Sequence, keepdim: _bool=False, *, dtype: 
     def func(input, dim, keepdim=False, *, dtype=None, out=None):
         order = get_channel_order(input)
 
-        if not keepdim and order == ChannelOrder.TENSORFLOW:
-            perm = perm_keras2pytorch(n_dims)
-            input = _permute(perm)(input)
-            out = tf.reduce_sum(input, axis=dim, keepdims=keepdim)
-            out = set_channel_order(out, ChannelOrder.PYTORCH)
-            return out
-        else:
+        if keepdim:
             dim = _dim_make_positive(dim, n_dims)
             if order == ChannelOrder.TENSORFLOW:
                 dim = dim_pytorch2keras(dim, n_dims)
             out = tf.reduce_sum(input, axis=dim, keepdims=keepdim)
             out = set_channel_order(out, order)
             return out
+        else:
+            if order == ChannelOrder.TENSORFLOW:
+                perm = perm_keras2pytorch(n_dims)
+                input = _permute(perm)(input)
+            out = tf.reduce_sum(input, axis=dim, keepdims=keepdim)
+            out = set_channel_order(out, ChannelOrder.PYTORCH)
+            return out
     return func
 
 
-@converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Optional[_dtype] = None, out: Optional[Tensor] = None):
     n_dims = input.dim()
 
     def func(input, dim, keepdim=False, *, dtype=None, out=None):
         order = get_channel_order(input)
 
-        if not keepdim and order == ChannelOrder.TENSORFLOW:
-            perm = perm_keras2pytorch(n_dims)
-            input = _permute(perm)(input)
-            out = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
-            out = set_channel_order(out, ChannelOrder.PYTORCH)
-            return out
-        else:
+        if keepdim:
             dim = _dim_make_positive(dim, n_dims)
             if order == ChannelOrder.TENSORFLOW:
                 dim = dim_pytorch2keras(dim, n_dims)
             out = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
             out = set_channel_order(out, order)
+            return out
+        else:
+            if order == ChannelOrder.TENSORFLOW:
+                perm = perm_keras2pytorch(n_dims)
+                input = _permute(perm)(input)
+            out = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
+            out = set_channel_order(out, ChannelOrder.PYTORCH)
             return out
     return func
 

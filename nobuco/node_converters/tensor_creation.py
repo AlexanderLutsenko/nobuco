@@ -1,8 +1,11 @@
+from typing import Optional
+
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size
 
 import tensorflow as tf
 import torch
+import torch.nn.functional as F
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
@@ -54,3 +57,13 @@ def converter_full_like(input: Tensor, fill_value: Number, *, memory_format=None
     return func
 
 
+@converter(F._canonical_mask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_canonical_mask(mask: Optional[Tensor], mask_name: str, other_type: Optional, other_name: str, target_type, check_other: bool = True):
+    if mask is not None:
+        _mask_is_float = torch.is_floating_point(mask)
+        if not _mask_is_float:
+            raise Exception('Not supported yet')
+
+    def func(mask, mask_name, other_type, other_name, target_type, check_other=True):
+        return mask
+    return func
