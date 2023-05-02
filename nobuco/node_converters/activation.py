@@ -9,11 +9,16 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from tensorflow.python.framework.ops import disable_eager_execution
+
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import dim_pytorch2keras
 
+def prelu(x, weight):
+    x = tf.math.maximum(0, x) + weight * tf.math.minimum(0, x)
+    return x
 
 def hard_sigmoid_pytorch_compatible(x):
   x = tf.clip_by_value(x/6 + 1/2, clip_value_min=0, clip_value_max=1)
@@ -60,6 +65,28 @@ def converter_relu(input: Tensor, inplace: bool = False):
 def converter_relu_(input: Tensor):
     def func(input):
         return tf.nn.relu(input)
+    return func
+
+
+# # please help me
+# @converter(nn.PReLU, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+# def converter_PReLU(self, input: Tensor):
+#     return keras.layers.PReLU()
+
+
+@converter(F.prelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_prelu(input: Tensor, alpha: float = 0.0, inplace: bool = False):
+    def func(input, alpha=0.0, inplace=False):
+        # return keras.layers.PReLU(tf.initializers.constant(alpha))(input) # please help me
+        return keras.layers.PReLU(tf.initializers.constant(0))(input)
+    return func
+
+
+@converter(torch.prelu, torch.Tensor.prelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_prelu(input: Tensor, alpha: float = 0.0, inplace: bool = False):
+    def func(input, alpha=0.0, inplace=False):
+        # return keras.layers.PReLU(tf.initializers.constant(alpha))(input) # please help me
+        return keras.layers.PReLU(tf.initializers.constant(0))(input)
     return func
 
 
