@@ -45,7 +45,7 @@ class ControlIf(nn.Module):
 
     def forward(self, x):
         x = self.conv_pre(x)
-        x = self.cond([x.mean() > 0, x])
+        x = self.cond([x.mean(dim=None) > 0, x])
         x = self.conv_shared(x)
         return x
 

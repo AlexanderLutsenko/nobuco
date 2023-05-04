@@ -75,6 +75,49 @@ def converter_leaky_relu(input: Tensor, negative_slope: float = 0.01, inplace: b
     return func
 
 
+def prelu_prepare_params(weight_np, input_dim, input_channels, input_channel_order):
+    if weight_np.size == 1:
+        w_shape = [1] * input_dim
+        shared_axes = [i for i in range(1, input_dim)]
+        weights = weight_np.reshape(w_shape)
+    elif weight_np.size == input_channels:
+        if input_channel_order == ChannelOrder.TENSORFLOW:
+            channel_dim = dim_pytorch2keras(1, input_dim)
+        else:
+            channel_dim = 1
+        w_shape = [1] * input_dim
+        w_shape[channel_dim] = weight_np.size
+        shared_axes = [i for i in range(1, input_dim) if i != channel_dim]
+        weights = weight_np.reshape(w_shape)
+    else:
+        raise Exception('Unsupported weight shape')
+    return shared_axes, weights
+
+
+@converter(nn.PReLU, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_PReLU(self, input: Tensor):
+    input_dim = input.dim()
+    input_channels = input.shape[1] if input_dim > 1 else 1
+    weight_np = self.weight.detach().numpy()
+
+    def func(input):
+        shared_axes, weights = prelu_prepare_params(weight_np, input_dim, input_channels, get_channel_order(input))
+        return keras.layers.PReLU(shared_axes=shared_axes, weights=weights)(input)
+    return func
+
+
+@converter(F.prelu, torch.prelu, torch.Tensor.prelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_prelu(input: Tensor, weight: Tensor):
+    input_dim = input.dim()
+    input_channels = input.shape[1] if input_dim > 1 else 1
+    weight_np = weight.detach().numpy()
+
+    def func(input, weight):
+        shared_axes, weights = prelu_prepare_params(weight_np, input_dim, input_channels, get_channel_order(input))
+        return keras.layers.PReLU(shared_axes=shared_axes, weights=weights)(input)
+    return func
+
+
 @converter(F.hardsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_hardsigmoid(input: Tensor, inplace: bool = False):
     def func(input, inplace=False):

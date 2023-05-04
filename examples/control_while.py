@@ -22,7 +22,7 @@ class ControlWhile(nn.Module):
 
     @nobuco.traceable
     def loop_cond(self, x):
-        return x.abs().mean() < 3
+        return x.abs().mean(dim=None) < 3
 
     @nobuco.traceable
     def loop_body(self, x):
