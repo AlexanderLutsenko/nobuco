@@ -514,7 +514,7 @@ and there's a utility function to help you find what you need:
 ```python
 node = torch.Tensor.repeat
 # node = F.relu_
-# node = nn.Conv2d
+# node = nn.LSTM
 
 location_link, source_code = nobuco.locate_converter(node)
 print('Converter location:')

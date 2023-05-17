@@ -56,9 +56,29 @@ def converter_type(self, dtype=None, non_blocking=False, **kwargs):
     return type_func
 
 
+@converter(torch.Tensor.bool, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_bool(self, memory_format=None):
+    return lambda x: type_func(x, dtype=torch.bool)
+
+
+@converter(torch.Tensor.int, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_int(self, memory_format=None):
+    return lambda x: type_func(x, dtype=torch.int32)
+
+
+@converter(torch.Tensor.long, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_long(self, memory_format=None):
+    return lambda x: type_func(x, dtype=torch.int64)
+
+
 @converter(torch.Tensor.float, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_type(self, memory_format=None):
+def converter_float(self, memory_format=None):
     return lambda x: type_func(x, dtype=torch.float32)
+
+
+@converter(torch.Tensor.double, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_double(self, memory_format=None):
+    return lambda x: type_func(x, dtype=torch.float64)
 
 
 @converter(torch.Tensor.to, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)

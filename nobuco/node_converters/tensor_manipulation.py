@@ -274,22 +274,33 @@ def converter_unsqueeze(input, dim):
     return func
 
 
-# @converter(torch.Tensor.unfold, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-# def converter_unfold(self, dimension, size, step):
-#     n_dims = self.dim()
-#
-#     def func(self, dimension, size, step):
-#         sizes = [1]*n_dims
-#         strides = [1]*n_dims
-#         rates = [1]*n_dims
-#
-#         sizes[dimension] = size
-#         strides[dimension] = step
-#         x = self
-#         x = tf.image.extract_patches(x, sizes=sizes, strides=strides, rates=rates, padding='VALID')
-#
-#         b, c, h, w = x.shape
-#         x = tf.reshape(x, shape=[b, c, h, size, -1])
-#         x = tf.transpose(x, (0, 1, 2, 4, 3))
-#         return x
-#     return func
+def torch_gather(x, indices, gather_axis):
+    """
+    See: https://stackoverflow.com/a/71037111/4850610
+    """
+
+    all_indices = tf.where(tf.fill(indices.shape, True))
+    gather_locations = tf.reshape(indices, [indices.shape.num_elements()])
+
+    gather_indices = []
+    for axis in range(len(indices.shape)):
+        if axis == gather_axis:
+            gather_indices.append(tf.cast(gather_locations, dtype=tf.int64))
+        else:
+            gather_indices.append(tf.cast(all_indices[:, axis], dtype=tf.int64))
+
+    gather_indices = tf.stack(gather_indices, axis=-1)
+    gathered = tf.gather_nd(x, gather_indices)
+    reshaped = tf.reshape(gathered, indices.shape)
+    return reshaped
+
+
+@converter(torch.gather, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_gather(input: Tensor, dim, index: Tensor, *, sparse_grad: _bool=False, out: Optional[Tensor]=None):
+    n_dims = input.dim()
+
+    def func(input, dim, index, *, sparse_grad=False, out=None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+        return torch_gather(input, index, dim)
+    return func
