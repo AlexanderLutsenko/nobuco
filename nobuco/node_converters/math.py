@@ -1,7 +1,7 @@
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
 from torch import Tensor
-from torch.types import _int, _bool, Number, _dtype, _size
+from torch.types import _int, _bool, Number, _dtype, _size, _layout, _device
 
 import tensorflow as tf
 import torch
@@ -9,7 +9,8 @@ import torch
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.node_converter import converter
-from nobuco.converters.tensor import _dim_make_positive, dim_pytorch2keras, perm_keras2pytorch, _permute
+from nobuco.converters.tensor import _dim_make_positive, dim_pytorch2keras, perm_keras2pytorch, _permute, \
+    perm_pytorch2keras
 
 
 @converter(torch.sum, torch.Tensor.sum, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
@@ -59,17 +60,20 @@ def converter_mean(input: Tensor, dim=None, keepdim: _bool = False, *, dtype: Op
             return out
     return func
 
+
 @converter(torch.sin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_sin(input, *args, **kwargs):
     def func(input, *args, **kwargs):
         return tf.math.sin(input)
     return func
 
+
 @converter(torch.cos, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_cos(input, *args, **kwargs):
     def func(input, *args, **kwargs):
         return tf.math.cos(input)
     return func
+
 
 @converter(torch.Tensor.add, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_add(input, other, *args, **kwargs):
@@ -230,25 +234,72 @@ def converter_clamp(input: Tensor, min: Optional[Number]=None, max: Optional[Num
     return func
 
 
-@converter(torch.min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_min(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
-    n_dims = input.dim()
-
-    def func(input, dim=None, keepdim=False, *, out=None):
-        if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
-            dim = dim_pytorch2keras(dim, n_dims)
-        return tf.keras.backend.min(input, axis=dim, keepdims=keepdim)
+@converter(torch.minimum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_minimum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, other, *, out=None):
+        return tf.minimum(input, other)
     return func
 
 
-@converter(torch.max, torch.Tensor.max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.maximum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_maximum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, other, *, out=None):
+        return tf.maximum(input, other)
+    return func
+
+
+@converter(torch.min, torch.Tensor.min, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
+def converter_min(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
+    n_dims = input.dim()
+
+    if isinstance(dim, Tensor):
+        return converter_minimum.convert(input, dim, out=out)
+
+    def func(input, dim=None, keepdim=False, *, out=None):
+        if dim is None:
+            x = tf.keras.backend.min(input, axis=dim, keepdims=keepdim)
+            return set_channel_order(x, get_channel_order(input))
+        else:
+            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+                input = _permute(perm_keras2pytorch(n_dims))(input)
+                input = set_channel_order(input, ChannelOrder.PYTORCH)
+            x = tf.keras.backend.min(input, axis=dim, keepdims=keepdim)
+            a = tf.keras.backend.argmin(input, axis=dim)
+            order = get_channel_order(input)
+            return set_channel_order(x, order), set_channel_order(a, order)
+    return func
+
+
+@converter(torch.max, torch.Tensor.max, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_max(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
     n_dims = input.dim()
 
+    if isinstance(dim, Tensor):
+        return converter_maximum.convert(input, dim, out=out)
+
     def func(input, dim=None, keepdim=False, *, out=None):
-        if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
+        if dim is None:
+            x = tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
+            return set_channel_order(x, get_channel_order(input))
+        else:
+            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+                input = _permute(perm_keras2pytorch(n_dims))(input)
+                input = set_channel_order(input, ChannelOrder.PYTORCH)
+            x = tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
+            a = tf.keras.backend.argmax(input, axis=dim)
+            order = get_channel_order(input)
+            return set_channel_order(x, order), set_channel_order(a, order)
+    return func
+
+
+@converter(torch.argmin, torch.Tensor.argmin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_argmin(input: Tensor, dim: Optional[_int]=None, keepdim: _bool=False, *, out: Optional[Tensor]=None):
+    n_dims = input.dim()
+
+    def func(input, dim=None, keepdim=False, *, out=None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, n_dims)
-        return tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
+        return tf.keras.backend.argmin(input, axis=dim)
     return func
 
 
@@ -257,7 +308,14 @@ def converter_argmax(input: Tensor, dim: Optional[_int]=None, keepdim: _bool=Fal
     n_dims = input.dim()
 
     def func(input, dim=None, keepdim=False, *, out=None):
-        if dim is not None and get_channel_order(input) == ChannelOrder.TENSORFLOW:
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, n_dims)
         return tf.keras.backend.argmax(input, axis=dim)
+    return func
+
+
+@converter(torch.arange, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_arange(start: Number, end: Number, step: Number=1, *, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
+    def func(start, end, step=1, *, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        return tf.range(start, limit=end, delta=step)
     return func

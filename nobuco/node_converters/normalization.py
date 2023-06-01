@@ -29,23 +29,6 @@ def converter_BatchNorm(self, input: Tensor):
     # return func
 
 
-# @converter(F.batch_norm)
-# def converter_batch_norm(input: Tensor,
-#                running_mean: Optional[Tensor], running_var: Optional[Tensor],
-#                weight: Optional[Tensor] = None, bias: Optional[Tensor] = None,
-#                training: bool = False, momentum: float = 0.1, eps: float = 1e-5):
-#     weight = weight.detach().numpy()
-#     bias = bias.detach().numpy()
-#     running_mean = running_mean.detach().numpy()
-#     running_var = running_var.detach().numpy()
-#     bn = keras.layers.BatchNormalization(momentum=1 - momentum, epsilon=eps, weights=[weight, bias, running_mean, running_var])
-#
-#     def func(input, *args, **kwargs):
-#         return bn(input)
-#         # return (input - running_mean) / (tf.sqrt(running_var + eps)) * weight + bias
-#     return func
-
-
 @converter(F.layer_norm, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_layer_norm(input: Tensor,
                normalized_shape: List[int],

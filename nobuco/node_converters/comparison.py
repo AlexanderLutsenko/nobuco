@@ -67,7 +67,10 @@ def converter_sort(self, dim=-1, descending=False):
             direction = 'DESCENDING'
         else:
             direction = 'ASCENDING'
-        return tf.sort(self, axis=dim, direction=direction)
+        sorted = tf.sort(self, axis=dim, direction=direction)
+        argsorted = tf.argsort(self, axis=dim, direction=direction)
+        argsorted = tf.cast(argsorted, tf.int64)
+        return sorted, argsorted
     return func
 
 

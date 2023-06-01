@@ -78,6 +78,9 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
     #     outputs_pt = pytorch_op(*args_pt, **kwargs_pt)
     #     outputs_pt = collect_recursively(outputs_pt, torch.Tensor)
 
+    if len(outputs_tf_converted) != len(outputs_pt):
+        raise Exception(f"Number of outputs do not match: (Pytorch) {len(outputs_pt)} vs {len(outputs_tf_converted)} (Tensorflow)")
+
     for t_tf, t_pt in zip(outputs_tf_converted, outputs_pt):
         if t_tf.shape != t_pt.shape:
             raise Exception(f"Tensor shapes don't match: (Pytorch) {list(t_pt.shape)} vs {list(t_tf.shape)} (Tensorflow)")

@@ -12,13 +12,6 @@ import torch.nn.functional as F
 from nobuco.converters.node_converter import converter
 
 
-# @converter(nn.MaxPool2d)
-# def converter_MaxPool2D(self, input: Tensor):
-#     kernel_size = self.kernel_size
-#     stride = self.stride
-#     return keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride)
-
-
 @converter(torch.max_pool2d)
 def converter_max_pool_2d(input: Tensor, kernel_size: Union[_int, _size], stride: Union[_int, _size]=(), padding: Union[_int, _size]=0, dilation: Union[_int, _size]=1, ceil_mode: _bool=False):
     if isinstance(kernel_size, numbers.Number):
