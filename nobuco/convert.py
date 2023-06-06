@@ -203,9 +203,7 @@ def prepare_inputs_tf(inputs_pt, inputs_channel_order, input_shapes):
                 shape = permute_pytorch2keras(shape)
         else:
             shape = tens.shape
-
-        print()
-        return set_channel_order(keras.backend.placeholder(shape=shape), channel_order)
+        return set_channel_order(keras.backend.placeholder(shape=shape, dtype=tens.dtype), channel_order)
 
     return replace_recursively_func(inputs_pt, collect_func, replace_func)
 

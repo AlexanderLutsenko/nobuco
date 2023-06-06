@@ -96,3 +96,10 @@ def _ensure_iterable(iterable):
         return iterable
     else:
         return [iterable]
+
+
+def _ensure_tuple(iterable):
+    if isinstance(iterable, tuple):
+        return iterable
+    else:
+        return iterable,

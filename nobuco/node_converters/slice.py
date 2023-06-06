@@ -3,35 +3,39 @@ import torch
 
 import numpy as np
 
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.node_converter import converter
-from nobuco.converters.tensor import perm_keras2pytorch, _permute, _flatten, permute_pytorch2keras, _ensure_iterable
+from nobuco.converters.tensor import perm_keras2pytorch, _permute, _flatten, permute_pytorch2keras, _ensure_iterable, _ensure_tuple
+from nobuco.layers.weight import WeightLayer
 from nobuco.node_converters.boolean_mask import converter_masked_select
 
 
-# def broadcast_to_dim(tensor, target_n_dims):
-#     shape = tensor.shape()
-#     n_dims = len(tensor.shape)
-#     if get_channel_order(tensor) == ChannelOrder.TENSORFLOW:
-#         shape = dims_keras2pytorch(shape, n_dims)
-#         target_shape = shape_make_full(shape, target_n_dims)
-#         target_shape = dims_pytorch2keras(target_shape, target_n_dims)
-#     else:
-#         target_shape = shape_make_full(shape, target_n_dims)
-#
-#     tensor = tf.reshape(tensor, target_shape)
-#     return tensor
-
-
 def slices_make_full(slices, n_dims):
+    slices = _ensure_tuple(slices)
     n_notnone = len([slc for slc in slices if slc is not None])
     n_pads = n_dims - n_notnone
     slices_full = slices + (slice(None),) * n_pads
     return slices_full
 
 
-def slice_assign(sliced_tensor, assigned_tensor, *slice_args, verbose=0):
+def to_shape_and_dtype(assigned_tensor, shape, dtype):
+    if assigned_tensor.dtype != dtype:
+        assigned_tensor = tf.cast(assigned_tensor, dtype)
+    assigned_tensor = tf.broadcast_to(assigned_tensor, shape)
+    return assigned_tensor
+
+
+def broadcast(tensors):
+    shape = tensors[0].shape
+    for tens in tensors:
+        shape = tf.broadcast_dynamic_shape(shape, tens.shape)
+    tensors = [tf.broadcast_to(t, shape) for t in tensors]
+    return tensors
+
+
+def slice_assign(sliced_tensor, assigned_tensor, slice_args):
+    slice_args = _ensure_iterable(slice_args)
     """Assign a tensor to the slice of another tensor.
     No broadcast is performed.
     Args:
@@ -42,8 +46,10 @@ def slice_assign(sliced_tensor, assigned_tensor, *slice_args, verbose=0):
     Returns:
         - tf.Tensor: the original tensor with the slice correctly assigned.
     """
+
     shape = sliced_tensor.shape
     n_dims = len(shape)
+    n_indexed_dims = 0
     # parsing the slice specifications
     n_slices = len(slice_args)
     dims_to_index = []
@@ -53,53 +59,69 @@ def slice_assign(sliced_tensor, assigned_tensor, *slice_args, verbose=0):
         if slice_spec is Ellipsis:
             ellipsis = True
         else:
-            if isinstance(slice_spec, int):
-                start, stop, step = slice_spec, slice_spec + 1, None
-            elif isinstance(slice_spec, slice):
-                start, stop, step = slice_spec.start, slice_spec.stop, slice_spec.step
-            else:
-                raise Exception(f'Unrecognized slice spec: {slice_spec}')
-
-            no_start = start is None or start == 0
-            no_stop = stop is None or stop == -1
-            no_step = step is None or step == 1
-            if no_start and no_stop and no_step:
-                continue
             if ellipsis:
                 real_index = i_dim + (n_dims - n_slices)
             else:
                 real_index = i_dim
-            dims_to_index.append(real_index)
-            if no_step:
-                step = 1
-            if no_stop:
-                stop = shape[real_index]
-            if no_start:
-                start = 0
-            corresponding_range = tf.range(start, stop, step)
+
+            if isinstance(slice_spec, slice):
+                start, stop, step = slice_spec.start, slice_spec.stop, slice_spec.step
+
+                if start is None and stop is None and step is None:
+                    continue
+
+                if start is None:
+                    start = 0
+                if stop is None:
+                    stop = shape[real_index]
+                if step is None:
+                    step = 1
+
+                corresponding_range = tf.cast(tf.range(start, stop, step), dtype=tf.int32)
+            else:
+                slice_spec = tf.convert_to_tensor(slice_spec)
+                corresponding_range = tf.cast(slice_spec, dtype=tf.int32)
+                n_indexed_dims += 1
+
             corresponding_ranges.append(corresponding_range)
+            dims_to_index.append(real_index)
+
+    if not isinstance(assigned_tensor, TF_TENSOR_CLASSES):
+        assigned_tensor = tf.convert_to_tensor(assigned_tensor)
+        assigned_tensor = WeightLayer.create(assigned_tensor)(sliced_tensor)
+
     if not dims_to_index:
-        if verbose > 0:
-            print('Warning: no slicing performed')
+        assigned_tensor = to_shape_and_dtype(assigned_tensor, sliced_tensor.shape, sliced_tensor.dtype)
         return assigned_tensor
-    dims_left_out = [
-        i_dim for i_dim in range(n_dims) if i_dim not in dims_to_index
-    ]
+
+    dims_left_out = [i_dim for i_dim in range(n_dims) if i_dim not in dims_to_index]
     scatted_nd_perm = dims_to_index + dims_left_out
     inverse_scatter_nd_perm = list(np.argsort(scatted_nd_perm))
-    # reshaping the tensors
-    # NOTE: the tensors are reshaped to allow for easier indexing with
-    # tensor_scatter_nd_update
-    sliced_tensor_reshaped = tf.transpose(sliced_tensor, perm=scatted_nd_perm)
-    assigned_tensor_reshaped = tf.transpose(assigned_tensor, perm=scatted_nd_perm)
+
     left_out_shape = [shape[i_dim] for i_dim in dims_left_out]
-    assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
-    # creating the indices
-    mesh_ranges = tf.meshgrid(*corresponding_ranges, indexing='ij')
+
+    if n_indexed_dims < 2:
+        mesh_ranges = tf.meshgrid(*corresponding_ranges, indexing='ij')
+        sliced_shape = [tf.size(r) for r in corresponding_ranges] + left_out_shape
+    elif n_indexed_dims == len(corresponding_ranges):
+        mesh_ranges = broadcast(corresponding_ranges)
+        sliced_shape = [tf.size(mesh_ranges[0])] + left_out_shape
+    else:
+        raise Exception('This slice configuration is currently not supported')
+
     update_indices = tf.stack([
         tf.reshape(slicing_range, (-1,))
         for slicing_range in mesh_ranges
     ], axis=-1)
+
+    if isinstance(assigned_tensor, TF_TENSOR_CLASSES) and len(assigned_tensor.shape) == len(scatted_nd_perm):
+        assigned_tensor = tf.transpose(assigned_tensor, scatted_nd_perm)
+
+    assigned_tensor_reshaped = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
+    assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
+
+    # NOTE: the tensors are reshaped to allow for easier indexing with
+    sliced_tensor_reshaped = tf.transpose(sliced_tensor, perm=scatted_nd_perm)
 
     # finalisation
     sliced_tensor_reshaped = tf.tensor_scatter_nd_update(
@@ -107,21 +129,17 @@ def slice_assign(sliced_tensor, assigned_tensor, *slice_args, verbose=0):
         indices=update_indices,
         updates=assigned_tensor_reshaped,
     )
-    sliced_tensor_updated = tf.transpose(
-        sliced_tensor_reshaped,
-        perm=inverse_scatter_nd_perm,
-    )
+    sliced_tensor_updated = tf.transpose(sliced_tensor_reshaped, perm=inverse_scatter_nd_perm)
     return sliced_tensor_updated
 
 
 @converter(channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def getitem_indexed(self, *slices):
-    slices = _flatten(slices)
-    slices = torch.broadcast_tensors(*slices)
-    slices_combined = torch.stack(slices, dim=-1).numpy()
-
     def func(self, *slices):
-        return tf.gather_nd(self, slices_combined)
+        slices = _ensure_iterable(slices)
+        slices = broadcast(slices)
+        slices = tf.stack(slices, axis=-1)
+        return tf.gather_nd(self, slices)
     return func
 
 
@@ -169,13 +187,12 @@ def converter_getitem(self, *slices):
 
 
 @converter(torch.Tensor.__setitem__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_setitem(sliced_tensor, assigned_tensor, *slice_args):
+def converter_setitem(sliced_tensor, slice_args, assigned_tensor):
     n_dims = sliced_tensor.dim()
 
     def func(sliced_tensor, slice_args, assigned_tensor):
         if get_channel_order(sliced_tensor) == ChannelOrder.TENSORFLOW:
-            slice_args = _flatten(slice_args)
             slice_args = slices_make_full(slice_args, n_dims)
             slice_args = permute_pytorch2keras(slice_args)
-        return slice_assign(sliced_tensor, assigned_tensor, *slice_args)
+        return slice_assign(sliced_tensor, assigned_tensor, slice_args)
     return func
