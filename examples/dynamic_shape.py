@@ -40,6 +40,7 @@ keras_model = nobuco.pytorch_to_keras(
     input_shapes={input: (None, 3, None, None)}, # Annotate dynamic axes with None
     inputs_channel_order=ChannelOrder.TENSORFLOW,
     outputs_channel_order=ChannelOrder.TENSORFLOW,
+    trace_shape=False,
     save_trace_html=True,
 )
 

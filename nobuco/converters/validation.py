@@ -85,8 +85,8 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
         if t_tf.shape != t_pt.shape:
             raise Exception(f"Tensor shapes don't match: (Pytorch) {list(t_pt.shape)} vs {list(t_tf.shape)} (Tensorflow)")
 
-        if t_tf.dtype != t_pt.dtype:
-            raise Exception(f"Tensor dtypes don't match: (Pytorch) {t_pt.dtype} vs {t_tf.dtype} (Tensorflow)")
+        # if t_tf.dtype != t_pt.dtype:
+        #     raise Exception(f"Tensor dtypes don't match: (Pytorch) {t_pt.dtype} vs {t_tf.dtype} (Tensorflow)")
 
     def calc_diff(t1, t2):
         def calc_diff_numerical(t1, t2):

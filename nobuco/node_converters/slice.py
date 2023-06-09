@@ -34,7 +34,7 @@ def broadcast(tensors):
     return tensors
 
 
-def slice_assign(sliced_tensor, assigned_tensor, slice_args):
+def slice_assign(sliced_tensor, assigned_tensor, slice_args, is_scatter=False):
     slice_args = _ensure_iterable(slice_args)
     """Assign a tensor to the slice of another tensor.
     No broadcast is performed.
@@ -117,8 +117,11 @@ def slice_assign(sliced_tensor, assigned_tensor, slice_args):
     if isinstance(assigned_tensor, TF_TENSOR_CLASSES) and len(assigned_tensor.shape) == len(scatted_nd_perm):
         assigned_tensor = tf.transpose(assigned_tensor, scatted_nd_perm)
 
-    assigned_tensor_reshaped = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
-    assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
+    if is_scatter:
+        assigned_tensor_reshaped = assigned_tensor
+    else:
+        assigned_tensor_reshaped = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
+        assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
 
     # NOTE: the tensors are reshaped to allow for easier indexing with
     sliced_tensor_reshaped = tf.transpose(sliced_tensor, perm=scatted_nd_perm)
@@ -196,3 +199,12 @@ def converter_setitem(sliced_tensor, slice_args, assigned_tensor):
             slice_args = permute_pytorch2keras(slice_args)
         return slice_assign(sliced_tensor, assigned_tensor, slice_args)
     return func
+
+
+# @converter(torch.Tensor.scatter, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+# def converter_scatter(self, dim, index, src):
+#     assert dim == 0
+#     def func(self, dim, index, src):
+#         slice_args = (tf.reshape(index, -1),)
+#         return slice_assign(self, src, slice_args, is_scatter=True)
+#     return func

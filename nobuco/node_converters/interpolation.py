@@ -7,6 +7,8 @@ from torch import Tensor
 import tensorflow as tf
 import torch
 import torch.nn.functional as F
+
+from nobuco.commons import TF_TENSOR_CLASSES
 from nobuco.converters.node_converter import converter
 
 
@@ -21,10 +23,10 @@ def converter_interpolate(input: Tensor, size: Optional[int] = None, scale_facto
         raise Exception('Unsupported mode: ', mode)
 
     def func(input, size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None, antialias=False):
-        if isinstance(scale_factor, numbers.Number):
+        if isinstance(scale_factor, numbers.Number) or (isinstance(scale_factor, TF_TENSOR_CLASSES) and tf.size(scale_factor) == 1):
             scale_factor = (scale_factor, scale_factor)
 
-        if isinstance(size, numbers.Number):
+        if isinstance(size, numbers.Number) or (isinstance(size, TF_TENSOR_CLASSES) and tf.size(size) == 1):
             size = (size, size)
 
         if size is None:

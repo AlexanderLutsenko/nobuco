@@ -8,6 +8,7 @@ import torch
 import torchvision
 from torch import nn
 
+import nobuco
 from nobuco.entity.pytorch import PytorchNode, WrappedOp, PytorchNodeHierarchy
 from nobuco.trace.tensor_storage import clone_torch_tensors_recursively_with_cache, TensorStorage
 from nobuco.util import collect_recursively
@@ -37,8 +38,8 @@ class Tracer:
         torch.Tensor._make_subclass,
     ]
 
-    op_whitelist_dict = {
-        torch.Tensor: torch.Tensor.__setitem__
+    op_whitelist = {
+        (torch.Tensor, torch.Tensor.__setitem__),
     }
 
     _tracing_enabled = False
@@ -46,13 +47,14 @@ class Tracer:
     _node_list = []
 
     _tensor_storage: TensorStorage = None
+    _trace_shape = False
 
     @staticmethod
     def is_decorated(callable) -> bool:
         return hasattr(callable, '__undecorated_func__')
 
     @staticmethod
-    def op_unwrap(callable) -> bool:
+    def op_unwrap(callable: Callable) -> Callable:
         if Tracer.is_decorated(callable):
             return callable.__undecorated_func__
         else:
@@ -109,8 +111,19 @@ class Tracer:
         def decorator(*args, **kwargs):
             if Tracer._tracing_enabled:
                 Tracer._tracing_enabled = False
+                need_trace_deeper = True
 
-                wrapped_op = WrappedOp(orig_method)
+                call_method = orig_method
+                call_op_cls = op_cls
+
+                if Tracer._trace_shape:
+                    if orig_method == Tracer.op_unwrap(torch.Tensor.__getattribute__) and 'shape' in args:
+                        call_method = Tracer.op_unwrap(nobuco.shape)
+                        call_op_cls = nobuco
+                        args = args[:1]
+                        need_trace_deeper = False
+
+                wrapped_op = WrappedOp(call_method)
 
                 # Protection from external modification
                 args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
@@ -121,21 +134,21 @@ class Tracer:
                 num_input_tensors = len(collect_recursively((args, kwargs), torch.Tensor))
 
                 Tracer._parent_list.append(wrapped_op)
-                Tracer._tracing_enabled = True
-                outputs = orig_method(*args_inner, **kwargs_inner)
+                Tracer._tracing_enabled = need_trace_deeper
+                outputs = call_method(*args_inner, **kwargs_inner)
                 Tracer._tracing_enabled = False
                 Tracer._parent_list = Tracer._parent_list[:-1]
+
+                # __setitem__ method is sorta special
+                if orig_method == Tracer.op_unwrap(torch.Tensor.__setitem__):
+                    outputs = args[0]
 
                 num_output_tensors = len(collect_recursively(outputs, torch.Tensor))
 
                 if is_whitelist_op or (num_input_tensors > 0 and num_output_tensors > 0):
-                    module_name = op_cls.__name__ if isinstance(op_cls, types.ModuleType) else f'{op_cls.__module__}.{op_cls.__name__}'
+                    module_name = call_op_cls.__name__ if isinstance(call_op_cls, types.ModuleType) else f'{call_op_cls.__module__}.{call_op_cls.__name__}'
                     if module_suffix:
                         module_name += '.' + module_suffix
-
-                    # __setitem__ method is sorta special
-                    if '__setitem__' in str(orig_method):
-                        outputs = args[0]
 
                     # Protection from external modification
                     outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
@@ -186,13 +199,14 @@ class Tracer:
         for op_cls in Tracer.op_tracing_classes:
             Tracer.op_tracing_decorator_for_class(op_cls)
 
-        for op_cls, op in Tracer.op_whitelist_dict.items():
+        for op_cls, op in Tracer.op_whitelist:
             if not Tracer.is_decorated(op):
                 decorated = Tracer.op_tracing_decorator(op, op_cls, is_whitelist_op=True)
                 setattr(op_cls, op.__name__, decorated)
 
     @staticmethod
-    def trace(module_or_function: Union[nn.Module, Callable], args, kwargs) -> PytorchNodeHierarchy:
+    def trace(module_or_function: Union[nn.Module, Callable], trace_shape: bool, args, kwargs) -> PytorchNodeHierarchy:
+        Tracer._trace_shape = trace_shape
 
         ### Module tracing routines
         def apply_module_tracing_recursively(module):
@@ -215,6 +229,7 @@ class Tracer:
             apply_module_tracing_recursively(module_or_function)
         else:
             module_or_function = traceable(module_or_function)
+
         with torch.no_grad():
             module_or_function(*args, **kwargs)
 

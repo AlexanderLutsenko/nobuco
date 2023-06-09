@@ -39,7 +39,6 @@ def clone_torch_tensors_recursively_with_cache(obj, storage: TensorStorage, anno
             cached = clone(tensor)
             storage.add(cached)
         return cached
-        # return clone(tensor)
 
     replace_dict = {id(c): replace_func(c) for c in collected}
     return deepcopy(obj, memo=replace_dict)

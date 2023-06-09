@@ -241,11 +241,12 @@ def pytorch_to_keras(
         inputs_channel_order: Union[ChannelOrder, Dict[torch.Tensor, ChannelOrder]] = ChannelOrder.TENSORFLOW,
         outputs_channel_order: Union[ChannelOrder, Dict[int, ChannelOrder]] = None,
         converter_dict=CONVERTER_DICT,
+        trace_shape: bool = False,
         constants_to_variables: bool = True,
         full_validation: bool = True,
         validation_tolerance=1e-4,
-        save_trace_html=False,
-        return_outputs_pt=False,
+        save_trace_html: bool = False,
+        return_outputs_pt: bool = False,
         debug_traces: TraceLevel = TraceLevel.DEFAULT,
 ) -> Union[keras.Model, Tuple[keras.Model, object]]:
 
@@ -256,7 +257,7 @@ def pytorch_to_keras(
         kwargs = {}
 
     start = time.time()
-    node_hierarchy = Tracer.trace(module, args, kwargs)
+    node_hierarchy = Tracer.trace(module, trace_shape, args, kwargs)
 
     keras_converted_node = convert_hierarchy(node_hierarchy, converter_dict,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,

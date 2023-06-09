@@ -315,7 +315,7 @@ def converter_argmax(input: Tensor, dim: Optional[_int]=None, keepdim: _bool=Fal
 
 
 @converter(torch.arange, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_arange(start: Number, end: Number, step: Number=1, *, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
-    def func(start, end, step=1, *, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+def converter_arange(start: Number, end: Number=None, step: Number=1, *, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
+    def func(start, end=None, step=1, *, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
         return tf.range(start, limit=end, delta=step)
     return func
