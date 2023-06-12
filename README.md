@@ -119,9 +119,9 @@ Reproducing the graph structure is a different matter entirely. For that, Nobuco
 
 https://user-images.githubusercontent.com/2457934/233740603-cc11acc5-cd6b-48c8-b089-ff3ead772dd0.mp4
 
-<p align="center">
+<p align="center"><em>
 To ease debugging, Nobuco lets you jump right where the node was [I]nvoked, [D]efined and [C]onverted
-</p>
+</em></p>
 
 ## Channel order wizardry
 
@@ -175,7 +175,7 @@ pytorch_module = MyModule().eval()
 inputs = [
     torch.normal(0, 1, size=(1, 12, 32)),
 ]
-
+You can
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.PYTORCH,
@@ -431,6 +431,15 @@ def converter_shape(x: Tensor):
             shape = permute_keras2pytorch(shape)
         return tuple(shape)
     return func
+```
+
+It's also possible to automatically substitute every `.shape` call with `nobuco.shape` during the tracing phase by setting `trace_shape` flag:
+
+```python
+keras_model = nobuco.pytorch_to_keras(
+  # ...
+  trace_shape=True
+)
 ```
 
 ## So we put a converter inside your converter
