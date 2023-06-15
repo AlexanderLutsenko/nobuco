@@ -155,3 +155,10 @@ def converter_clip(input: Tensor, min: Optional[Tensor]=None, max: Optional[Tens
     def func(input, min=None, max=None, *, out=None):
         return tf.clip_by_value(input, min, max)
     return func
+
+
+@converter(F.silu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_silu(input: Tensor, inplace=False):
+    def func(input: Tensor, inplace=False):
+        return tf.nn.silu(input, beta=1.0)
+    return func
