@@ -160,6 +160,6 @@ def converter_clip(input: Tensor, min: Optional[Tensor]=None, max: Optional[Tens
 @converter(F.gelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_gelu(input: Tensor, approximate: bool = False):
     def func(input: Tensor, approximate):
-        return tf.keras.activations.gelu(input, approximate=approximate)
+        return tf.nn.gelu(input, approximate=approximate)
     return func
 
