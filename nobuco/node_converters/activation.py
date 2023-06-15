@@ -150,16 +150,14 @@ def converter_softmax(input: Tensor, dim: Union[str, None], *, dtype: Optional[_
     return func
 
 
-@converter(torch.clip, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_clip(input: Tensor, min: Optional[Tensor]=None, max: Optional[Tensor]=None, *, out: Optional[Tensor]=None):
-    def func(input, min=None, max=None, *, out=None):
-        return tf.clip_by_value(input, min, max)
-    return func
-
-
 @converter(F.gelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_gelu(input: Tensor, approximate: bool = False):
-    def func(input: Tensor, approximate):
-        return tf.nn.gelu(input, approximate=approximate)
+def converter_gelu(input: Tensor, approximate='none'):
+    def func(input: Tensor, approximate='none'):
+        if approximate.lower() == 'none':
+            # Gaussian Error Linear Units (GELUs)
+            # https://arxiv.org/abs/1606.08415
+            return input * 0.5 * (1 + tf.math.erf(input / tf.math.sqrt(2.)))
+        else:
+            return tf.nn.gelu(input, approximate=approximate)
     return func
 
