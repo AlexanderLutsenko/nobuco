@@ -150,6 +150,12 @@ def converter_softmax(input: Tensor, dim: Union[str, None], *, dtype: Optional[_
     return func
 
 
+@converter(torch.clip, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_clip(input: Tensor, min: Optional[Tensor]=None, max: Optional[Tensor]=None, *, out: Optional[Tensor]=None):
+    def func(input, min=None, max=None, *, out=None):
+        return tf.clip_by_value(input, min, max)
+
+
 @converter(F.gelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_gelu(input: Tensor, approximate='none'):
     def func(input: Tensor, approximate='none'):
@@ -160,4 +166,3 @@ def converter_gelu(input: Tensor, approximate='none'):
         else:
             return tf.nn.gelu(input, approximate=approximate)
     return func
-
