@@ -154,6 +154,7 @@ def converter_softmax(input: Tensor, dim: Union[str, None], *, dtype: Optional[_
 def converter_clip(input: Tensor, min: Optional[Tensor]=None, max: Optional[Tensor]=None, *, out: Optional[Tensor]=None):
     def func(input, min=None, max=None, *, out=None):
         return tf.clip_by_value(input, min, max)
+    return func
 
 
 @converter(F.gelu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
