@@ -451,32 +451,12 @@ Instead, we'll use it as an excuse to explain the concept of nested converters.
 So, for this module, conversion will give us incorrect result:
 
 ```python
-class MyModule(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv = nn.Conv2d(3, 3, kernel_size=(3, 3), padding=(1, 1))
-
+class SliceReLU(nn.Module):
     def forward(self, x):
-        x = self.conv(x)
         # Gives incorrect result after conversion
         torch.relu_(x[:, 1:2, 16:25, 8::2])
         # That's the recommended approach, but we're not going for it now
         # x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
-        return x
-```
-
-<img src="docs/converter_inside_converter1.svg" width="100%">
-
-In the previous section, we've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
-Can we embed some third-party converter? You bet! Why? Because it might just do what we need.
-Let's consider the standard route: pytorch -> onnx -> tensorflow, with the latter step done with [onnx-tf](https://github.com/onnx/onnx-tensorflow).
-This library likes transposing stuff so much, converting the whole graph with it may introduce intolerable inference overhead. Nonetheless, it does the job.
-A sensible tradeoff would be to wrap the problematic operation into its own `nn.Module` and give it a special treat, while handling everything else with Nobuco.
-
-```python
-class SliceReLU(nn.Module):
-    def forward(self, x):
-        torch.relu_(x[:, 1:2, 16:25, 8::2])
         return x
 
 
@@ -490,6 +470,14 @@ class MyModule(nn.Module):
         SliceReLU()(x)
         return x
 ```
+
+<img src="docs/converter_inside_converter1.svg" width="100%">
+
+In the previous section, we've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
+Can we embed some third-party converter? You bet! Why? Because it might just do what we need.
+Let's consider the standard route: pytorch -> onnx -> tensorflow, with the latter step done with [onnx-tf](https://github.com/onnx/onnx-tensorflow).
+This library likes transposing stuff so much, converting the whole graph with it may introduce intolerable inference overhead. Nonetheless, it does the job.
+A sensible tradeoff would be to wrap the problematic operation into its own `nn.Module` and give it a special treat, while handling everything else with Nobuco.
 
 ```python
 import onnx
