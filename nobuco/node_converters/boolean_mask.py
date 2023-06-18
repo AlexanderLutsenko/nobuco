@@ -13,7 +13,6 @@ from nobuco.converters.node_converter import converter
 @converter(torch.masked_select, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_masked_select(input: Tensor, mask: Tensor, *, out: Optional[Tensor]=None):
     def func(input, mask, *, out=None):
-        # return tf.boolean_mask(input, mask)
         return input[mask]
     return func
 

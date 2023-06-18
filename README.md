@@ -11,6 +11,7 @@
   - [x] Arbitrary torch functions
 - Simple
 - Flexible
+- Efficient
 - Sanity-preserving, with clear mistake messaging
 
 <!-- toc -->
@@ -444,10 +445,10 @@ keras_model = nobuco.pytorch_to_keras(
 
 ## So we put a converter inside your converter
 
-One of the operations currently not supported is mask assign.
-There's no particular reason why, I just haven't done it yet (and your contribution is highly welcome!) 
-For now, let's use it as an excuse to explain the concept of nested converters.
-Like I said, for this module, conversion will fail:
+As we've learned, Nobuco gets confused when in-place operation is applied to a slice.
+There's a way to fix that, but let's not do it now.
+Instead, we'll use it as an excuse to explain the concept of nested converters.
+So, for this module, conversion will give us incorrect result:
 
 ```python
 class MyModule(nn.Module):
@@ -457,7 +458,10 @@ class MyModule(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        x[x > 0] += 1
+        # Gives incorrect result after conversion
+        torch.relu_(x[:, 1:2, 16:25, 8::2])
+        # That's the recommended approach, but we're not going for it now
+        # x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
         return x
 ```
 
@@ -470,9 +474,9 @@ This library likes transposing stuff so much, converting the whole graph with it
 A sensible tradeoff would be to wrap the problematic operation into its own `nn.Module` and give it a special treat, while handling everything else with Nobuco.
 
 ```python
-class AddByMask(nn.Module):
-    def forward(self, x, mask):
-        x[mask] += 1
+class SliceReLU(nn.Module):
+    def forward(self, x):
+        torch.relu_(x[:, 1:2, 16:25, 8::2])
         return x
 
 
@@ -483,8 +487,7 @@ class MyModule(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
-        mask = x > 0
-        AddByMask()(x, mask)
+        SliceReLU()(x)
         return x
 ```
 
@@ -493,19 +496,20 @@ import onnx
 from onnx_tf.backend import prepare
 
 
-@nobuco.converter(AddByMask, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
-def converter_AddByMask(self, x, mask):
-    model_path = 'add_by_mask'
+@nobuco.converter(SliceReLU, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, reusable=False)
+def converter_SliceReLU(self, x):
+    model_path = 'slice_relu'
     onnx_path = model_path + '.onnx'
 
-    # NB: onnx.export is implemented via tracing i.e. it may modify the inputs!
-    torch.onnx.export(self, (x, mask), onnx_path, opset_version=12, input_names=['input', 'mask'], dynamic_axes={'input': [0, 1, 2, 3]})
-
+    # NB: onnx.export in implemented via tracing i.e. it may modify the inputs!
+    torch.onnx.export(self, (x,), onnx_path, opset_version=12, input_names=['input'],
+                      dynamic_axes={'input': [0, 1, 2, 3]}
+                      )
     onnx_model = onnx.load(onnx_path)
     tf_rep = prepare(onnx_model)
     tf_rep.export_graph(model_path)
     model = tf.keras.models.load_model(model_path)
-    return keras.layers.Lambda(lambda x, mask: model(input=x, mask=mask))
+    return keras.layers.Lambda(lambda x: model(input=x))
 ```
 
 <img src="docs/converter_inside_converter2.svg" width="100%">

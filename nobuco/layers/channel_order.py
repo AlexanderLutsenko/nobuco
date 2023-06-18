@@ -5,24 +5,8 @@ from nobuco.converters.type_cast import tf_cast_recursively
 from nobuco.util import collect_recursively, replace_recursively_func
 
 
-class SetOrderLayer:
-    def __init__(self, func, channel_order):
-        self.func = func
-        self.channel_order = channel_order
-
-    def __call__(self, *args, **kwargs):
-        args = tf_annotate_recursively(args, channel_order=self.channel_order)
-        kwargs = tf_annotate_recursively(kwargs, channel_order=self.channel_order)
-        outputs = self.func(*args, **kwargs)
-        outputs = tf_annotate_recursively(outputs, channel_order=self.channel_order)
-        return outputs
-
-    def __str__(self):
-        return f"{self.__class__.__name__}(func={self.func})"
-
-
 class ChangeOrderingLayer:
-    def __init__(self, func, channel_ordering_strategy, autocast):
+    def __init__(self, func, channel_ordering_strategy, autocast=False):
         self.func = func
         self.channel_ordering_strategy = channel_ordering_strategy
         self.autocast = autocast
