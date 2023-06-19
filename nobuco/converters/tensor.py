@@ -91,7 +91,7 @@ def _flatten(iterable):
 
 def _ensure_iterable(iterable):
     if isinstance(iterable, (list, tuple)):
-        if isinstance(iterable[0], (list, tuple)) and len(iterable) == 1:
+        if len(iterable) == 1 and isinstance(iterable[0], (list, tuple)):
             return iterable[0]
         return iterable
     else:

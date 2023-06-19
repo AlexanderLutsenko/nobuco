@@ -78,6 +78,11 @@ def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):
                 if step is None:
                     step = 1
 
+                if start < 0:
+                    start = shape[real_index] + start
+                if stop < 0:
+                    stop = shape[real_index] + stop
+
                 corresponding_range = tf.cast(tf.range(start, stop, step), dtype=tf.int32)
             else:
                 slice_spec = tf.convert_to_tensor(slice_spec)

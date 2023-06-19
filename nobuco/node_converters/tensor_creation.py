@@ -63,6 +63,13 @@ def converter_zeros_like(input: Tensor, *, memory_format=None, dtype=None, layou
     return func
 
 
+@converter(torch.Tensor.new_zeros, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_new_zeros(self, size, *args, **kwargs):
+    def func(self, size, *args, **kwargs):
+        return tf.zeros(shape=size, dtype=self.dtype)
+    return func
+
+
 @converter(torch.Tensor.new_empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_new_empty(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
     def func(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):

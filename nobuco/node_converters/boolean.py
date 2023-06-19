@@ -26,3 +26,11 @@ def converter_invert(input: Tensor):
     def func(input):
         return tf.math.logical_not(input)
     return func
+
+
+@converter(torch.Tensor.__ne__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_ne(self, *args, **kwargs):
+    def func(self, *args, **kwargs):
+        val = args[0]
+        return tf.math.not_equal(self, val)
+    return func

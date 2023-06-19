@@ -1,4 +1,5 @@
 import time
+import traceback
 import warnings
 from typing import Callable, Dict, Collection, Optional, List, Union, Tuple
 
@@ -137,8 +138,13 @@ def convert_hierarchy(
         elif has_converter(node, converter_dict):
             children_converted_nodes = []
             node_converter: Pytorch2KerasNodeConverter = converter_dict.get(node.get_type(), None)
-            node_is_reusable = node_converter.reusable
-            keras_op = convert_node(node, node_converter)
+            try:
+                keras_op = convert_node(node, node_converter)
+                node_is_reusable = node_converter.reusable
+            except Exception as e:
+                warnings.warn(f"Conversion exception on node '{node.get_type().__name__}': {e}")
+                traceback.print_exc()
+                keras_op = UnimplementedOpStub(node.get_op())
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
         elif len(children) > 0:
             children_converted_nodes = [convert(child, converted_op_dict, reuse_layers, full_validation, depth + 1) for child in children]

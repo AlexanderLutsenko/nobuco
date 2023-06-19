@@ -23,13 +23,13 @@ def converter_Linear(self, input: Tensor):
     weights = self.weight.detach().numpy()
     weights = weights.transpose(1, 0)
 
-    biases = self.bias
-    if biases is not None:
+    use_bias = self.bias is not None
+    if use_bias:
         biases = self.bias.detach().numpy()
         params = [weights, biases]
     else:
         params = [weights]
-    return keras.layers.Dense(out_filters, weights=params)
+    return keras.layers.Dense(out_filters, use_bias=use_bias, weights=params)
 
 
 @converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -38,13 +38,14 @@ def converter_linear(input, weight, bias, out=None):
     weights = weight.detach().numpy()
     weights = weights.transpose(1, 0)
 
-    if bias is not None:
+    use_bias = bias is not None
+    if use_bias:
         biases = bias.detach().numpy()
         params = [weights, biases]
     else:
         params = [weights]
 
-    layer = keras.layers.Dense(out_filters, weights=params)
+    layer = keras.layers.Dense(out_filters, use_bias=use_bias, weights=params)
 
     def func(input, weight, bias, out=None):
         return layer(input)

@@ -60,8 +60,8 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
         else:
             return diff, ValidationStatus.SUCCESS
     except Exception as e:
-        # raise Exception("Validation exception on node '{}'".format(op_type.__name__), e)
-        warnings.warn("Validation exception on node '{}': {}".format(op_type.__name__, e))
+        # raise Exception(f"Validation exception on node '{op_type.__name__}': {e}")
+        warnings.warn(f"Validation exception on node '{op_type.__name__}': {e}")
         return None, ValidationStatus.FAIL
 
 

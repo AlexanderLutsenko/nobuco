@@ -14,7 +14,7 @@ from nobuco.converters.channel_ordering import set_channel_order, get_channel_or
 from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import dims_pytorch2keras, perm_keras2pytorch, \
     _dim_make_positive, dim_pytorch2keras, _permute, _flatten, perm_pytorch2keras, perm_compose, \
-    is_identity_perm, permute_pytorch2keras, perm_identity
+    is_identity_perm, permute_pytorch2keras, perm_identity, _ensure_iterable
 
 
 def _permute_inner(perm_original, allow_lazy=True):
@@ -195,13 +195,20 @@ def converter_expand_as(self, other):
 
 @converter(torch.roll, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_roll(input: Tensor, shifts: Union[_int, _size], dims: Union[_int, _size]=()):
-    assert isinstance(shifts, _int) and isinstance(dims, _int)
+    assert dims != (), 'Assertion error'
     n_dims = input.dim()
 
     def func(input, shifts, dims=()):
+        shifts = _ensure_iterable(shifts)
+        dims = _ensure_iterable(dims)
+
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-            dims = dim_pytorch2keras(dims, n_dims)
-        return tf.roll(input, shift=shifts, axis=dims)
+            dims = dims_pytorch2keras(dims, n_dims)
+
+        x = input
+        for shift, dim in zip(shifts, dims):
+            x = tf.roll(x, shift=shift, axis=dim)
+        return x
     return func
 
 
