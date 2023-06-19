@@ -1,3 +1,4 @@
+import traceback
 import warnings
 from enum import Enum
 import math
@@ -62,6 +63,7 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
     except Exception as e:
         # raise Exception(f"Validation exception on node '{op_type.__name__}': {e}")
         warnings.warn(f"Validation exception on node '{op_type.__name__}': {e}")
+        traceback.print_exc()
         return None, ValidationStatus.FAIL
 
 

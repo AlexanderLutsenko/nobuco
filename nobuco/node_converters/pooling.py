@@ -62,12 +62,13 @@ def converter_avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=F
 @converter(F.adaptive_avg_pool2d)
 def converter_adaptiveAvgPool2D(input: Tensor, output_size):
     if output_size == (1, 1) or output_size == 1:
-        pool_size = input.shape[2:]
         def func(input, output_size):
-            return keras.layers.AvgPool2D(pool_size=pool_size)(input)
-        return func
+            return keras.layers.GlobalAvgPool2D(keepdims=True)(input)
     else:
-        raise Exception('Unsupported parameters for adaptive_avg_pool2d')
+        def func(input, output_size):
+            import tensorflow_addons as tfa
+            return tfa.layers.AdaptiveAveragePooling2D(output_size=output_size)(input)
+    return func
 
 
 @converter(F.pixel_shuffle)

@@ -2,6 +2,7 @@ from typing import Optional, Union, List, Tuple, Sequence, Any
 
 from torch import Tensor
 
+import tensorflow as tf
 from tensorflow import keras
 import torch
 import torch.nn.functional as F
