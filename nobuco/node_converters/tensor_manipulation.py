@@ -212,8 +212,8 @@ def converter_unbind(self, dim=0):
     return func
 
 
-@converter(torch.Tensor.flatten, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_flatten(self, start_dim=0, end_dim=-1):
+@converter(torch.Tensor.flatten, torch.flatten, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_t_flatten(self, start_dim=0, end_dim=-1):
     def func(self, start_dim=0, end_dim=-1):
         start_shape = self.shape[:start_dim]
 
