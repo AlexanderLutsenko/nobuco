@@ -234,6 +234,20 @@ def converter_clamp(input: Tensor, min: Optional[Number]=None, max: Optional[Num
     return func
 
 
+@converter(torch.Tensor.clamp_min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_clamp(self, min):
+    def func(self, min):
+        return tf.keras.backend.clip(self, min_value=min, max_value=None)
+    return func
+
+
+@converter(torch.Tensor.clamp_max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_clamp(self, max):
+    def func(self, max):
+        return tf.keras.backend.clip(self, min_value=None, max_value=max)
+    return func
+
+
 @converter(torch.minimum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_minimum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):

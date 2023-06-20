@@ -11,7 +11,8 @@ import torch
 from torchvision import models
 
 
-pytorch_module = models.swin_t().eval()
+# pytorch_module = models.swin_t().eval()
+pytorch_module = models.swin_v2_t().eval()
 
 x = torch.normal(0, 1, size=(1, 3, 224, 224))
 

@@ -31,6 +31,7 @@ pip install -U nobuco
   - [Control flows](#control-flows)
   - [Dynamic shapes](#dynamic-shapes)
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
+- [But was it worth it?](#but-was-it-worth-it)
 - [More nice things](#more-nice-things)
   - [Nobuco knowledge base](#nobuco-knowledge-base)
 
@@ -501,6 +502,85 @@ def converter_SliceReLU(self, x):
 ```
 
 <img src="docs/converter_inside_converter2.svg" width="100%">
+
+## But was it worth it?
+
+Let's cut to the chase, here's the numbers.
+
+**mobilenet_v3_large** (26.8 Mb)
+
+|                   | nobuco  | onnx_tf  | speedup |
+|-------------------|---------|----------|---------|
+| x86 (XNNPACK)     | 11.1 ms | 14.7 ms  | 1.3x    |
+| Arm CPU (XNNPACK) | 24.3 ms | 40.3 ms  | 1.6x    |
+| Arm GPU (OpenCL)  | 21.3 ms | 192.6 ms | 9x      |
+
+**deeplabv3_resnet50** (158.5 Mb)
+
+|                   | nobuco | onnx_tf | speedup |
+|-------------------|--------|---------|---------|
+| x86 (XNNPACK)     | 1.25 s | 1.34 s  | 1.07x   |
+| Arm CPU (XNNPACK) | 2.0 s  | 2.7 s   | 1.35x   |
+| Arm GPU (OpenCL)  | 1.6 s  | 2.6 s   | 1.62x   |
+
+As we can see, redundant transpositions may completely ruin the performance, especially on a GPU.
+But that's not the only issue.
+Let's test this:
+
+```python
+class SliceReLU(nn.Module):
+    def forward(self, x):
+        x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
+        return x
+```
+
+|                   | nobuco     | onnx_tf    | speedup |
+|-------------------|------------|------------|---------|
+| x86 (XNNPACK)     | 0.40 ms    | 1.57 ms    | 3.9x    |
+| Arm CPU           | 4.6 ms     | **2.9** ms | 0.6x    |
+| Arm CPU (XNNPACK) | **2.1** ms | FAIL       | —       |
+| Arm GPU (OpenCL)  | 21.8 ms    | FAIL       | —       |
+
+Again, the graph obtained with `onnx_tf` is much slower on x86 CPU.
+Worse yet, on mobile processor, optimized TFLite delegates for both GPU and CPU failed.
+No transpose ops were added this time, so who's to blame?
+It suffices to see what `torch.trace` gives us:
+
+<table>
+<tr>
+<th>slice_relu.onnx</th>
+</tr>
+<tr>
+<td>
+<img src="docs/slice_relu_onnx.png" width="100%">
+</td>
+</tr>
+</table>
+
+`onnx_tf` does a fair job optimizing the graph it's given,
+but combining consecutive `slice` ops seems to be too much to ask.
+It also leaves out garbage nodes sometimes (see free-floating `While` in this example).
+
+Nobuco evades these types of problems by simply not dealing with `onnx`.
+
+<table>
+  <tr>
+    <th>slice_relu_nobuco.tflite</th>
+    <th>slice_relu_onnxtf.tflite</th>
+  </tr>
+  <tr>
+    <td>
+      <p align="center">
+        <img src="docs/slice_relu_nobuco.png" width="60%">
+      </p>
+    </td>
+    <td>
+      <p align="center">
+        <img src="docs/slice_relu_onnxtf.png" width="60%">
+      </p>
+    </td>
+  </tr>
+</table>
 
 ## More nice things
 

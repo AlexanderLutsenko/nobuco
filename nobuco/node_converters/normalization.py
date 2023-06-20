@@ -30,6 +30,27 @@ def converter_BatchNorm(self, input: Tensor):
     # return func
 
 
+@converter(nn.InstanceNorm1d, nn.InstanceNorm2d)
+def converter_InstanceNorm(self, input: Tensor):
+    params = []
+
+    scale = False
+    if self.weight is not None:
+        scale = True
+        params.append(self.weight.detach.numpy())
+
+    center = False
+    if self.bias is not None:
+        center = True
+        params.append(self.bias.detach.numpy())
+
+    epsilon = self.eps
+
+    import tensorflow_addons as tfa
+    layer = tfa.layers.InstanceNormalization(axis=-1, epsilon=epsilon, scale=scale, center=center, weights=params)
+    return layer
+
+
 @converter(F.layer_norm, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_layer_norm(input: Tensor,
                normalized_shape: List[int],

@@ -55,6 +55,13 @@ def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dt
     return func
 
 
+@converter(torch.Tensor.zero_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_zero_(self):
+    def func(self):
+        return tf.zeros_like(self)
+    return func
+
+
 @converter(torch.zeros_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_zeros_like(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
     def func(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
