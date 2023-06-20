@@ -544,7 +544,7 @@ class SliceReLU(nn.Module):
 Again, the graph obtained with `onnx_tf` is much slower on x86 CPU.
 Worse yet, on mobile processor, optimized TFLite delegates for both GPU and CPU failed.
 No transpose ops were added this time, so who's to blame?
-It suffices to see what `torch.trace` gives us:
+It suffices to see what `torch.onnx.export` gives us:
 
 <table>
 <tr>
@@ -559,7 +559,7 @@ It suffices to see what `torch.trace` gives us:
 
 `onnx_tf` does a fair job optimizing the graph it's given,
 but combining consecutive `slice` ops seems to be too much to ask.
-It also leaves out garbage nodes sometimes (see free-floating `While` in this example).
+It also leaves out garbage nodes sometimes (note the free-floating `While` in this example).
 
 Nobuco evades these types of problems by simply not dealing with `onnx`.
 
