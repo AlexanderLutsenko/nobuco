@@ -32,8 +32,7 @@ pip install -U nobuco
   - [Dynamic shapes](#dynamic-shapes)
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 - [But was it worth it?](#but-was-it-worth-it)
-- [More nice things](#more-nice-things)
-  - [Nobuco knowledge base](#nobuco-knowledge-base)
+- [Nobuco knowledge base](#nobuco-knowledge-base)
 
 <!-- tocstop -->
 
@@ -576,9 +575,7 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
   </tr>
 </table>
 
-## More nice things
-
-### Nobuco knowledge base
+## Nobuco knowledge base
 
 Don't want to convert anything but looking for a tensorflow equivalent of a certain pytorch node (operation or module)?
 Nobuco already implements quite a few node converters, most written in concise and (hopefully) understandable way.
