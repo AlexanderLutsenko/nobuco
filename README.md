@@ -559,18 +559,18 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
 
 <table align="center">
   <tr>
-    <th>slice_relu_nobuco.tflite</th>
-    <th>slice_relu_onnxtf.tflite</th>
+    <th>slice_relu_nobuco</th>
+    <th>slice_relu_onnxtf</th>
   </tr>
   <tr>
     <td>
       <p align="center">
-        <img src="docs/slice_relu_nobuco.svg" width="100%">
+        <img src="docs/slice_relu_nobuco.png" width="60%">
       </p>
     </td>
     <td>
       <p align="center">
-        <img src="docs/slice_relu_onnxtf.svg" width="100%">
+        <img src="docs/slice_relu_onnxtf.png" width="60%">
       </p>
     </td>
   </tr>
