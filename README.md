@@ -546,16 +546,10 @@ Worse yet, on mobile processor, optimized TFLite delegates for both GPU and CPU 
 No transpose ops were added this time, so who's to blame?
 It suffices to see what `torch.onnx.export` gives us:
 
-<table>
-<tr>
-<th>slice_relu.onnx</th>
-</tr>
-<tr>
-<td>
-<img src="docs/slice_relu_onnx.png" width="100%">
-</td>
-</tr>
-</table>
+<p align="center">
+  <img src="docs/slice_relu_onnx.png" width="100%">
+  <b>slice_relu.onnx</b>
+</p>
 
 `onnx_tf` does a fair job optimizing the graph it's given,
 but combining consecutive `slice` ops seems to be too much to ask.
@@ -563,7 +557,7 @@ It also leaves out garbage nodes sometimes (note the free-floating `While` in th
 
 Nobuco evades these types of problems by simply not dealing with `onnx`.
 
-<table>
+<table align="center">
   <tr>
     <th>slice_relu_nobuco.tflite</th>
     <th>slice_relu_onnxtf.tflite</th>
@@ -571,12 +565,12 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
   <tr>
     <td>
       <p align="center">
-        <img src="docs/slice_relu_nobuco.png" width="60%">
+        <img src="docs/slice_relu_nobuco.svg" width="100%">
       </p>
     </td>
     <td>
       <p align="center">
-        <img src="docs/slice_relu_onnxtf.png" width="60%">
+        <img src="docs/slice_relu_onnxtf.svg" width="100%">
       </p>
     </td>
   </tr>
