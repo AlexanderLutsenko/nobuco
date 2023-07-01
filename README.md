@@ -1,5 +1,5 @@
 <p align="center">
-<img src="docs/nobuco.png">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/nobuco.png">
 <sup><a href="https://www.behance.net/diliajl">diliajl</a></sup>
 </p>
 
@@ -75,7 +75,7 @@ keras_model = nobuco.pytorch_to_keras(
 
 Aaaand done! That's all it takes to... wait, what's that?
 
-<img src="docs/essentials1.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials1.svg" width="100%">
 
 Nobuco says it doesn't know how to handle hard sigmoid.
 Apparently, it's our job to provide a node converter for either `F.hardsigmoid` or the enclosing `Hardsigmoid` module (or the entire `MyModule`, but that makes little sense). Here, we'll go for the former.
@@ -92,9 +92,9 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.keras.activations.hard_sigmoid(input)
 ````
 
-<img src="docs/essentials2.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials2.svg" width="100%">
 
-It works, but the outputs don't quite match. Perhaps we should check on how [pytorch](https://pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [tensorflow](https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
+It works, but the outputs don't quite match. Perhaps we should check on how [pytorch](https://pytorch.org/https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [tensorflow](https://www.tensorflow.org/api_https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
 And sure enough, their implementations differ. Have to type in the formula manually, I guess...
 
 ````python
@@ -103,12 +103,12 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.clip_by_value(input/6 + 1/2, clip_value_min=0, clip_value_max=1)
 ````
 
-<img src="docs/essentials3.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials3.svg" width="100%">
 
 And the happy result:
 
 <p align="center">
-<img src="docs/tutorial.png" width="30%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/tutorial.png" width="30%">
 </p>
 
 The example above is artificial but it illustrates the point.
@@ -186,7 +186,7 @@ keras_model = nobuco.pytorch_to_keras(
 The laziness shoots us in the foot here, and we get not one transpose but two:
 
 <p align="center">
-<img src="docs/channel_ordering.png" width="30%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/channel_ordering.png" width="30%">
 </p>
 
 For such occasions, there's two brethren functions: `force_tensorflow_order` and `force_pytorch_order`.
@@ -199,7 +199,7 @@ x2 = self.conv2(x)
 ```
 
 <p align="center">
-<img src="docs/channel_ordering_forced.png" width="30%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/channel_ordering_forced.png" width="30%">
 </p>
 
 In case you are curious, the implementation is trivial:
@@ -229,7 +229,7 @@ class MyModule(nn.Module):
         return x
 ```
 
-<img src="docs/inplace1.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace1.svg" width="100%">
 
 However, applying in-place operation to a slice yields incorrect result. What gives?
 
@@ -240,7 +240,7 @@ class MyModule(nn.Module):
         return x
 ```
 
-<img src="docs/inplace2.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace2.svg" width="100%">
 
 You see, tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
 So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
@@ -249,7 +249,7 @@ As you can see above, the output tensors of `__getitem__` and `relu_` are <span 
 In fact, it's empty:
 
 <p align="center">
-<img src="docs/inplace_empty.png" width="30%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace_empty.png" width="30%">
 </p>
 
 The easiest way of fixing this is to explicitly assign the result to the slice.
@@ -262,7 +262,7 @@ class MyModule(nn.Module):
         return x
 ```
 
-<img src="docs/inplace3.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace3.svg" width="100%">
 
 ## Going dynamic
 
@@ -352,7 +352,7 @@ def converter_ControlIf(self, x):
 ```
 
 <p align="center">
-<img src="docs/control_if.png" width="25%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/control_if.png" width="25%">
 </p>
 
 See [examples](/examples) for other ways to convert control flow ops.
@@ -392,26 +392,26 @@ keras_model = nobuco.pytorch_to_keras(
 
 Something's not right. We don't see shape extraction ops in the debug output or the graph:
 
-<img src="docs/dynamic_shape1.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/dynamic_shape1.svg" width="100%">
 
 <p align="center">
-<img src="docs/dynamic_shape1.png" width="15%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/dynamic_shape1.png" width="15%">
 </p>
 
 That's not surprising, actually. 
 In pytorch, tensor shape is a tuple of regular integers, not tensors, so it's quite difficult to track them.
 `nobuco.shape` solves this problem.
-This function returns tensors, much like [`tf.shape`](https://www.tensorflow.org/api_docs/python/tf/shape) does:
+This function returns tensors, much like [`tf.shape`](https://www.tensorflow.org/api_https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/python/tf/shape) does:
 
 ```python
 # Allows for dynamic shape
 b, c, h, w = nobuco.shape(x)
 ```
 
-<img src="docs/dynamic_shape2.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/dynamic_shape2.svg" width="100%">
 
 <p align="center">
-<img src="docs/dynamic_shape2.png" width="30%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/dynamic_shape2.png" width="30%">
 </p>
 
 Also, take a moment to appreciate how elegant the solution is. 
@@ -471,7 +471,7 @@ class MyModule(nn.Module):
         return x
 ```
 
-<img src="docs/converter_inside_converter1.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/converter_inside_converter1.svg" width="100%">
 
 In the previous section, we've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
 Can we embed some third-party converter? You bet! Why? Because it might just do what we need.
@@ -500,7 +500,7 @@ def converter_SliceReLU(self, x):
     return keras.layers.Lambda(lambda x: model(input=x))
 ```
 
-<img src="docs/converter_inside_converter2.svg" width="100%">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/converter_inside_converter2.svg" width="100%">
 
 ## But was it worth it?
 
@@ -546,7 +546,7 @@ No transpose ops were added this time, so who's to blame?
 It suffices to see what `torch.onnx.export` gives us:
 
 <p align="center">
-  <img src="docs/slice_relu_onnx.png" width="100%">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/slice_relu_onnx.png" width="100%">
   <b>slice_relu.onnx</b>
 </p>
 
@@ -564,12 +564,12 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
   <tr>
     <td>
       <p align="center">
-        <img src="docs/slice_relu_nobuco.png" width="60%">
+        <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/slice_relu_nobuco.png" width="60%">
       </p>
     </td>
     <td>
       <p align="center">
-        <img src="docs/slice_relu_onnxtf.png" width="60%">
+        <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/slice_relu_onnxtf.png" width="60%">
       </p>
     </td>
   </tr>
