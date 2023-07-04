@@ -35,7 +35,7 @@ def broadcast(tensors):
     return tensors
 
 
-def slice_assign(sliced_tensor, slice_args, assigned_tensor):
+def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):
     slice_args = _ensure_iterable(slice_args)
     """Assign a tensor to the slice of another tensor.
     No broadcast is performed.
@@ -115,17 +115,28 @@ def slice_assign(sliced_tensor, slice_args, assigned_tensor):
     else:
         raise Exception('This slice configuration is currently not supported')
 
+    update_indices = tf.stack([
+        tf.reshape(slicing_range, (-1,))
+        for slicing_range in mesh_ranges
+    ], axis=-1)
+
     if isinstance(assigned_tensor, TF_TENSOR_CLASSES) and len(assigned_tensor.shape) == len(scatted_nd_perm):
         assigned_tensor = tf.transpose(assigned_tensor, scatted_nd_perm)
 
-    assigned_tensor = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
-    sliced_tensor = tf.transpose(sliced_tensor, perm=scatted_nd_perm)
-    update_indices = tf.stack(mesh_ranges, axis=-1)
+    if is_scatter:
+        assigned_tensor_reshaped = assigned_tensor
+    else:
+        assigned_tensor_reshaped = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
+        assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
 
+    # NOTE: the tensors are reshaped to allow for easier indexing with
+    sliced_tensor_reshaped = tf.transpose(sliced_tensor, perm=scatted_nd_perm)
+
+    # finalisation
     sliced_tensor_reshaped = tf.tensor_scatter_nd_update(
-        tensor=sliced_tensor,
+        tensor=sliced_tensor_reshaped,
         indices=update_indices,
-        updates=assigned_tensor,
+        updates=assigned_tensor_reshaped,
     )
     sliced_tensor_updated = tf.transpose(sliced_tensor_reshaped, perm=inverse_scatter_nd_perm)
     return sliced_tensor_updated
