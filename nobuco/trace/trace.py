@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import traceback
 import types
@@ -205,7 +207,7 @@ class Tracer:
                 setattr(op_cls, op.__name__, decorated)
 
     @staticmethod
-    def trace(module_or_function: Union[nn.Module, Callable], trace_shape: bool, args, kwargs) -> PytorchNodeHierarchy:
+    def trace(module_or_function: nn.Module | Callable, trace_shape: bool, args, kwargs) -> PytorchNodeHierarchy:
         Tracer._trace_shape = trace_shape
 
         ### Module tracing routines

@@ -9,7 +9,8 @@ class WeightLayer(tf.keras.layers.Layer):
         super().__init__(*args, **kwargs)
         self.weight_shape = weight_shape
         self.weight_dtype = weight_dtype
-        self.weight = self.add_weight('weight', shape=weight_shape, dtype=weight_dtype)
+        self.weight = self.add_weight('weight', shape=weight_shape, dtype=weight_dtype, initializer=tf.keras.initializers.Zeros()
+)
 
     def get_config(self):
         config = super().get_config()

@@ -6,6 +6,9 @@ from nobuco.commons import TF_TENSOR_CLASSES
 from nobuco.util import collect_recursively, replace_recursively_func
 
 TF_TYPE_PRIORITY_LIST = [
+    tf.complex128,
+    tf.complex64,
+
     tf.float64,
     tf.float32,
     # tf.float16,

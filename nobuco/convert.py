@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import time
 import traceback
 import warnings
@@ -244,8 +246,8 @@ def pytorch_to_keras(
         args: List[object] = None,
         kwargs: Dict[str, object] = None,
         input_shapes: Dict[torch.Tensor, Collection[Optional[int]]] = None,
-        inputs_channel_order: Union[ChannelOrder, Dict[torch.Tensor, ChannelOrder]] = ChannelOrder.TENSORFLOW,
-        outputs_channel_order: Union[ChannelOrder, Dict[int, ChannelOrder]] = None,
+        inputs_channel_order: ChannelOrder | Dict[torch.Tensor, ChannelOrder] = ChannelOrder.TENSORFLOW,
+        outputs_channel_order: ChannelOrder | Dict[int, ChannelOrder] = None,
         converter_dict=CONVERTER_DICT,
         trace_shape: bool = False,
         constants_to_variables: bool = True,
@@ -254,7 +256,7 @@ def pytorch_to_keras(
         save_trace_html: bool = False,
         return_outputs_pt: bool = False,
         debug_traces: TraceLevel = TraceLevel.DEFAULT,
-) -> Union[keras.Model, Tuple[keras.Model, object]]:
+) -> keras.Model | Tuple[keras.Model, object]:
 
     if args is None:
         args = []
