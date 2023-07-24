@@ -39,6 +39,10 @@ def dtype_pytorch2keras(dtype):
         tf_type = tf.int64
     elif dtype == torch.bool:
         tf_type = tf.bool
+    elif dtype == torch.complex64:
+        tf_type = tf.complex64
+    elif dtype == torch.complex128:
+        tf_type = tf.complex128
     elif dtype is None:
         tf_type = None
     else:

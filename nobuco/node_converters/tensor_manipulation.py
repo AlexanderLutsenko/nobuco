@@ -70,6 +70,14 @@ def converter_transpose(input: Tensor, dim0, dim1):
     return func
 
 
+@converter(torch.Tensor.t, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_t(self: Tensor):
+    assert self.dim() == 2
+    def func(self):
+        return tf.transpose(self, perm=(1, 0))
+    return func
+
+
 # tensor.T
 @converter(torch.Tensor.__getattribute__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_getattribute(self, attribute):

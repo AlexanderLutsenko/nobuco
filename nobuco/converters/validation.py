@@ -3,6 +3,7 @@ import warnings
 from enum import Enum
 import math
 
+import numpy as np
 import torch
 
 from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
@@ -92,8 +93,12 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
 
     def calc_diff(t1, t2):
         def calc_diff_numerical(t1, t2):
-            diff = t1 - t2
-            return diff.abs().max().detach().cpu().numpy()
+            nan_mask = torch.isnan(t1) & torch.isnan(t2)
+            diff = t1[~nan_mask] - t2[~nan_mask]
+            if diff.numel() == 0:
+                return 0
+            else:
+                return diff.abs().max().detach().cpu().numpy()
 
         def calc_diff_boolean(t1, t2):
             diff = t1 ^ t2

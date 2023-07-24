@@ -134,3 +134,10 @@ def converter_canonical_mask(mask: Optional[Tensor], mask_name: str, other_type:
     def func(mask, mask_name, other_type, other_name, target_type, check_other=True):
         return mask
     return func
+
+
+@converter(torch.complex, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_complex(real: Tensor, imag: Tensor, *, out: Optional[Tensor]=None):
+    def func(real, imag, *, out=None):
+        return tf.complex(real, imag)
+    return func

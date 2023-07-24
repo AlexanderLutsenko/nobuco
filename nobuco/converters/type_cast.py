@@ -12,10 +12,11 @@ TF_TYPE_PRIORITY_LIST = [
     tf.float64,
     tf.float32,
     # tf.float16,
-    tf.int32,
+
     tf.int64,
-    # tf.int16,
-    # tf.int8,
+    tf.int32,
+    tf.int16,
+    tf.int8,
 ]
 
 
@@ -32,7 +33,7 @@ def tf_cast_recursively(inputs, type_priority_list=None):
             raise Exception(f'Unsupported dtype: {t.dtype}')
         min_priority = min(min_priority, p)
 
-    if min_priority not in type_priority_list:
+    if min_priority >= len(type_priority_list):
         return inputs
 
     target_dtype = type_priority_list[min_priority]

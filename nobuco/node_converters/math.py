@@ -1,5 +1,7 @@
+import math
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+import keras.layers
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size, _layout, _device
 
@@ -63,6 +65,53 @@ def converter_mean(input: Tensor, dim=None, keepdim: _bool=False, *, dtype: Opti
                 perm = perm_keras2pytorch(n_dims)
                 input = _permute(perm)(input)
             out = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
+            out = set_channel_order(out, ChannelOrder.PYTORCH)
+            return out
+    return func
+
+
+@converter(torch.std, torch.Tensor.std, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
+def converter_std(input: Tensor, dim, unbiased: _bool=True, keepdim: _bool=False, *, out: Optional[Tensor]=None):
+    n_dims = input.dim()
+
+    def var_unbiased(input, axis, keepdims=False):
+        input_means = tf.reduce_mean(input, axis=axis, keepdims=True)
+        squared_deviations = tf.square(input - input_means)
+
+        if input.dtype in (tf.complex64, tf.complex128):
+            squared_deviations = tf.abs(squared_deviations)
+
+        sum = tf.reduce_sum(squared_deviations, axis=axis, keepdims=keepdims)
+        shape = tf.shape(input)
+        n = math.prod(shape[i] for i in axis)
+        # [sic] This implementation follows Pytorch behaviour, i.e. makes NaNs when n==1
+        return sum / tf.cast(n - 1, dtype=sum.dtype)
+
+    def std(input, axis, unbiased=True, keepdims=False):
+        if unbiased:
+            var = var_unbiased(input, axis=axis, keepdims=keepdims)
+            return tf.sqrt(var)
+        else:
+            return tf.math.reduce_std(input, axis=axis, keepdims=keepdims)
+
+    def func(input, dim, unbiased=True, keepdim=False, *, out=None):
+        if dim is not None:
+            dim = _ensure_iterable(dim)
+
+        order = get_channel_order(input)
+
+        if keepdim:
+            dim = _dims_make_positive(dim, n_dims)
+            if order == ChannelOrder.TENSORFLOW:
+                dim = dims_pytorch2keras(dim, n_dims)
+            out = std(input, axis=dim, unbiased=unbiased, keepdims=keepdim)
+            out = set_channel_order(out, order)
+            return out
+        else:
+            if order == ChannelOrder.TENSORFLOW:
+                perm = perm_keras2pytorch(n_dims)
+                input = _permute(perm)(input)
+            out = std(input, axis=dim, unbiased=unbiased, keepdims=keepdim)
             out = set_channel_order(out, ChannelOrder.PYTORCH)
             return out
     return func

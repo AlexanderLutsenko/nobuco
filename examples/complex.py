@@ -19,18 +19,26 @@ class ModelComplex(nn.Module):
         self.mask = torch.randn(1, 3, 100, 100).to(torch.complex64)
 
     def forward(self, x):
-        return x * self.mask
+        x = torch.complex(x, x)
+        x = x.to(torch.complex128)
+        x = x * self.mask
+
+        s1 = torch.std(x, dim=1, unbiased=False, keepdim=True)
+        s2 = x.std(dim=3, unbiased=True, keepdim=False)
+
+        x = x.view(1, -1)
+        x = x.t()
+        return x, s1, s2
 
 
 model = ModelComplex()
 
-dummy_image = torch.randn(1, 3, 100, 100).to(torch.complex64)
+dummy_image = torch.randn(1, 3, 100, 100)
 
 keras_model = nobuco.pytorch_to_keras(
     model,
-    args=[dummy_image]
+    args=[dummy_image],
 )
-
 
 model_path = 'complex'
 keras_model.save(model_path + '.h5')
