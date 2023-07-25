@@ -37,7 +37,7 @@ def converter(*ops,
     return inner
 
 
-def converter_unregister(op):
+def unregister_converter(op):
     op = Tracer.op_unwrap(op)
     if op in CONVERTER_DICT:
         del CONVERTER_DICT[op]
