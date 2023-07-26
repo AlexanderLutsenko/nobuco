@@ -17,7 +17,7 @@ def converter_masked_select(input: Tensor, mask: Tensor, *, out: Optional[Tensor
     return func
 
 
-@converter(torch.masked_fill, torch.Tensor.masked_fill, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.masked_fill, torch.Tensor.masked_fill, torch.Tensor.masked_fill_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_masked_fill(input: Tensor, mask: Tensor, value: Number):
     def func(input, mask, value):
         value = tf.convert_to_tensor(value, dtype=input.dtype)

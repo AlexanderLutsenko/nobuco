@@ -24,9 +24,7 @@ def converter_max_pool_2d(input: Tensor, kernel_size: Union[_int, _size], stride
         padding = (padding, padding)
 
     if padding != (0, 0):
-        kh, kw = kernel_size
-        pad = (dilation[0] * (kh - 1) - padding[0], dilation[1] * (kw - 1) - padding[1])
-        pad_layer = keras.layers.ZeroPadding2D(pad)
+        pad_layer = keras.layers.ZeroPadding2D(padding)
     else:
         pad_layer = None
 
@@ -46,9 +44,7 @@ def converter_avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=F
         padding = (padding, padding)
 
     if padding != (0, 0):
-        kh, kw = kernel_size
-        pad = ((kh - 1) - padding[0], (kw - 1) - padding[1])
-        pad_layer = keras.layers.ZeroPadding2D(pad)
+        pad_layer = keras.layers.ZeroPadding2D(padding)
     else:
         pad_layer = None
 

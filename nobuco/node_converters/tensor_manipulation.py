@@ -84,6 +84,9 @@ def converter_getattribute(self, attribute):
     if attribute == 'T':
         def func(self, attribute):
             return _permute_inner([1, 0])(self)
+    elif attribute == 'data':
+        def func(self, attribute):
+            return self
     else:
         raise Exception(f'Unsupported attribute: {attribute}')
     return func
