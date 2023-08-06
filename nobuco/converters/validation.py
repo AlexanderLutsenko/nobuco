@@ -84,9 +84,9 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
     if len(outputs_tf_converted) != len(outputs_pt):
         raise Exception(f"Number of outputs do not match: (Pytorch) {len(outputs_pt)} vs {len(outputs_tf_converted)} (Tensorflow)")
 
-    for t_tf, t_pt in zip(outputs_tf_converted, outputs_pt):
+    for i, (t_tf, t_pt) in enumerate(zip(outputs_tf_converted, outputs_pt)):
         if t_tf.shape != t_pt.shape:
-            raise Exception(f"Tensor shapes don't match: (Pytorch) {list(t_pt.shape)} vs {list(t_tf.shape)} (Tensorflow)")
+            raise Exception(f"Tensor shapes of output #{i} don't match: (Pytorch) {list(t_pt.shape)} vs {list(t_tf.shape)} (Tensorflow)")
 
         # if t_tf.dtype != t_pt.dtype:
         #     raise Exception(f"Tensor dtypes don't match: (Pytorch) {t_pt.dtype} vs {t_tf.dtype} (Tensorflow)")
@@ -98,11 +98,11 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
             if diff.numel() == 0:
                 return 0
             else:
-                return diff.abs().max().detach().cpu().numpy()
+                return diff.abs().max().numpy()
 
         def calc_diff_boolean(t1, t2):
             diff = t1 ^ t2
-            return diff.to(torch.float32).max()
+            return diff.to(torch.float32).max().numpy()
 
         if t1.numel() == t2.numel() == 0:
             return 0

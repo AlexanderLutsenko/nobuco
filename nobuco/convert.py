@@ -16,7 +16,7 @@ from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_orde
 from nobuco.converters.validation import validate, ValidationResult, ConversionResult
 from nobuco.layers.channel_order import ChangeOrderingLayer
 from nobuco.layers.container import TransientContainer
-from nobuco.layers.stub import UnimplementedOpStub
+from nobuco.layers.stub import UnimplementedOpStub, FailedConversionStub
 from nobuco.util import get_torch_tensor_identifier, collect_recursively, replace_recursively_func, \
     clone_torch_tensors_recursively
 from nobuco.entity.keras import KerasConvertedNode
@@ -146,7 +146,7 @@ def convert_hierarchy(
             except Exception as e:
                 warnings.warn(f"Conversion exception on node '{node.get_type().__name__}': {e}")
                 traceback.print_exc()
-                keras_op = UnimplementedOpStub(node.get_op())
+                keras_op = FailedConversionStub(node.get_op())
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
         elif len(children) > 0:
             children_converted_nodes = [convert(child, converted_op_dict, reuse_layers, full_validation, depth + 1) for child in children]

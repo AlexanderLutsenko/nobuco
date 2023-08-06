@@ -15,108 +15,6 @@ from nobuco.converters.tensor import _dim_make_positive, dim_pytorch2keras, perm
     perm_pytorch2keras, _ensure_iterable, _dims_make_positive, dims_pytorch2keras
 
 
-@converter(torch.sum, torch.Tensor.sum, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-def converter_sum(input: Tensor, dim=None, keepdim: _bool=False, *, dtype: Optional[_dtype]=None, out: Optional[Tensor]=None):
-    n_dims = input.dim()
-
-    def func(input, dim=None, keepdim=False, *, dtype=None, out=None):
-        if dim is not None:
-            dim = _ensure_iterable(dim)
-
-        order = get_channel_order(input)
-
-        if keepdim:
-            dim = _dims_make_positive(dim, n_dims)
-            if order == ChannelOrder.TENSORFLOW:
-                dim = dims_pytorch2keras(dim, n_dims)
-            out = tf.reduce_sum(input, axis=dim, keepdims=keepdim)
-            out = set_channel_order(out, order)
-            return out
-        else:
-            if order == ChannelOrder.TENSORFLOW:
-                perm = perm_keras2pytorch(n_dims)
-                input = _permute(perm)(input)
-            out = tf.reduce_sum(input, axis=dim, keepdims=keepdim)
-            out = set_channel_order(out, ChannelOrder.PYTORCH)
-            return out
-
-    return func
-
-
-@converter(torch.mean, torch.Tensor.mean, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-def converter_mean(input: Tensor, dim=None, keepdim: _bool=False, *, dtype: Optional[_dtype]=None, out: Optional[Tensor]=None):
-    n_dims = input.dim()
-
-    def func(input, dim=None, keepdim=False, *, dtype=None, out=None):
-        if dim is not None:
-            dim = _ensure_iterable(dim)
-
-        order = get_channel_order(input)
-
-        if keepdim:
-            dim = _dims_make_positive(dim, n_dims)
-            if order == ChannelOrder.TENSORFLOW:
-                dim = dims_pytorch2keras(dim, n_dims)
-            out = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
-            out = set_channel_order(out, order)
-            return out
-        else:
-            if order == ChannelOrder.TENSORFLOW:
-                perm = perm_keras2pytorch(n_dims)
-                input = _permute(perm)(input)
-            out = tf.reduce_mean(input, axis=dim, keepdims=keepdim)
-            out = set_channel_order(out, ChannelOrder.PYTORCH)
-            return out
-    return func
-
-
-@converter(torch.std, torch.Tensor.std, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-def converter_std(input: Tensor, dim, unbiased: _bool=True, keepdim: _bool=False, *, out: Optional[Tensor]=None):
-    n_dims = input.dim()
-
-    def var_unbiased(input, axis, keepdims=False):
-        input_means = tf.reduce_mean(input, axis=axis, keepdims=True)
-        squared_deviations = tf.square(input - input_means)
-
-        if input.dtype in (tf.complex64, tf.complex128):
-            squared_deviations = tf.abs(squared_deviations)
-
-        sum = tf.reduce_sum(squared_deviations, axis=axis, keepdims=keepdims)
-        shape = tf.shape(input)
-        n = math.prod(shape[i] for i in axis)
-        # [sic] This implementation follows Pytorch behaviour, i.e. makes NaNs when n==1
-        return sum / tf.cast(n - 1, dtype=sum.dtype)
-
-    def std(input, axis, unbiased=True, keepdims=False):
-        if unbiased:
-            var = var_unbiased(input, axis=axis, keepdims=keepdims)
-            return tf.sqrt(var)
-        else:
-            return tf.math.reduce_std(input, axis=axis, keepdims=keepdims)
-
-    def func(input, dim, unbiased=True, keepdim=False, *, out=None):
-        if dim is not None:
-            dim = _ensure_iterable(dim)
-
-        order = get_channel_order(input)
-
-        if keepdim:
-            dim = _dims_make_positive(dim, n_dims)
-            if order == ChannelOrder.TENSORFLOW:
-                dim = dims_pytorch2keras(dim, n_dims)
-            out = std(input, axis=dim, unbiased=unbiased, keepdims=keepdim)
-            out = set_channel_order(out, order)
-            return out
-        else:
-            if order == ChannelOrder.TENSORFLOW:
-                perm = perm_keras2pytorch(n_dims)
-                input = _permute(perm)(input)
-            out = std(input, axis=dim, unbiased=unbiased, keepdims=keepdim)
-            out = set_channel_order(out, ChannelOrder.PYTORCH)
-            return out
-    return func
-
-
 @converter(torch.sin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_sin(input, *args, **kwargs):
     def func(input, *args, **kwargs):
@@ -230,17 +128,31 @@ def converter_exp(input: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
-@converter(torch.log, torch.Tensor.log, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.log, torch.Tensor.log, torch.log_, torch.Tensor.log_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_log(input: Tensor, *, out: Optional[Tensor]=None):
     def func(input, *, out: Optional[Tensor]=None):
-        return tf.experimental.numpy.log(input)
+        return tf.math.log(input)
     return func
 
 
-@converter(torch.log2, torch.Tensor.log2, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.log2, torch.Tensor.log2, torch.log2_, torch.Tensor.log2_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_log2(input: Tensor, *, out: Optional[Tensor]=None):
     def func(input, *, out: Optional[Tensor]=None):
-        return tf.experimental.numpy.log2(input)
+        return keras.layers.Lambda(lambda x: tf.experimental.numpy.log2(x))(input)
+    return func
+
+
+@converter(torch.log10, torch.Tensor.log10, torch.log10_, torch.Tensor.log10_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_log10(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out: Optional[Tensor]=None):
+        return keras.layers.Lambda(lambda x: tf.experimental.numpy.log10(x))(input)
+    return func
+
+
+@converter(torch.log1p, torch.Tensor.log1p, torch.log1p_, torch.Tensor.log1p_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_log1p(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out: Optional[Tensor]=None):
+        return keras.layers.Lambda(lambda x: tf.experimental.numpy.log1p(x))(input)
     return func
 
 
@@ -304,83 +216,17 @@ def converter_clamp(self, max):
     return func
 
 
-@converter(torch.minimum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.minimum, torch.Tensor.minimum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_minimum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.minimum(input, other)
     return func
 
 
-@converter(torch.maximum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.maximum, torch.Tensor.maximum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_maximum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.maximum(input, other)
-    return func
-
-
-@converter(torch.min, torch.Tensor.min, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-def converter_min(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
-    n_dims = input.dim()
-
-    if isinstance(dim, Tensor):
-        return converter_minimum.convert(input, dim, out=out)
-
-    def func(input, dim=None, keepdim=False, *, out=None):
-        if dim is None:
-            x = tf.keras.backend.min(input, axis=dim, keepdims=keepdim)
-            return set_channel_order(x, get_channel_order(input))
-        else:
-            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-                input = _permute(perm_keras2pytorch(n_dims))(input)
-                input = set_channel_order(input, ChannelOrder.PYTORCH)
-            x = tf.keras.backend.min(input, axis=dim, keepdims=keepdim)
-            a = tf.keras.backend.argmin(input, axis=dim)
-            order = get_channel_order(input)
-            return set_channel_order(x, order), set_channel_order(a, order)
-    return func
-
-
-@converter(torch.max, torch.Tensor.max, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-def converter_max(input: Tensor, dim=None, keepdim: _bool=False, *, out: Union[Tensor, Tuple[Tensor, ...], List[Tensor]]=None):
-    n_dims = input.dim()
-
-    if isinstance(dim, Tensor):
-        return converter_maximum.convert(input, dim, out=out)
-
-    def func(input, dim=None, keepdim=False, *, out=None):
-        if dim is None:
-            x = tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
-            return set_channel_order(x, get_channel_order(input))
-        else:
-            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-                input = _permute(perm_keras2pytorch(n_dims))(input)
-                input = set_channel_order(input, ChannelOrder.PYTORCH)
-            x = tf.keras.backend.max(input, axis=dim, keepdims=keepdim)
-            a = tf.keras.backend.argmax(input, axis=dim)
-            order = get_channel_order(input)
-            return set_channel_order(x, order), set_channel_order(a, order)
-    return func
-
-
-@converter(torch.argmin, torch.Tensor.argmin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_argmin(input: Tensor, dim: Optional[_int]=None, keepdim: _bool=False, *, out: Optional[Tensor]=None):
-    n_dims = input.dim()
-
-    def func(input, dim=None, keepdim=False, *, out=None):
-        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-            dim = dim_pytorch2keras(dim, n_dims)
-        return tf.keras.backend.argmin(input, axis=dim)
-    return func
-
-
-@converter(torch.argmax, torch.Tensor.argmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_argmax(input: Tensor, dim: Optional[_int]=None, keepdim: _bool=False, *, out: Optional[Tensor]=None):
-    n_dims = input.dim()
-
-    def func(input, dim=None, keepdim=False, *, out=None):
-        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-            dim = dim_pytorch2keras(dim, n_dims)
-        return tf.keras.backend.argmax(input, axis=dim)
     return func
 
 

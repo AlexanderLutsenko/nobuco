@@ -30,7 +30,49 @@ class DummyModel(nn.Module):
         s3 = torch.sum(x, dim=(1, 2, 3), keepdim=True)
         s4 = torch.sum(x, dim=(3,), keepdim=False)
         s5 = torch.sum(x, dim=1, keepdim=True)
-        return (m1, m2, m3, m4, m5), (s1, s2, s3, s4, s5)
+
+        std1 = torch.std(x, dim=(1, 2), unbiased=False, keepdim=False)
+        std2 = x.std(dim=3, unbiased=True, keepdim=True)
+
+        mask = x > 0
+
+        any1 = torch.any(mask, dim=1, keepdim=False)
+        any2 = mask.any(dim=3, keepdim=True)
+
+        all1 = torch.all(mask, dim=0, keepdim=True)
+        all2 = mask.all(dim=2, keepdim=False)
+
+        min1 = torch.min(x, dim=1, keepdim=False)
+        min2 = x.min(dim=3, keepdim=True)
+        min3 = torch.min(x)
+
+        max1 = torch.max(x, dim=1, keepdim=False)
+        max2 = x.max(dim=3, keepdim=True)
+        max3 = torch.max(x)
+
+        argmin1 = torch.argmin(x, dim=1, keepdim=False)
+        argmin2 = x.argmin(dim=3, keepdim=True)
+        argmin3 = torch.argmin(x)
+
+        argmax1 = torch.argmax(x, dim=1, keepdim=False)
+        argmax2 = x.argmax(dim=3, keepdim=True)
+        argmax3 = torch.argmax(x)
+
+        amin1 = torch.amin(x, dim=None, keepdim=True)
+        amin2 = torch.amin(x, dim=1, keepdim=True)
+        amin3 = torch.amin(x, dim=(1, 2), keepdim=True)
+
+        amax1 = torch.amax(x, dim=None, keepdim=False)
+        amax2 = torch.amax(x, dim=0, keepdim=False)
+        amax3 = torch.amax(x, dim=(0, 1, 2), keepdim=False)
+
+        return \
+            (m1, m2, m3, m4, m5), (s1, s2, s3, s4, s5), \
+            (std1, std2), \
+            (any1, any2), (all1, all2), \
+            (min1, min2, min3), (max1, max2, max3), \
+            (argmin1, argmin2, argmin3), (argmax1, argmax2, argmax3), \
+            (amin1, amin2, amin3), (amax1, amax2, amax3)
 
 
 model = DummyModel()
@@ -44,7 +86,7 @@ keras_model = nobuco.pytorch_to_keras(
     # inputs_channel_order=ChannelOrder.PYTORCH,
 )
 
-model_path = 'sum_mean'
+model_path = 'reduce'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 
