@@ -1,6 +1,7 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
+import torch
 import keras
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
@@ -8,8 +9,6 @@ from tensorflow.lite.python.lite import TFLiteConverter
 import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
-
-import torch
 
 
 tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'tokenizer', 'bert-base-cased')

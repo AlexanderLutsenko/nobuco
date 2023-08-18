@@ -1,6 +1,6 @@
 from enum import Enum
 import tensorflow as tf
-from tensorflow.python.keras.engine.keras_tensor import KerasTensor
+from keras.src.engine.keras_tensor import KerasTensor
 from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
 CONVERTER_DICT = {}
@@ -14,11 +14,6 @@ TF_TENSOR_CLASSES = (
     ResourceVariable,
     KerasTensor,
 )
-try:
-    from keras.engine.keras_tensor import KerasTensor as KerasTensor2
-    TF_TENSOR_CLASSES = (*TF_TENSOR_CLASSES, KerasTensor2)
-except Exception:
-    pass
 
 
 class TraceLevel(Enum):

@@ -4,12 +4,12 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import nobuco
 from nobuco.layers.weight import WeightLayer
 
+import torch
+from torch import nn
+
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
 from tensorflow import keras
-
-import torch
-from torch import nn
 
 
 class ModelComplex(nn.Module):

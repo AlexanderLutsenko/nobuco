@@ -5,12 +5,12 @@ import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
 
+import torch
+from torch import nn
+
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
 from tensorflow import keras
-
-import torch
-from torch import nn
 
 
 class MyModule(nn.Module):
@@ -26,8 +26,12 @@ class MyModule(nn.Module):
         x[:, 2, index_x, index_y] = 1
 
         d = x[indices]
-        z = x[index_x, index_y]
-        return y + x, d, z
+        z1 = x[torch.stack([index_x, index_y], dim=1)]
+        z2 = x[index_x][index_y]
+
+        # FIXME: does not work!
+        # z3 = x[index_x, index_y]
+        return x, y, d, z1, z2
 
 
 x = torch.normal(0, 1, size=(8, 3, 128, 128))

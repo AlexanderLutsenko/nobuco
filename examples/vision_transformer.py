@@ -1,14 +1,14 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-import keras
-
 import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
 
 import torch
 from torchvision import models
+
+import keras
 
 
 pytorch_module = models.vit_l_32().eval()

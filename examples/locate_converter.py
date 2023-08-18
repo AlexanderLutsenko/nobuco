@@ -1,7 +1,8 @@
+import nobuco
 import torch
 import torch.nn.functional as F
 from torch import nn
-import nobuco
+
 
 node = torch.Tensor.repeat
 # node = F.relu_

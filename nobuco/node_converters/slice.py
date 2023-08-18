@@ -1,4 +1,7 @@
+import numbers
+
 import tensorflow as tf
+from tensorflow import keras
 import torch
 
 import numpy as np
@@ -185,9 +188,15 @@ def converter_setitem(sliced_tensor, slice_args, assigned_tensor):
 def getitem_indexed(self, *slices):
     def func(self, *slices):
         slices = _ensure_iterable(slices)
-        slices = broadcast(slices)
-        slices = tf.stack(slices, axis=-1)
-        return tf.gather_nd(self, slices)
+        res = self
+        for i, slice_spec in reversed(list(enumerate(slices))):
+            if isinstance(slice_spec, (slice, numbers.Number)):
+                pads = [slice(None, None, None)]*i
+                res = self.__getitem__(*pads, slice_spec)
+            else:
+                slice_spec = tf.convert_to_tensor(slice_spec)
+                res = keras.layers.Lambda(lambda x: tf.experimental.numpy.take(x[0], x[1], axis=i))([res, slice_spec])
+        return res
     return func
 
 
@@ -203,6 +212,7 @@ def converter_getitem(self, *slices):
         elif slices[0].dtype == torch.int64:
             return getitem_indexed.convert(self, slices)
 
+    # FIXME: add support for ellipsis!
     def is_light(slices):
         return all(isinstance(slc, slice) for slc in slices)
 
@@ -215,9 +225,11 @@ def converter_getitem(self, *slices):
                 s = slices_make_full(slices, n_dims)
                 s = permute_pytorch2keras(s)
                 x = x.__getitem__(s)
+                # x = getitem_indexed(x, s)
                 x = set_channel_order(x, ChannelOrder.TENSORFLOW)
             else:
                 x = x.__getitem__(slices)
+                # x = getitem_indexed(x, slices)
                 x = set_channel_order(x, ChannelOrder.PYTORCH)
             return x
     else:
@@ -229,15 +241,7 @@ def converter_getitem(self, *slices):
                 perm = perm_keras2pytorch(n_dims)
                 x = _permute(perm)(x)
             x = x.__getitem__(slices)
+            # x = getitem_indexed(x, slices)
             x = set_channel_order(x, ChannelOrder.PYTORCH)
             return x
     return func
-
-
-# @converter(torch.Tensor.scatter, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-# def converter_scatter(self, dim, index, src):
-#     assert dim == 0
-#     def func(self, dim, index, src):
-#         slice_args = (tf.reshape(index, -1),)
-#         return slice_assign(self, src, slice_args, is_scatter=True)
-#     return func

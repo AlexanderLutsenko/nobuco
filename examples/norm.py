@@ -16,27 +16,29 @@ from tensorflow import keras
 class DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
+        self.natch_norm = nn.BatchNorm2d(32)
+        self.instance_norm = nn.InstanceNorm2d(32, affine=True)
+        self.group_norm = nn.GroupNorm(num_groups=4, num_channels=32, affine=True)
+        self.layer_norm = nn.LayerNorm(normalized_shape=256, elementwise_affine=True)
 
     def forward(self, x):
-        log = torch.log_(x)
-        log2 = x.log2_()
-        log10 = torch.log10(x)
-        log1p = torch.log1p(x)
-        return log, log2, log10, log1p
+        x1 = self.natch_norm(x)
+        x2 = self.instance_norm(x)
+        x3 = self.group_norm(x)
+        x4 = self.layer_norm(x)
+        return x1, x2, x3, x4
 
 
-model = DummyModel()
-dummy_image = torch.randn(1, 3, 100, 100)
-
-model(dummy_image)
+model = DummyModel().eval()
+x = torch.randn(4, 32, 256, 256)
 
 keras_model = nobuco.pytorch_to_keras(
     model,
-    args=[dummy_image],
+    args=[x],
     # inputs_channel_order=ChannelOrder.PYTORCH,
 )
 
-model_path = 'math_ops'
+model_path = 'norm'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 

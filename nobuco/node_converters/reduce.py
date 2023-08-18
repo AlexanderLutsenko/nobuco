@@ -1,11 +1,16 @@
 import math
 from typing import Optional, Union, List, Tuple, Sequence, Any, Callable
 
+
+from nobuco.node_converters.math import converter_maximum, converter_minimum
+
 from nobuco.layers.channel_order import tf_annotate_recursively
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size, _layout, _device
 
+
 import tensorflow as tf
+from tensorflow import keras
 import torch
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
@@ -134,8 +139,12 @@ def converter_min(input: Tensor, dim=None, keepdim: _bool=False, *, out=None):
 
     n_dims = input.dim()
 
-    def func(input, dim=None, keepdim=False, *, out=None):
-        return reduce_func(inner_func, n_dims)(input, dim, keepdim)
+    if isinstance(dim, torch.Tensor):
+        def func(input, dim=None, keepdim=False, *, out=None):
+            return converter_minimum.convert(input, other=dim)(input, dim)
+    else:
+        def func(input, dim=None, keepdim=False, *, out=None):
+            return reduce_func(inner_func, n_dims)(input, dim, keepdim)
     return func
 
 
@@ -154,8 +163,12 @@ def converter_max(input: Tensor, dim=None, keepdim: _bool=False, *, out=None):
 
     n_dims = input.dim()
 
-    def func(input, dim=None, keepdim=False, *, out=None):
-        return reduce_func(inner_func, n_dims)(input, dim, keepdim)
+    if isinstance(dim, torch.Tensor):
+        def func(input, dim=None, keepdim=False, *, out=None):
+            return converter_maximum.convert(input, other=dim)(input, dim)
+    else:
+        def func(input, dim=None, keepdim=False, *, out=None):
+            return reduce_func(inner_func, n_dims)(input, dim, keepdim)
     return func
 
 
@@ -200,7 +213,7 @@ def converter_argmax(input: Tensor, dim=None, keepdim: _bool=False, *, out=None)
 @converter(torch.amin, torch.Tensor.amin, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_amin(input: Tensor, dim: Union[_int, _size]=(), keepdim: _bool=False, *, out: Optional[Tensor]=None):
     def inner_func(input, dim, keepdim):
-        return tf.reduce_min(input, axis=dim, keepdims=keepdim)
+        return keras.layers.Lambda(lambda x: tf.experimental.numpy.amin(x, axis=dim, keepdims=keepdim))(input)
 
     n_dims = input.dim()
 
@@ -212,7 +225,7 @@ def converter_amin(input: Tensor, dim: Union[_int, _size]=(), keepdim: _bool=Fal
 @converter(torch.amax, torch.Tensor.amax, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_amax(input: Tensor, dim: Union[_int, _size]=(), keepdim: _bool=False, *, out: Optional[Tensor]=None):
     def inner_func(input, dim, keepdim):
-        return tf.reduce_max(input, axis=dim, keepdims=keepdim)
+        return keras.layers.Lambda(lambda x: tf.experimental.numpy.amax(x, axis=dim, keepdims=keepdim))(input)
 
     n_dims = input.dim()
 

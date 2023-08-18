@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-import tensorflow as tf
 import torch
+import tensorflow as tf
 
 from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.tensor import _permute, perm_pytorch2keras, perm_keras2pytorch

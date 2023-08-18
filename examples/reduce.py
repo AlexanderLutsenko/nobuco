@@ -45,10 +45,12 @@ class DummyModel(nn.Module):
         min1 = torch.min(x, dim=1, keepdim=False)
         min2 = x.min(dim=3, keepdim=True)
         min3 = torch.min(x)
+        min4 = torch.min(x, x)
 
         max1 = torch.max(x, dim=1, keepdim=False)
         max2 = x.max(dim=3, keepdim=True)
         max3 = torch.max(x)
+        max4 = torch.max(x, x)
 
         argmin1 = torch.argmin(x, dim=1, keepdim=False)
         argmin2 = x.argmin(dim=3, keepdim=True)
@@ -70,7 +72,7 @@ class DummyModel(nn.Module):
             (m1, m2, m3, m4, m5), (s1, s2, s3, s4, s5), \
             (std1, std2), \
             (any1, any2), (all1, all2), \
-            (min1, min2, min3), (max1, max2, max3), \
+            (min1, min2, min3, min4), (max1, max2, max3, max4), \
             (argmin1, argmin2, argmin3), (argmax1, argmax2, argmax3), \
             (amin1, amin2, amin3), (amax1, amax2, amax3)
 

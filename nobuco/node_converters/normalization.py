@@ -32,22 +32,37 @@ def converter_BatchNorm(self, input: Tensor):
 
 @converter(nn.InstanceNorm1d, nn.InstanceNorm2d)
 def converter_InstanceNorm(self, input: Tensor):
-    params = []
+    assert not self.track_running_stats
 
-    scale = False
-    if self.weight is not None:
-        scale = True
-        params.append(self.weight.detach.numpy())
-
-    center = False
-    if self.bias is not None:
-        center = True
-        params.append(self.bias.detach.numpy())
-
+    num_features = self.num_features
     epsilon = self.eps
+    affine = self.affine
 
-    import tensorflow_addons as tfa
-    layer = tfa.layers.InstanceNormalization(axis=-1, epsilon=epsilon, scale=scale, center=center, weights=params)
+    if affine:
+        weight = self.weight.detach().numpy()
+        bias = self.bias.detach().numpy()
+        params = [weight, bias]
+    else:
+        params = []
+
+    layer = keras.layers.GroupNormalization(groups=num_features, axis=-1, epsilon=epsilon, scale=affine, center=affine, weights=params)
+    return layer
+
+
+@converter(nn.GroupNorm)
+def converter_GroupNorm(self, input: Tensor):
+    num_groups = self.num_groups
+    epsilon = self.eps
+    affine = self.affine
+
+    if affine:
+        weight = self.weight.detach().numpy()
+        bias = self.bias.detach().numpy()
+        params = [weight, bias]
+    else:
+        params = []
+
+    layer = keras.layers.GroupNormalization(groups=num_groups, epsilon=epsilon, center=affine, scale=affine, weights=params)
     return layer
 
 
@@ -60,9 +75,15 @@ def converter_layer_norm(input: Tensor,
                ):
     assert len(normalized_shape) == 1
 
-    weight = weight.detach().numpy()
-    bias = bias.detach().numpy()
-    layer = keras.layers.LayerNormalization(axis=-1, epsilon=eps, weights=[weight, bias])
+    params = []
+    if weight is not None:
+        weight = weight.detach().numpy()
+        params.append(weight)
+    if bias is not None:
+        bias = bias.detach().numpy()
+        params.append(bias)
+
+    layer = keras.layers.LayerNormalization(axis=-1, epsilon=eps, scale=weight is not None, center=bias is not None, weights=params)
 
     def func(input, *args, **kwargs):
         return layer(input)

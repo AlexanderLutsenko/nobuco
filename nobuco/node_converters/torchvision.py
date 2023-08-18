@@ -10,5 +10,5 @@ from nobuco.converters.node_converter import converter
 def converter_StochasticDepth(self, input: Tensor):
     p = self.p
     mode = self.mode
-    import keras.applications
-    return keras.applications.convnext.StochasticDepth(p)
+    import keras.src.applications
+    return keras.src.applications.convnext.StochasticDepth(p)
