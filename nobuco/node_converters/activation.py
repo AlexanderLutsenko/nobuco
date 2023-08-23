@@ -154,7 +154,7 @@ def converter_softmax(input: Tensor, dim: Union[str, None], *, dtype: Optional[_
 def converter_log_softmax(input: Tensor, dim, *, dtype: Optional[_dtype]=None):
     num_dims = input.dim()
 
-    def func(input: Tensor, dim, *, dtype=None):
+    def func(input, dim, *, dtype=None):
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, num_dims)
         return tf.nn.log_softmax(input, axis=dim)
