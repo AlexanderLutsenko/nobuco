@@ -27,6 +27,7 @@ pip install -U nobuco
 - [Essentials](#essentials)
 - [Channel order wizardry](#channel-order-wizardry)
 - [In-place operations](#in-place-operations)
+- [Implementation mismatch: pick your poison](#implementation-mismatch-pick-your-poison)
 - [Going dynamic](#going-dynamic)
   - [Control flows](#control-flows)
   - [Dynamic shapes](#dynamic-shapes)
@@ -263,6 +264,144 @@ class MyModule(nn.Module):
 ```
 
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace3.svg" width="100%">
+
+
+## Implementation mismatch: pick your poison
+
+Sometimes, Pytorch and Tensorflow just don't get along. 
+In case of `hardsigmoid`, it's a mere inconvenience, but it can be much more sinister.
+
+Take the model below, for example.
+
+```python
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.factor = 4
+        self.conv = nn.Conv2d(3*self.factor**2, 3*self.factor**2, kernel_size=1)
+
+    def forward(self, x):
+        x = nn.PixelUnshuffle(self.factor)(x)
+        x = self.conv(x)
+        x = nn.PixelShuffle(self.factor)(x)
+        return x
+```
+
+Ideally, there would only be three nodes in the converted graph. That's not what we get, though.
+
+You see, Tensorflow does not really support `pixel_unshuffle`/`pixel_shuffle`.
+Their closest counterparts, `tf.nn.space_to_depth`/`tf.nn.depth_to_space`,
+do almost the same thing but not quite: output channels are in a different order.
+The order must be fixed with a pricey `transpose`, no way around that. Or is there?
+
+<p align="center">
+    <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/pixelshuffle1.png" width="20%">
+</p>
+
+Instead of emulating an absent Pytorch op in Tensorflow, 
+we might do the procedure in reverse: provide a Pytorch implementation for the Tensorflow node we want to convert to.
+The overhead would be carried by the original Pytorch model leaving the converted graph nice and clean.
+
+```python
+from nobuco.addons.torch.space_to_depth import SpaceToDepth
+from nobuco.addons.torch.depth_to_space import DepthToSpace
+
+
+class MyModuleTFOptimized(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.factor = 4
+        self.conv = nn.Conv2d(3*self.factor**2, 3*self.factor**2, kernel_size=1)
+
+    def forward(self, x):
+        x = SpaceToDepth(self.factor)(x)
+        x = self.conv(x)
+        x = DepthToSpace(self.factor)(x)
+        return x
+```
+
+<p align="center">
+    <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/pixelshuffle2.png" width="20%">
+</p>
+
+<table align="center">
+<tr>
+<th>Torch-optimized</th>
+<th>Tensorflow-optimized</th>
+</tr>
+<tr>
+<td>
+
+Torch implementation
+```python
+F.pixel_unshuffle
+```
+Tensorflow converter
+```python
+@nobuco.converter(F.pixel_unshuffle, 
+                  channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def converter_pixel_unshuffle(input: Tensor, downscale_factor: _int):
+    def func(input, downscale_factor):
+        x = tf.nn.space_to_depth(input, downscale_factor)
+        x = channel_interleave2d(x, downscale_factor, reverse=True)
+        return x
+    return func
+
+
+def channel_interleave2d(x, block_size: int, reverse: bool):
+    b, h, w, c = x.shape
+    n_blocks = block_size ** 2
+
+    if reverse:
+        x = tf.reshape(x, (b, h, w, n_blocks, c // n_blocks))
+    else:
+        x = tf.reshape(x, (b, h, w, c // n_blocks, n_blocks))
+
+    x = tf.transpose(x, (0, 1, 2, 4, 3))
+    x = tf.reshape(x, (b, h, w, c))
+    return x
+```
+
+</td>
+<td>
+
+Torch implementation
+```python
+class SpaceToDepth(nn.Module):
+    def __init__(self, block_size):
+        super().__init__()
+        self.block_size = block_size
+
+    def forward(self, input):
+        x = F.pixel_unshuffle(input, self.block_size)
+        x = channel_interleave2d(x, self.block_size, reverse=False)
+        return x
+
+    
+def channel_interleave2d(x: torch.Tensor, block_size: int, reverse: bool) -> torch.Tensor:
+    b, c, h, w = x.shape
+    n_blocks = block_size ** 2
+
+    if reverse:
+        x = x.view(b, n_blocks, c // n_blocks, h, w)
+    else:
+        x = x.view(b, c // n_blocks, n_blocks, h, w)
+
+    x = x.transpose(1, 2).reshape(b, c, h, w)
+    return x
+```
+
+Tensorflow converter
+```python
+@nobuco.converter(SpaceToDepth, 
+                  channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def converter_space_to_depth(self, input: torch.Tensor):
+    return lambda input: tf.nn.space_to_depth(input, self.block_size)
+```
+
+</td>
+</tr>
+</table>
 
 ## Going dynamic
 
