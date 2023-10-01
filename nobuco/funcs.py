@@ -32,15 +32,20 @@ def converter_force_pytorch_order(inputs):
 
 
 @traceable
-def shape(x: Tensor):
-    return tuple(torch.tensor(d, dtype=torch.int32) for d in x.shape)
+def shape(x: Tensor, dim=None):
+    shape = tuple(torch.tensor(d, dtype=torch.int32) for d in x.shape)
+    if dim is not None:
+        shape = shape[dim]
+    return shape
 
 
 @converter(shape, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_shape(x: Tensor):
-    def func(x):
+def converter_shape(x: Tensor, dim=None):
+    def func(x, dim=None):
         shape = tf.unstack(tf.shape(x))
         if get_channel_order(x) == ChannelOrder.TENSORFLOW:
-            shape = permute_keras2pytorch(shape)
-        return tuple(shape)
+            shape = tuple(permute_keras2pytorch(shape))
+        if dim is not None:
+            shape = shape[dim]
+        return shape
     return func

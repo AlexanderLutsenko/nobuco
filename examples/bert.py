@@ -33,6 +33,7 @@ keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[tokens_tensor], kwargs={'token_type_ids': segments_tensors},
     inputs_channel_order=ChannelOrder.TENSORFLOW,
+    trace_shape=True,
 )
 
 model_path = 'bert'

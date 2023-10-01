@@ -46,12 +46,26 @@ def converter_scalar_tensor(s: Number, *, dtype: Optional[_dtype]=None, layout: 
 @converter(torch.zeros, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
     def func(*size, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        size = tf.reshape(tf.convert_to_tensor(size), (-1,))
         tf_type = dtype_pytorch2keras(dtype)
         # Sic!
         if dtype is None:
             return tf.zeros(shape=size)
         else:
             return tf.zeros(shape=size, dtype=tf_type)
+    return func
+
+
+@converter(torch.ones, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
+    def func(*size, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        size = tf.reshape(tf.convert_to_tensor(size), (-1,))
+        tf_type = dtype_pytorch2keras(dtype)
+        # Sic!
+        if dtype is None:
+            return tf.ones(shape=size)
+        else:
+            return tf.ones(shape=size, dtype=tf_type)
     return func
 
 

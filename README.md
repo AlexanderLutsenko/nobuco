@@ -289,7 +289,7 @@ class MyModule(nn.Module):
 
 Ideally, there would only be three nodes in the converted graph. That's not what we get, though.
 
-You see, Tensorflow does not really support `pixel_unshuffle`/`pixel_shuffle`.
+Well, Tensorflow does not really support `pixel_unshuffle`/`pixel_shuffle`.
 Their closest counterparts, `tf.nn.space_to_depth`/`tf.nn.depth_to_space`,
 do almost the same thing but not quite: output channels are in a different order.
 The order must be fixed with a pricey `transpose`, no way around that. Or is there?
@@ -553,27 +553,7 @@ b, c, h, w = nobuco.shape(x)
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/dynamic_shape2.png" width="30%">
 </p>
 
-Also, take a moment to appreciate how elegant the solution is. 
-`nobuco.shape` is a one-liner that simply replaces each integer in shape tuple with a scalar tensor.
-No special treatment required!
-
-```python
-@traceable
-def shape(x: Tensor):
-    return tuple(torch.tensor(d, dtype=torch.int32) for d in x.shape)
-
-
-@converter(shape, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_shape(x: Tensor):
-    def func(x):
-        shape = tf.unstack(tf.shape(x))
-        if get_channel_order(x) == ChannelOrder.TENSORFLOW:
-            shape = permute_keras2pytorch(shape)
-        return tuple(shape)
-    return func
-```
-
-It's also possible to automatically substitute every `.shape` call with `nobuco.shape` during the tracing phase by setting `trace_shape` flag:
+It's also possible to automatically substitute every `.shape`/`.size` call with `nobuco.shape` during the tracing phase by setting `trace_shape` flag:
 
 ```python
 keras_model = nobuco.pytorch_to_keras(
@@ -682,14 +662,14 @@ class SliceReLU(nn.Module):
 Again, the graph obtained with `onnx_tf` is much slower on x86 CPU.
 Worse yet, on mobile processor, optimized TFLite delegates for both GPU and CPU failed.
 No transpose ops were added this time, so who's to blame?
-It suffices to see what `torch.onnx.export` gives us:
+Just look what `torch.onnx.export` gives us:
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/slice_relu_onnx.png" width="100%">
   <b>slice_relu.onnx</b>
 </p>
 
-`onnx_tf` does a fair job optimizing the graph it's given,
+`onnx_tf` does a fair job optimizing the monstrosity of a graph it's given,
 but combining consecutive `slice` ops seems to be too much to ask.
 It also leaves out garbage nodes sometimes (note the free-floating `While` in this example).
 

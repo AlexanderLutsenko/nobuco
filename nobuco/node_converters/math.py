@@ -92,6 +92,13 @@ def converter_floor_divide(input: Union[Tensor, Number], other: Union[Tensor, Nu
     return func
 
 
+@converter(torch.Tensor.__mod__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+def converter_div(self, value, *args, **kwargs):
+    def func(self, value, *args, **kwargs):
+        return self % value
+    return func
+
+
 @converter(torch.sqrt, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_sqrt(input: Tensor, *, out: Optional[Tensor]=None):
     def func(input, *, out=None):

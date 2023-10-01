@@ -21,13 +21,14 @@ class DynamicShape(nn.Module):
     def forward(self, x):
         x = self.conv(x)
 
-        # Produces static shape
-        # b, c, h, w = x.shape
+        # Produces static shape, set trace_shape=True to automatically replace with `nobuco.shape`
+        b, _, h, w = x.shape
+        c = x.size(dim=1)
 
         # Allows for dynamic shape
-        b, c, h, w = nobuco.shape(x)
+        # b, c, h, w = nobuco.shape(x)
 
-        x = x[:, :, h//3:, w//3:]
+        x = x[:, :c-1, h//3:, w//3:]
         return x
 
 
@@ -37,10 +38,10 @@ pytorch_module = DynamicShape().eval()
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[input],
-    input_shapes={input: (None, 3, None, None)}, # Annotate dynamic axes with None
+    input_shapes={input: (None, 3, None, None)},  # Annotate dynamic axes with None
     inputs_channel_order=ChannelOrder.TENSORFLOW,
     outputs_channel_order=ChannelOrder.TENSORFLOW,
-    trace_shape=False,
+    trace_shape=True,
     save_trace_html=True,
 )
 

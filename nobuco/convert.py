@@ -242,21 +242,57 @@ def postprocess_outputs_tf(outputs, outputs_channel_order):
 
 
 def pytorch_to_keras(
-        module: nn.Module,
+        model: nn.Module | Callable,
         args: List[object] = None,
         kwargs: Dict[str, object] = None,
         input_shapes: Dict[torch.Tensor, Collection[Optional[int]]] = None,
         inputs_channel_order: ChannelOrder | Dict[torch.Tensor, ChannelOrder] = ChannelOrder.TENSORFLOW,
-        outputs_channel_order: ChannelOrder | Dict[int, ChannelOrder] = None,
-        converter_dict=CONVERTER_DICT,
+        outputs_channel_order: ChannelOrder | Dict[int, ChannelOrder] | None = None,
         trace_shape: bool = False,
         constants_to_variables: bool = True,
         full_validation: bool = True,
-        validation_tolerance=1e-4,
-        save_trace_html: bool = False,
+        validation_tolerance: float = 1e-4,
         return_outputs_pt: bool = False,
+        save_trace_html: bool = False,
         debug_traces: TraceLevel = TraceLevel.DEFAULT,
 ) -> keras.Model | Tuple[keras.Model, object]:
+    """Converts Pytorch program to Keras graph
+
+    Args:
+        model: Pytorch module or function
+        args: Pytorch model arguments.
+            Default: None
+        kwargs: Pytorch model keyword arguments.
+            Default: None
+        input_shapes: Desired input shapes. Set dim to None for dynamic size.
+            Default: None
+        inputs_channel_order: Desired channel order of the converted graph's inputs.
+            Default: `ChannelOrder.TENSORFLOW`
+        outputs_channel_order: Desired channel order of the converted graph's outputs.
+            Set to None if you don't care to minimize the amount of transpositions.
+            Default: None
+        trace_shape: If True, replaces all `torch.Tensor.shape` and `torch.Tensor.size` calls with `nobuco.shape`
+            so they can be traced and added to the Keras graph.
+            Default: False
+        constants_to_variables: If True, replaces each Pytorch constant tensor with `WeightLayer` returning corresponding value.
+            Due to how Keras works, this allows multiple layers to use the same set of constants without parameter duplication.
+            Default: True
+        full_validation: If True, all nested modules will be independently tested for conversion accuracy.
+            Set to False to reduce conversion time.
+            Default: True
+        validation_tolerance: Absolute conversion discrepancy above which alert will be triggered.
+            Default: 1e-4
+        return_outputs_pt: If True, returns Pytorch outputs. Useful for implementing nested converters.
+            Default: False
+        save_trace_html: If True, saves model trace as `trace.html`.
+            Default: False
+        debug_traces:
+            Default: `TraceLevel.DEFAULT`
+
+    Returns:
+        Converted Keras model
+        Pytorch outputs if `return_outputs_pt` is True
+    """
 
     if args is None:
         args = []
@@ -265,9 +301,9 @@ def pytorch_to_keras(
         kwargs = {}
 
     start = time.time()
-    node_hierarchy = Tracer.trace(module, trace_shape, args, kwargs)
+    node_hierarchy = Tracer.trace(model, trace_shape, args, kwargs)
 
-    keras_converted_node = convert_hierarchy(node_hierarchy, converter_dict,
+    keras_converted_node = convert_hierarchy(node_hierarchy, CONVERTER_DICT,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
                                              tolerance=validation_tolerance,
                                              )
@@ -288,7 +324,7 @@ def pytorch_to_keras(
         with open('trace.html', 'w') as f:
             f.write(html)
 
-    unimplemented_hierarchy = find_unimplemented(node_hierarchy, converter_dict)
+    unimplemented_hierarchy = find_unimplemented(node_hierarchy, CONVERTER_DICT)
     if unimplemented_hierarchy is not None:
         print('Unimplemented nodes:')
         print(unimplemented_hierarchy.__str__(**vis_params))

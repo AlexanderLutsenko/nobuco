@@ -81,7 +81,7 @@ class Tracer:
                 # Protection from external modification
                 args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
 
-                # Inner function may change the input structure, ensure against that
+                # Inner function may change the input structure, insure against that
                 args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
 
                 Tracer._parent_list.append(wrapped_op)
@@ -107,6 +107,7 @@ class Tracer:
         forward.__undecorated_func__ = forward_func
         return forward
 
+
     @staticmethod
     def op_tracing_decorator(orig_method, op_cls, module_suffix=None, is_whitelist_op=False):
 
@@ -119,10 +120,11 @@ class Tracer:
                 call_op_cls = op_cls
 
                 if Tracer._trace_shape:
-                    if orig_method == Tracer.op_unwrap(torch.Tensor.__getattribute__) and 'shape' in args:
+                    if orig_method == Tracer.op_unwrap(torch.Tensor.size) or orig_method == Tracer.op_unwrap(torch.Tensor.__getattribute__) and 'shape' in args:
                         call_method = Tracer.op_unwrap(nobuco.shape)
                         call_op_cls = nobuco
-                        args = args[:1]
+                        if 'shape' in args:
+                            args = args[:1]
                         need_trace_deeper = False
 
                 wrapped_op = WrappedOp(call_method)
@@ -130,7 +132,7 @@ class Tracer:
                 # Protection from external modification
                 args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
 
-                # Inner function may change the input structure, ensure against that
+                # Inner function may change the input structure, insure against that
                 args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively(args, torch.Tensor)})
 
                 num_input_tensors = len(collect_recursively((args, kwargs), torch.Tensor))
