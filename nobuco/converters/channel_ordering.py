@@ -25,7 +25,7 @@ def t_keras2pytorch(tensor_tf, restore_channel_order=False):
 
 
 def t_pytorch2keras(tensor_pt, channel_order=ChannelOrder.PYTORCH):
-    tensor_tf = tf.convert_to_tensor(tensor_pt.detach().numpy())
+    tensor_tf = tf.convert_to_tensor(tensor_pt.cpu().detach().numpy())
     if channel_order == ChannelOrder.TENSORFLOW:
         tensor_tf = _permute(perm_pytorch2keras(tensor_pt.dim()))(tensor_tf)
     tensor_tf = set_channel_order(tensor_tf, channel_order=channel_order)

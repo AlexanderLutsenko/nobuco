@@ -67,7 +67,7 @@ class Tracer:
         tensors1 = collect_recursively(tensors1, torch.Tensor)
         tensors2 = collect_recursively(tensors2, torch.Tensor)
         assert len(tensors1) == len(tensors2)
-        return all(torch.equal(t1, t2) for t1, t2 in zip(tensors1, tensors2))
+        return all(torch.equal(t1.cpu(), t2.cpu()) for t1, t2 in zip(tensors1, tensors2))
 
     @staticmethod
     def module_forward_tracing_decorator(forward_func):

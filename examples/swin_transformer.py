@@ -1,6 +1,3 @@
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
 import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
@@ -9,9 +6,11 @@ import torch
 from torchvision import models
 
 
-pytorch_module = models.swin_v2_t().eval()
+device = 'cuda'
 
-x = torch.normal(0, 1, size=(1, 3, 224, 224))
+pytorch_module = models.swin_v2_t().eval().to(device)
+
+x = torch.normal(0, 1, size=(1, 3, 224, 224)).to(device)
 
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,

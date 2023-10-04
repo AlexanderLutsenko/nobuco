@@ -98,7 +98,7 @@ def prelu_prepare_params(weight_np, input_dim, input_channels, input_channel_ord
 def converter_PReLU(self, input: Tensor):
     input_dim = input.dim()
     input_channels = input.shape[1] if input_dim > 1 else 1
-    weight_np = self.weight.detach().numpy()
+    weight_np = self.weight.cpu().detach().numpy()
 
     def func(input):
         shared_axes, weights = prelu_prepare_params(weight_np, input_dim, input_channels, get_channel_order(input))
@@ -110,7 +110,7 @@ def converter_PReLU(self, input: Tensor):
 def converter_prelu(input: Tensor, weight: Tensor):
     input_dim = input.dim()
     input_channels = input.shape[1] if input_dim > 1 else 1
-    weight_np = weight.detach().numpy()
+    weight_np = weight.cpu().detach().numpy()
 
     def func(input, weight):
         shared_axes, weights = prelu_prepare_params(weight_np, input_dim, input_channels, get_channel_order(input))

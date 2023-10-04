@@ -17,10 +17,10 @@ from nobuco.converters.node_converter import converter
 def converter_BatchNorm(self, input: Tensor):
     momentum = self.momentum
     epsilon = self.eps
-    weight = self.weight.detach().numpy()
-    bias = self.bias.detach().numpy()
-    running_mean = self.running_mean.detach().numpy()
-    running_var = self.running_var.detach().numpy()
+    weight = self.weight.cpu().detach().numpy()
+    bias = self.bias.cpu().detach().numpy()
+    running_mean = self.running_mean.cpu().detach().numpy()
+    running_var = self.running_var.cpu().detach().numpy()
 
     layer = keras.layers.BatchNormalization(momentum=1 - momentum, epsilon=epsilon, weights=[weight, bias, running_mean, running_var])
     return layer
@@ -39,8 +39,8 @@ def converter_InstanceNorm(self, input: Tensor):
     affine = self.affine
 
     if affine:
-        weight = self.weight.detach().numpy()
-        bias = self.bias.detach().numpy()
+        weight = self.weight.cpu().detach().numpy()
+        bias = self.bias.cpu().detach().numpy()
         params = [weight, bias]
     else:
         params = []
@@ -56,8 +56,8 @@ def converter_GroupNorm(self, input: Tensor):
     affine = self.affine
 
     if affine:
-        weight = self.weight.detach().numpy()
-        bias = self.bias.detach().numpy()
+        weight = self.weight.cpu().detach().numpy()
+        bias = self.bias.cpu().detach().numpy()
         params = [weight, bias]
     else:
         params = []
@@ -77,10 +77,10 @@ def converter_layer_norm(input: Tensor,
 
     params = []
     if weight is not None:
-        weight = weight.detach().numpy()
+        weight = weight.cpu().detach().numpy()
         params.append(weight)
     if bias is not None:
-        bias = bias.detach().numpy()
+        bias = bias.cpu().detach().numpy()
         params.append(bias)
 
     layer = keras.layers.LayerNormalization(axis=-1, epsilon=eps, scale=weight is not None, center=bias is not None, weights=params)

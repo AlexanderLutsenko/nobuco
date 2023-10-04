@@ -20,12 +20,12 @@ from nobuco.converters.node_converter import converter
 @converter(nn.Linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_Linear(self, input: Tensor):
     out_filters, in_filters = self.weight.shape
-    weights = self.weight.detach().numpy()
+    weights = self.weight.cpu().detach().numpy()
     weights = weights.transpose(1, 0)
 
     use_bias = self.bias is not None
     if use_bias:
-        biases = self.bias.detach().numpy()
+        biases = self.bias.cpu().detach().numpy()
         params = [weights, biases]
     else:
         params = [weights]
@@ -35,12 +35,12 @@ def converter_Linear(self, input: Tensor):
 @converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_linear(input, weight, bias, out=None):
     out_filters, in_filters = weight.shape
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
     weights = weights.transpose(1, 0)
 
     use_bias = bias is not None
     if use_bias:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
     else:
         params = [weights]
@@ -125,7 +125,7 @@ def converter_norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None
 def converter_embedding(input: Tensor, weight: Tensor, padding_idx: Optional[int] = None, max_norm: Optional[float] = None,
               norm_type: float = 2.0, scale_grad_by_freq: bool = False, sparse: bool = False):
     input_dim, output_dim = weight.shape
-    weight = weight.detach().numpy()
+    weight = weight.cpu().detach().numpy()
 
     layer = keras.layers.Embedding(input_dim, output_dim, weights=[weight])
 

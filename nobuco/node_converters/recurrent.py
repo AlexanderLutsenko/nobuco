@@ -48,15 +48,15 @@ def converter_GRU(self: nn.GRU, input, hx=None):
             return np.concatenate([p2, p1, p3], axis=-1)
 
         suffix = '_reverse' if reverse else ''
-        weight_ih = self.__getattr__(f'weight_ih_l{i}{suffix}').detach().numpy().transpose((1, 0))
-        weight_hh = self.__getattr__(f'weight_hh_l{i}{suffix}').detach().numpy().transpose((1, 0))
+        weight_ih = self.__getattr__(f'weight_ih_l{i}{suffix}').cpu().detach().numpy().transpose((1, 0))
+        weight_hh = self.__getattr__(f'weight_hh_l{i}{suffix}').cpu().detach().numpy().transpose((1, 0))
         weight_ih = reorder(weight_ih)
         weight_hh = reorder(weight_hh)
         weights = [weight_ih, weight_hh]
 
         if self.bias:
-            bias_ih = self.__getattr__(f'bias_ih_l{i}{suffix}').detach().numpy()
-            bias_hh = self.__getattr__(f'bias_hh_l{i}{suffix}').detach().numpy()
+            bias_ih = self.__getattr__(f'bias_ih_l{i}{suffix}').cpu().detach().numpy()
+            bias_hh = self.__getattr__(f'bias_hh_l{i}{suffix}').cpu().detach().numpy()
             bias_ih = reorder(bias_ih)
             bias_hh = reorder(bias_hh)
             weights += [np.stack([bias_ih, bias_hh], axis=0)]
@@ -124,13 +124,13 @@ def converter_LSTM(self: nn.LSTM, input, hx=None):
 
     def create_layer(i, reverse):
         suffix = '_reverse' if reverse else ''
-        weight_ih = self.__getattr__(f'weight_ih_l{i}{suffix}').detach().numpy().transpose((1, 0))
-        weight_hh = self.__getattr__(f'weight_hh_l{i}{suffix}').detach().numpy().transpose((1, 0))
+        weight_ih = self.__getattr__(f'weight_ih_l{i}{suffix}').cpu().detach().numpy().transpose((1, 0))
+        weight_hh = self.__getattr__(f'weight_hh_l{i}{suffix}').cpu().detach().numpy().transpose((1, 0))
         weights = [weight_ih, weight_hh]
 
         if self.bias:
-            bias_ih = self.__getattr__(f'bias_ih_l{i}{suffix}').detach().numpy()
-            bias_hh = self.__getattr__(f'bias_hh_l{i}{suffix}').detach().numpy()
+            bias_ih = self.__getattr__(f'bias_ih_l{i}{suffix}').cpu().detach().numpy()
+            bias_hh = self.__getattr__(f'bias_hh_l{i}{suffix}').cpu().detach().numpy()
             weights += [bias_ih + bias_hh]
 
         lstm = keras.layers.LSTM(

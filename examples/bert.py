@@ -1,6 +1,3 @@
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
 import torch
 import keras
 import tensorflow as tf
@@ -22,13 +19,15 @@ indexed_tokens = tokenizer.encode(text_1, text_2, add_special_tokens=True)
 # Define sentence A and B indices associated to 1st and 2nd sentences (see paper)
 segments_ids = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
 
+device = 'cuda'
+
 # Convert inputs to PyTorch tensors
-segments_tensors = torch.tensor([segments_ids])
-tokens_tensor = torch.tensor([indexed_tokens])
+segments_tensors = torch.tensor([segments_ids]).to(device)
+tokens_tensor = torch.tensor([indexed_tokens]).to(device)
 
-pytorch_module = torch.hub.load('huggingface/pytorch-transformers', 'model', 'bert-base-cased').eval()
+pytorch_module = torch.hub.load('huggingface/pytorch-transformers', 'model', 'bert-base-cased').eval().to(device)
 
-
+# tf.config.experimental.set_visible_devices([], 'GPU')
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[tokens_tensor], kwargs={'token_type_ids': segments_tensors},

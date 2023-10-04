@@ -24,11 +24,11 @@ def converter_Conv1d(self, input: Tensor):
     dilation = self.dilation
 
     out_filters, in_filters, kw = weight.shape
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
     weights = tf.transpose(weights, (2, 1, 0))
 
     if bias is not None:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
         use_bias = True
     else:
@@ -63,11 +63,11 @@ def converter_Conv1d(self, input: Tensor):
 @converter(F.conv1d)
 def converter_conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None, stride: Union[_int, _size]=1, padding: str="valid", dilation: Union[_int, _size]=1, groups: _int=1):
     out_filters, in_filters, kw = weight.shape
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
     weights = tf.transpose(weights, (2, 1, 0))
 
     if bias is not None:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
         use_bias = True
     else:
@@ -110,11 +110,11 @@ def converter_Conv2d(self, input: Tensor):
 
     out_filters, in_filters, kh, kw = weight.shape
 
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
     weights = tf.transpose(weights, (2, 3, 1, 0))
 
     if bias is not None:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
         use_bias = True
     else:
@@ -150,11 +150,11 @@ def converter_conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
 
     out_filters, in_filters, kh, kw = weight.shape
 
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
     weights = tf.transpose(weights, (2, 3, 1, 0))
 
     if bias is not None:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
         use_bias = True
     else:
@@ -195,7 +195,7 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
     output_padding = self.output_padding
 
     in_filters, out_filters, kh, kw = weight.shape
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
 
     if groups == 1:
         weights = weights.transpose((2, 3, 1, 0))
@@ -203,7 +203,7 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
         weights = weights.transpose((2, 3, 0, 1))
 
     if bias is not None:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
         use_bias = True
     else:
@@ -276,7 +276,7 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
                      stride: Union[_int, _size]=1, padding: Union[_int, _size]=0, output_padding: Union[_int, _size]=0,
                      groups: _int=1, dilation: Union[_int, _size]=1):
     in_filters, out_filters, kh, kw = weight.shape
-    weights = weight.detach().numpy()
+    weights = weight.cpu().detach().numpy()
 
     if groups == 1:
         weights = weights.transpose((2, 3, 1, 0))
@@ -284,7 +284,7 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
         weights = weights.transpose((2, 3, 0, 1))
 
     if bias is not None:
-        biases = bias.detach().numpy()
+        biases = bias.cpu().detach().numpy()
         params = [weights, biases]
         use_bias = True
     else:
