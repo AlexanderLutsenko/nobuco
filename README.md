@@ -74,7 +74,7 @@ keras_model = nobuco.pytorch_to_keras(
 )
 ````
 
-Aaaand done! That's all it takes to... wait, what's that?
+Aaaand done! That's all it takes to... hold on, what's that?
 
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials1.svg" width="100%">
 
@@ -104,25 +104,27 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
     return lambda input, inplace=False: tf.clip_by_value(input/6 + 1/2, clip_value_min=0, clip_value_max=1)
 ````
 
-<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials3.svg" width="100%">
-
 And the happy result:
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials3.svg" width="100%">
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/tutorial.png" width="30%">
 </p>
 
-The example above is artificial but it illustrates the point.
+The example above is artificial, but it illustrates the point.
 It's not feasible to provide a node converter for every existing pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
 Best we can do without the converter constantly lacking essential functionality, being riddled with bugs, doing weird stuff and breaking apart with every other PT/TF release 
 is to keep the tool simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
 Usually it's easy for a human to translate an isolated operation from one framework to another.
 Reproducing the graph structure is a different matter entirely. For that, Nobuco has you covered!
 
+Nobuco lets you intervene in conversion at each step, asks for help where needed and doesn't bother you with routine stuff.
+
 https://user-images.githubusercontent.com/2457934/233740603-cc11acc5-cd6b-48c8-b089-ff3ead772dd0.mp4
 
 <p align="center"><em>
-To ease debugging, Nobuco lets you jump right where the node was [I]nvoked, [D]efined and [C]onverted
+With an IDE, you can jump right where the node was [I]nvoked, [D]efined and [C]onverted
 </em></p>
 
 ## Channel order wizardry
@@ -268,7 +270,7 @@ class MyModule(nn.Module):
 
 ## Implementation mismatch: pick your poison
 
-Sometimes, Pytorch and Tensorflow just don't get along. 
+Sometimes, Pytorch and Tensorflow just don't go along. 
 In case of `hardsigmoid`, it's a mere inconvenience, but it can be much more sinister.
 
 Take the model below, for example.
@@ -289,7 +291,7 @@ class MyModule(nn.Module):
 
 Ideally, there would only be three nodes in the converted graph. That's not what we get, though.
 
-Well, Tensorflow does not really support `pixel_unshuffle`/`pixel_shuffle`.
+Tensorflow does not have `pixel_unshuffle`/`pixel_shuffle`.
 Their closest counterparts, `tf.nn.space_to_depth`/`tf.nn.depth_to_space`,
 do almost the same thing but not quite: output channels are in a different order.
 The order must be fixed with a pricey `transpose`, no way around that. Or is there?
@@ -332,11 +334,13 @@ class MyModuleTFOptimized(nn.Module):
 <tr>
 <td>
 
-Torch implementation
+**Torch implementation**
+
 ```python
 F.pixel_unshuffle
 ```
-Tensorflow converter
+
+**Tensorflow converter**
 ```python
 @nobuco.converter(F.pixel_unshuffle, 
                   channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
@@ -365,7 +369,7 @@ def channel_interleave2d(x, block_size: int, reverse: bool):
 </td>
 <td>
 
-Torch implementation
+**Torch implementation**
 ```python
 class SpaceToDepth(nn.Module):
     def __init__(self, block_size):
@@ -391,7 +395,7 @@ def channel_interleave2d(x: torch.Tensor, block_size: int, reverse: bool) -> tor
     return x
 ```
 
-Tensorflow converter
+**Tensorflow converter**
 ```python
 @nobuco.converter(SpaceToDepth, 
                   channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
@@ -697,7 +701,7 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
 ## Nobuco knowledge base
 
 Don't want to convert anything but looking for a tensorflow equivalent of a certain pytorch node (operation or module)?
-Nobuco already implements quite a few node converters, most written in concise and (hopefully) understandable way.
+Nobuco already implements quite a few node converters, most written in concise and, hopefully, understandable way.
 These are located in [nobuco/node_converters](https://github.com/AlexanderLutsenko/nobuco/tree/master/nobuco/node_converters),
 and there's a utility function to help you find what you need:
 
