@@ -18,7 +18,8 @@ from nobuco.converters.channel_ordering import set_channel_order, get_channel_or
 from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import perm_keras2pytorch, _permute, _ensure_iterable, _dims_make_positive, dims_pytorch2keras
 
-
+# Converters for reduce functions are made so complex to minimize the number of transpositions.
+# Hopefully, the end user will never need to see this.
 def reduce_func(inner_func: Callable, n_dims: int):
     def func(input, dim, keepdim, **kwargs):
         if dim is not None:
@@ -35,7 +36,7 @@ def reduce_func(inner_func: Callable, n_dims: int):
             outputs = tf_annotate_recursively(outputs, order)
             return outputs
         else:
-            if order == ChannelOrder.TENSORFLOW:
+            if dim is not None and order == ChannelOrder.TENSORFLOW:
                 perm = perm_keras2pytorch(n_dims)
                 input = _permute(perm)(input)
             outputs = inner_func(input, dim, keepdim, **kwargs)
@@ -176,6 +177,9 @@ def converter_max(input: Tensor, dim=None, keepdim: _bool=False, *, out=None):
 def converter_argmin(input: Tensor, dim=None, keepdim: _bool=False, *, out=None):
     def inner_func(input, dim, keepdim):
         if dim is None:
+            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+                perm = perm_keras2pytorch(n_dims)
+                input = _permute(perm)(input)
             return tf.math.argmin(tf.reshape(input, shape=(-1,)))
         else:
             dim = dim[0]
@@ -195,6 +199,9 @@ def converter_argmin(input: Tensor, dim=None, keepdim: _bool=False, *, out=None)
 def converter_argmax(input: Tensor, dim=None, keepdim: _bool=False, *, out=None):
     def inner_func(input, dim, keepdim):
         if dim is None:
+            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+                perm = perm_keras2pytorch(n_dims)
+                input = _permute(perm)(input)
             return tf.math.argmax(tf.reshape(input, shape=(-1,)))
         else:
             dim = dim[0]
