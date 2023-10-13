@@ -25,6 +25,12 @@ def traceable(func_to_trace: Callable):
         return Tracer.op_tracing_decorator(func_to_trace, inspect.getmodule(func_to_trace), module_suffix=module_suffix)
 
 
+def find_call_summary(call_stack: List[traceback.FrameSummary]) -> traceback.FrameSummary:
+    for summary in reversed(call_stack[:-1]):
+        if not summary.name.endswith('_call_impl'):
+            return summary
+
+
 class Tracer:
     
     op_tracing_classes = [
@@ -94,7 +100,7 @@ class Tracer:
                 outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
                 is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
 
-                summary: traceback.FrameSummary = traceback.extract_stack()[-3]
+                summary: traceback.FrameSummary = find_call_summary(traceback.extract_stack())
                 node = PytorchNode(wrapped_op, self.__module__, Tracer._parent_list.copy(), self, args_clone, kwargs_clone, outputs_clone, is_inplace, summary)
                 Tracer._node_list.append(node)
 
@@ -158,7 +164,7 @@ class Tracer:
                     outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
                     is_inplace = not Tracer.are_equal((args, kwargs), (args_clone, kwargs_clone))
 
-                    summary: traceback.FrameSummary = traceback.extract_stack()[-2]
+                    summary: traceback.FrameSummary = find_call_summary(traceback.extract_stack())
                     node = PytorchNode(wrapped_op, module_name, Tracer._parent_list.copy(), None, args_clone, kwargs_clone, outputs_clone, is_inplace, summary)
                     Tracer._node_list.append(node)
 
