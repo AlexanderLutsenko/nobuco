@@ -31,6 +31,7 @@ pip install -U nobuco
 - [Going dynamic](#going-dynamic)
   - [Control flows](#control-flows)
   - [Dynamic shapes](#dynamic-shapes)
+- [Ad hoc modifications](#ad-hoc-modifications) 
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 - [But was it worth it?](#but-was-it-worth-it)
 - [Nobuco knowledge base](#nobuco-knowledge-base)
@@ -566,6 +567,83 @@ keras_model = nobuco.pytorch_to_keras(
 )
 ```
 
+## Ad hoc modifications
+
+Let's say, for illustrative purposes, that we prefer putting batchnorm _before_ convolution.
+We were sure `TFLiteConverter` would fuse these two linear operations into one.
+Alas, it failed to meet our expectations. 
+Can we still get the fusion to work without re-training or messing around with the model checkpoint?
+
+```python
+class FusibleModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.bn = nn.BatchNorm2d(3)
+        self.conv = nn.Conv2d(3, 16, kernel_size=(3, 3), padding=(0, 0))
+        self.act = nn.ReLU()
+
+    def forward(self, x):
+        x = self.bn(x)
+        x = self.conv(x)
+        x = self.act(x)
+        return x
+```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/fusion1.png" width="20%">
+</p>
+
+Here's one way to do it:
+- Wrap the two ops in a `Callable`. Decorate it with `@nobuco.traceable`. 
+- Make a custom converter for it which does the desired optimization. 
+
+```python
+class FusibleModule(nn.Module):
+    # ...
+
+    @nobuco.traceable
+    def bn_conv(self, x):
+        x = self.bn(x)
+        x = self.conv(x)
+        return x
+
+    def forward(self, x):
+        x = self.bn_conv(x)
+        x = self.act(x)
+        return x
+```
+
+```python
+@nobuco.converter(FusibleModule.bn_conv, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def converter_bn_conv(self, x):
+    order = ChannelOrder.TENSORFLOW
+    bn, out_bn = nobuco.pytorch_to_keras(self.bn, [x], inputs_channel_order=order, outputs_channel_order=order, return_outputs_pt=True)
+    conv = nobuco.pytorch_to_keras(self.conv, [out_bn], inputs_channel_order=order, outputs_channel_order=order)
+
+    gamma, beta, moving_mean, moving_variance = bn.get_weights()
+    kernel, bias = conv.get_weights()
+    eps = self.bn.eps
+
+    '''
+    y = gamma * (x - moving_mean) / sqrt(moving_variance + eps) + beta
+    z = kernel * y + bias
+    =>
+    z = kernel_fused * x + bias_fused WHERE
+    kernel_fused = kernel * gamma / sqrt(moving_variance + eps)
+    bias_fused = -kernel_fused * moving_mean + kernel * beta + bias
+    '''
+    kernel_fused = kernel * (gamma / np.sqrt(moving_variance + eps))[None, None, :, None]
+    bias_fused = (-kernel_fused * moving_mean[None, None, :, None] + kernel * beta[None, None, :, None]).sum(axis=(0, 1, 2)).flatten() + bias
+    conv.set_weights([kernel_fused, bias_fused])
+    return lambda self, x: conv(x)
+```
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/fusion2.svg" width="100%">
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/fusion2.png" width="20%">
+</p>
+
 ## So we put a converter inside your converter
 
 As we've learned, Nobuco gets confused when in-place operation is applied to a slice.
@@ -596,7 +674,7 @@ class MyModule(nn.Module):
 
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/converter_inside_converter1.svg" width="100%">
 
-In the previous section, we've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
+We've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
 Can we embed some third-party converter? You bet! Why? Because it might just do what we need.
 Let's consider the standard route: pytorch -> onnx -> tensorflow, with the latter step done with [onnx-tf](https://github.com/onnx/onnx-tensorflow).
 This library likes transposing stuff so much, converting the whole graph with it may introduce intolerable inference overhead. Nonetheless, it does the job.
