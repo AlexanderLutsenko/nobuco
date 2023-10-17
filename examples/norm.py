@@ -1,12 +1,14 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
+
 import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
 
 import torch
 from torch import nn
+from torchvision.ops import FrozenBatchNorm2d
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
@@ -16,17 +18,19 @@ from tensorflow import keras
 class DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.natch_norm = nn.BatchNorm2d(32)
+        self.batch_norm = nn.BatchNorm2d(32)
+        self.frozen_batch_norm = FrozenBatchNorm2d(32)
         self.instance_norm = nn.InstanceNorm2d(32, affine=True)
         self.group_norm = nn.GroupNorm(num_groups=4, num_channels=32, affine=True)
         self.layer_norm = nn.LayerNorm(normalized_shape=256, elementwise_affine=True)
 
     def forward(self, x):
-        x1 = self.natch_norm(x)
-        x2 = self.instance_norm(x)
-        x3 = self.group_norm(x)
-        x4 = self.layer_norm(x)
-        return x1, x2, x3, x4
+        x1 = self.batch_norm(x)
+        x2 = self.frozen_batch_norm(x)
+        x3 = self.instance_norm(x)
+        x4 = self.group_norm(x)
+        x5 = self.layer_norm(x)
+        return x1, x2, x3, x4, x5
 
 
 model = DummyModel().eval()

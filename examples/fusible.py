@@ -14,18 +14,18 @@ from tensorflow import keras
 import numpy as np
 
 
-class FusibleModule(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.bn = nn.BatchNorm2d(3)
-        self.conv = nn.Conv2d(3, 16, kernel_size=(3, 3), padding=(0, 0))
-        self.act = nn.ReLU()
-
-    def forward(self, x):
-        x = self.bn(x)
-        x = self.conv(x)
-        x = self.act(x)
-        return x
+# class FusibleModule(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#         self.bn = nn.BatchNorm2d(3)
+#         self.conv = nn.Conv2d(3, 16, kernel_size=(3, 3), padding=(0, 0))
+#         self.act = nn.ReLU()
+#
+#     def forward(self, x):
+#         x = self.bn(x)
+#         x = self.conv(x)
+#         x = self.act(x)
+#         return x
 
 
 class FusibleModule(nn.Module):
