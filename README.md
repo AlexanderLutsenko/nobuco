@@ -96,7 +96,7 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
 
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials2.svg" width="100%">
 
-It works, but the outputs don't quite match. Perhaps we should check on how [Pytorch](https://pytorch.org/https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [Tensorflow](https://www.tensorflow.org/api_https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
+It works, but the outputs don't quite match. Perhaps we should check on how [Pytorch](https://pytorch.org/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [Tensorflow](https://www.tensorflow.org/api_docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
 And sure enough, their implementations differ. Have to type in the formula manually, I guess...
 
 ````python
