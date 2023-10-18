@@ -3,7 +3,7 @@
 <sup><a href="https://www.behance.net/diliajl">diliajl</a></sup>
 </p>
 
-**No** **Bu**llshit **Co**nverter is a tool that helps you translate pytorch models into tensorflow graphs without losing your mind.
+**No** **Bu**llshit **Co**nverter is a tool that helps you translate Pytorch models into Tensorflow/Keras graphs without losing your mind.
 
 - Supports a wide range of architectures
   - [x] Control flow ops (If, While)
@@ -40,7 +40,7 @@ pip install -U nobuco
 
 ## Essentials
 
-Suppose we want to convert a pytorch module similar to this one:
+Suppose we want to convert a Pytorch module similar to this one:
 
 ````python
 class MyModule(nn.Module):
@@ -83,8 +83,8 @@ Nobuco says it doesn't know how to handle hard sigmoid.
 Apparently, it's our job to provide a node converter for either `F.hardsigmoid` or the enclosing `Hardsigmoid` module (or the entire `MyModule`, but that makes little sense). Here, we'll go for the former.
 
 Conversion is done directly. No layers upon layers of abstraction, no obscure intermediate representation. 
-A node converter is just a `Callable` that takes in the same arguments as the corresponding node in pytorch and outputs an equivalent node in tensorflow. 
-The converted node preserves the original node's signature, but pytorch tensors replaced with tensorflow counterparts (be that `tf.Tensor`, `KerasTensor`, `tf.Variable`, or `ResourceVariable`).
+A node converter is just a `Callable` that takes in the same arguments as the corresponding node in Pytorch and outputs an equivalent node in Tensorflow. 
+The converted node preserves the original node's signature, but Pytorch tensors replaced with Tensorflow counterparts (be that `tf.Tensor`, `KerasTensor`, `tf.Variable`, or `ResourceVariable`).
 
 This should do the trick:
 
@@ -96,7 +96,7 @@ def hardsigmoid(input: torch.Tensor, inplace: bool = False):
 
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/essentials2.svg" width="100%">
 
-It works, but the outputs don't quite match. Perhaps we should check on how [pytorch](https://pytorch.org/https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [tensorflow](https://www.tensorflow.org/api_https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
+It works, but the outputs don't quite match. Perhaps we should check on how [Pytorch](https://pytorch.org/https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/stable/generated/torch.nn.functional.hardsigmoid.html) and [Tensorflow](https://www.tensorflow.org/api_https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/python/tf/keras/activations/hard_sigmoid) define hard sigmoid. 
 And sure enough, their implementations differ. Have to type in the formula manually, I guess...
 
 ````python
@@ -114,7 +114,7 @@ And the happy result:
 </p>
 
 The example above is artificial, but it illustrates the point.
-It's not feasible to provide a node converter for every existing pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
+It's not feasible to provide a node converter for every existing Pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
 Best we can do without the converter constantly lacking essential functionality, being riddled with bugs, doing weird stuff and breaking apart with every other PT/TF release 
 is to keep the tool simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
 Usually it's easy for a human to translate an isolated operation from one framework to another.
@@ -131,22 +131,22 @@ With an IDE, you can jump right where the node was [I]nvoked, [D]efined and [C]o
 ## Channel order wizardry
 
 Some operations assume its input tensors have a channel dimension. 
-And as you probably know, pytorch and tensorflow do not agree on the layout of such tensors.
+And as you probably know, Pytorch and Tensorflow do not agree on the layout of such tensors.
 Pytorch adopts channel-first layout (_B**C**H_, _B**C**HW_, etc.) 
-while tensorflow works efficiently with channel-last tensors (_BH**C**_, _BHW**C**_, ...).
+while Tensorflow works efficiently with channel-last tensors (_BH**C**_, _BHW**C**_, ...).
 Transposing tensors between the two layouts incurs non-trivial overhead as generally, tensor data must be physically rearranged.
 In an effort to keep that overhead to the minimum, Nobuco does layout coercions _lazily_. 
 A couple of things are needed to make it possible:
 
-- Tensorflow tensors are augmented with an additional property which stores their channel order, either pytorch (channel first) or tensorflow (channel last) style.
+- Tensorflow tensors are augmented with an additional property which stores their channel order, either Pytorch (channel first) or Tensorflow (channel last) style.
 - Node converters have requirements on what channel order their inputs must have. Said requirements are expressed with `channel_ordering_strategy` argument. 
 
 Channel ordering strategies are
 - `FORCE_TENSORFLOW_ORDER`
-  - Input tensors will be coerced to tensorflow channel order.
+  - Input tensors will be coerced to Tensorflow channel order.
   - Convenient for converting channel-aware operations (convolution, batchnorm).
 - `FORCE_PYTORCH_ORDER`
-  - Input tensors entering the node will look exactly as they do in the original pytorch graph. 
+  - Input tensors entering the node will look exactly as they do in the original Pytorch graph. 
   - Use it when the node does not interpret its input tensors as having a channel dimension (linear, matmul). 
 - `MINIMUM_TRANSPOSITIONS`
   - The channel order is decided by a majority vote (whichever prevails among the inputs). This way the number of coercions (i.e. tensor transpositions) is kept to the minimum.
@@ -157,7 +157,7 @@ Channel ordering strategies are
 
 The simple lazy approach makes wonders in most situations, but sometimes it produces suboptimal graphs.
 Consider the code below. Imagine this is some sort of text processing network. 
-It first applies a GRU layer which assumes the inputs do not have a channel dimension, so its input/output layouts are the same in both pytorch and tensorflow.
+It first applies a GRU layer which assumes the inputs do not have a channel dimension, so its input/output layouts are the same in both Pytorch and Tensorflow.
 But then, the outputs are passed to a couple of 1D convolutions which are channel-aware. 
 Because of that, a transpose op must be put in the converted graph.
 
@@ -246,7 +246,7 @@ class MyModule(nn.Module):
 
 <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace2.svg" width="100%">
 
-You see, tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
+You see, Tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
 So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
 This copy is then passed to `relu` (which is not in-place either), and its result is not used anywhere. 
 As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations are excluded from the graph.
@@ -257,7 +257,7 @@ In fact, it's empty:
 </p>
 
 The easiest way of fixing this is to explicitly assign the result to the slice.
-Conveniently enough, most standard in-place operations in pytorch do return their modified arguments as outputs.
+Conveniently enough, most standard in-place operations in Pytorch do return their modified arguments as outputs.
 
 ```python
 class MyModule(nn.Module):
@@ -440,9 +440,9 @@ class ControlIf(nn.Module):
         return x
 ```
 
-Of course, it's possible to translate the dynamic module into a tensorflow layer
+Of course, it's possible to translate the dynamic module into a Tensorflow layer
 (don't forget to decorate it with `@tf.function` for autograph to kick in).
-But what if it contains inner modules, do you replicate them in tensorflow all by hand?
+But what if it contains inner modules, do you replicate them in Tensorflow all by hand?
 Not unless you want to! 
 Just convert them separately and use the resulting graphs inside the parent layer.
 
@@ -543,7 +543,7 @@ Something's not right. We don't see shape extraction ops in the debug output or 
 </p>
 
 That's not surprising, actually. 
-In pytorch, tensor shape is a tuple of regular integers, not tensors, so it's quite difficult to track them.
+In Pytorch, tensor shape is a tuple of regular integers, not tensors, so it's quite difficult to track them.
 `nobuco.shape` solves this problem.
 This function returns tensors, much like [`tf.shape`](https://www.tensorflow.org/api_https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/python/tf/shape) does:
 
@@ -676,7 +676,7 @@ class MyModule(nn.Module):
 
 We've seen it's possible to invoke a Nobuco converter inside another Nobuco converter.
 Can we embed some third-party converter? You bet! Why? Because it might just do what we need.
-Let's consider the standard route: pytorch -> onnx -> tensorflow, with the latter step done with [onnx-tf](https://github.com/onnx/onnx-tensorflow).
+Let's consider the standard route: Pytorch -> ONNX -> Tensorflow, with the latter step done with [onnx-tf](https://github.com/onnx/onnx-tensorflow).
 This library likes transposing stuff so much, converting the whole graph with it may introduce intolerable inference overhead. Nonetheless, it does the job.
 A sensible tradeoff would be to wrap the problematic operation into its own `nn.Module` and give it a special treat, while handling everything else with Nobuco.
 
@@ -778,7 +778,7 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
 
 ## Nobuco knowledge base
 
-Don't want to convert anything but looking for a tensorflow equivalent of a certain pytorch node (operation or module)?
+Don't want to convert anything but looking for a Tensorflow equivalent of a certain Pytorch node (operation or module)?
 Nobuco already implements quite a few node converters, most written in concise and, hopefully, understandable way.
 These are located in [nobuco/node_converters](https://github.com/AlexanderLutsenko/nobuco/tree/master/nobuco/node_converters),
 and there's a utility function to help you find what you need:
