@@ -161,10 +161,15 @@ def converter_log_softmax(input: Tensor, dim, *, dtype: Optional[_dtype]=None):
     return func
 
 
-@converter(torch.clip, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.clip, torch.Tensor.clip, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_clip(input: Tensor, min: Optional[Tensor]=None, max: Optional[Tensor]=None, *, out: Optional[Tensor]=None):
     def func(input, min=None, max=None, *, out=None):
-        return tf.clip_by_value(input, min, max)
+        if min is None:
+            return tf.minimum(input, max)
+        elif max is None:
+            return tf.maximum(input, min)
+        else:
+            return tf.clip_by_value(input, min, max)
     return func
 
 
