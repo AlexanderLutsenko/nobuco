@@ -10,7 +10,8 @@ from nobuco.layers.channel_order import ChangeOrderingLayer
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.node_converter import converter
-from nobuco.converters.tensor import perm_keras2pytorch, _permute, _flatten, permute_pytorch2keras, _ensure_iterable, _ensure_tuple
+from nobuco.converters.tensor import perm_keras2pytorch, _permute, _flatten, permute_pytorch2keras, _ensure_iterable, \
+    _ensure_tuple, dim_pytorch2keras
 from nobuco.layers.weight import WeightLayer
 from nobuco.node_converters.boolean_mask import converter_masked_select
 
@@ -244,4 +245,37 @@ def converter_getitem(self, *slices):
             # x = getitem_indexed(x, slices)
             x = set_channel_order(x, ChannelOrder.PYTORCH)
             return x
+    return func
+
+
+@converter(torch.scatter, torch.Tensor.scatter, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_scatter(input, dim, index, src):
+    if input.dim() == 1:
+        def func(input, dim, index, src):
+            return tf.tensor_scatter_nd_update(input, index[..., None], src)
+    else:
+        def func(input, dim, index, src):
+            if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+                dim = dim_pytorch2keras(dim, tf.rank(input))
+
+            grids = tf.where(tf.ones_like(index))
+            rank = tf.shape(grids)[-1:]
+            grids = tf.reshape(grids, tf.concat([tf.shape(index), rank], axis=0))
+
+            # Clean but not fully supported by TFLite
+            # grids = tf.unstack(grids, axis=-1)
+            # grids[dim] = index
+            # multi_index = tf.stack(grids, axis=-1)
+
+            # TFLite-compatible variant
+            # - avoid operating tensors of dimensionality 5 and higher
+            # - avoid tf.unstack
+            grids = tf.reshape(grids, (-1, rank[0]))
+            index = tf.reshape(index, (-1,))
+            grids_before = grids[..., :dim]
+            grids_after = grids[..., dim + 1:]
+            multi_index = tf.concat([grids_before, index[..., None], grids_after], axis=-1)
+            multi_index = tf.reshape(multi_index, tf.concat([tf.shape(src), rank], axis=0))
+
+            return tf.tensor_scatter_nd_update(input, multi_index, src)
     return func
