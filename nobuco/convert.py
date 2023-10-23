@@ -66,7 +66,7 @@ def convert_node(node: PytorchNode, node_converter: Pytorch2KerasNodeConverter) 
 
     # clone the inputs to be on the safe side
     input_args, input_kwargs = clone_torch_tensors_recursively((input_args, node.input_kwargs))
-    layer = node_converter.convert(*input_args, **input_kwargs)
+    layer = node_converter.convert(_pytorch_node=node, *input_args, **input_kwargs)
     return layer
 
 

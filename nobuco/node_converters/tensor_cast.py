@@ -5,6 +5,7 @@ import torch
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
+from nobuco.converters.type_cast import dtype_pytorch2keras
 
 
 @converter(torch.Tensor.contiguous, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
@@ -26,28 +27,6 @@ def converter_cpu(self, memory_format=None):
     def func(self, memory_format=None):
         return self
     return func
-
-
-def dtype_pytorch2keras(dtype):
-    if dtype == torch.float32:
-        tf_type = tf.float32
-    elif dtype == torch.float64:
-        tf_type = tf.float64
-    elif dtype == torch.int32:
-        tf_type = tf.int32
-    elif dtype == torch.int64:
-        tf_type = tf.int64
-    elif dtype == torch.bool:
-        tf_type = tf.bool
-    elif dtype == torch.complex64:
-        tf_type = tf.complex64
-    elif dtype == torch.complex128:
-        tf_type = tf.complex128
-    elif dtype is None:
-        tf_type = None
-    else:
-        raise Exception('Unsupported dtype: ', dtype)
-    return tf_type
 
 
 def type_func(self, dtype=None, non_blocking=False, **kwargs):
@@ -75,6 +54,11 @@ def converter_long(self, memory_format=None):
     return lambda x: type_func(x, dtype=torch.int64)
 
 
+@converter(torch.Tensor.half, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_half(self, memory_format=None):
+    return lambda x: type_func(x, dtype=torch.float16)
+
+
 @converter(torch.Tensor.float, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_float(self, memory_format=None):
     return lambda x: type_func(x, dtype=torch.float32)
@@ -96,6 +80,13 @@ def converter_to(self, device=None, dtype=None, non_blocking=False, copy=False, 
             return self
         else:
             raise Exception('Unsupported params')
+    return func
+
+
+@converter(torch.Tensor.type_as, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_type_as(self, tensor):
+    def func(self, tensor):
+        return tf.cast(self, tensor.dtype)
     return func
 
 

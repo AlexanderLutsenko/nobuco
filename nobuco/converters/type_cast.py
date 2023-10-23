@@ -1,6 +1,7 @@
 import sys
 
 import tensorflow as tf
+import torch
 
 from nobuco.commons import TF_TENSOR_CLASSES
 from nobuco.util import collect_recursively, replace_recursively_func
@@ -11,7 +12,7 @@ TF_TYPE_PRIORITY_LIST = [
 
     tf.float64,
     tf.float32,
-    # tf.float16,
+    tf.float16,
 
     tf.int64,
     tf.int32,
@@ -20,7 +21,35 @@ TF_TYPE_PRIORITY_LIST = [
 ]
 
 
-def tf_cast_recursively(inputs, type_priority_list=None):
+def dtype_pytorch2keras(dtype):
+    if dtype == torch.float16:
+        tf_type = tf.float16
+    elif dtype == torch.float32:
+        tf_type = tf.float32
+    elif dtype == torch.float64:
+        tf_type = tf.float64
+    elif dtype == torch.int8:
+        tf_type = tf.int8
+    elif dtype == torch.int16:
+        tf_type = tf.int16
+    elif dtype == torch.int32:
+        tf_type = tf.int32
+    elif dtype == torch.int64:
+        tf_type = tf.int64
+    elif dtype == torch.bool:
+        tf_type = tf.bool
+    elif dtype == torch.complex64:
+        tf_type = tf.complex64
+    elif dtype == torch.complex128:
+        tf_type = tf.complex128
+    elif dtype is None:
+        tf_type = None
+    else:
+        raise Exception('Unsupported dtype: ', dtype)
+    return tf_type
+
+
+def tf_autocast_recursively(inputs, type_priority_list=None):
     if type_priority_list is None:
         type_priority_list = TF_TYPE_PRIORITY_LIST
 
@@ -51,3 +80,24 @@ def tf_cast_recursively(inputs, type_priority_list=None):
             return obj
 
     return replace_recursively_func(inputs, collect_func, replace_func)
+
+
+def tf_cast_recursively(obj, types):
+    assert len(collect_recursively(obj, TF_TENSOR_CLASSES)) == len(types)
+
+    i = 0
+
+    def collect_func(obj):
+        return isinstance(obj, TF_TENSOR_CLASSES)
+
+    def replace_func(tf_tensor):
+        nonlocal i
+        if tf_tensor.dtype != types[i]:
+            tf_tensor_cast = tf.cast(tf_tensor, types[i])
+            if hasattr(obj, 'channel_order'):
+                tf_tensor_cast.channel_order = tf_tensor.channel_order
+            tf_tensor = tf_tensor_cast
+        i += 1
+        return tf_tensor
+
+    return replace_recursively_func(obj, collect_func, replace_func)

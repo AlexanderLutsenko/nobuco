@@ -14,7 +14,8 @@ def find_index(collection, el):
     return None
 
 
-# Tensor identifier contains time_ns to be truly unique, as tensors pop in and out of existence and `Two objects with non-overlapping lifetimes may have the same id() value`.
+# Tensor identifier contains time_ns to be truly unique,
+# as tensors pop in and out of existence and `Two objects with non-overlapping lifetimes may have the same id() value`.
 def get_torch_tensor_identifier(tensor):
     if hasattr(tensor, 'original_id'):
         return tensor.original_id

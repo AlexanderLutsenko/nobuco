@@ -85,6 +85,7 @@ class PytorchNode:
     def output_tensors(self):
         return collect_recursively(self.outputs, torch.Tensor)
 
+
     @property
     def input_names(self):
         return [get_torch_tensor_identifier(t) for t in self.input_tensors]
@@ -92,6 +93,10 @@ class PytorchNode:
     @property
     def output_names(self):
         return [get_torch_tensor_identifier(t) for t in self.output_tensors]
+
+    @property
+    def output_types(self):
+        return [t.dtype for t in self.output_tensors]
 
     def get_type(self):
         if isinstance(self.wrapped_op.op, torch.nn.Module):

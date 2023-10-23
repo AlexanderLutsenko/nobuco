@@ -21,7 +21,7 @@ keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[x],
     inputs_channel_order=ChannelOrder.TENSORFLOW,
-    full_validation=False
+    # full_validation=False
 )
 
 model_path = 'vision_transformer'

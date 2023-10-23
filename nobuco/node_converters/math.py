@@ -29,14 +29,14 @@ def converter_cos(input, *args, **kwargs):
     return func
 
 
-@converter(torch.Tensor.add, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+@converter(torch.add, torch.Tensor.add, torch.Tensor.add_, torch.Tensor.__add__, torch.Tensor.__iadd__, torch.Tensor.__radd__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_add(input, other, *args, **kwargs):
     def func(input, other, *args, **kwargs):
         return input + other
     return func
 
 
-@converter(torch.sub, torch.subtract, torch.Tensor.sub, torch.Tensor.__sub__, torch.Tensor.__isub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+@converter(torch.sub, torch.subtract, torch.Tensor.sub, torch.Tensor.sub_, torch.Tensor.__sub__, torch.Tensor.__isub__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_sub(input: Union[Tensor, Number], other: Union[Tensor, Number], *, alpha: Optional[Number]=1, out: Optional[Tensor]=None):
     def func(input, other, *, alpha=1, out=None):
         return input - other
@@ -57,7 +57,7 @@ def converter_mul(input: Union[Tensor, Number], other: Union[Tensor, Number], *,
     return func
 
 
-@converter(torch.Tensor.mul, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+@converter(torch.Tensor.mul, torch.Tensor.mul_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_mul(self, value):
     def func(self, value):
         return self * value
@@ -71,7 +71,7 @@ def converter_div(input: Union[Tensor, Number], other: Union[Tensor, Number], *,
     return func
 
 
-@converter(torch.Tensor.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+@converter(torch.Tensor.div, torch.Tensor.div_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_div(self, value, *args, **kwargs):
     def func(self, value, *args, **kwargs):
         return self / value
@@ -223,17 +223,28 @@ def converter_clamp(self, max):
     return func
 
 
-@converter(torch.minimum, torch.Tensor.minimum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.minimum, torch.Tensor.minimum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_minimum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.minimum(input, other)
     return func
 
 
-@converter(torch.maximum, torch.Tensor.maximum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.maximum, torch.Tensor.maximum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_maximum(input: Tensor, other: Tensor, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.maximum(input, other)
+    return func
+
+
+@converter(torch.cumsum, torch.Tensor.cumsum, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_cumsum(input: Tensor, dim, *, dtype: Optional[_dtype] = None, out: Optional[Tensor] = None):
+    num_dims = input.dim()
+
+    def func(input, dim, *, dtype = None, out = None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        return tf.cumsum(input, axis=dim)
     return func
 
 

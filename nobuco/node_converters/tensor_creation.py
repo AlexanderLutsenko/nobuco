@@ -57,7 +57,7 @@ def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dt
 
 
 @converter(torch.ones, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
+def converter_ones(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
     def func(*size, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
         size = tf.reshape(tf.convert_to_tensor(size), (-1,))
         tf_type = dtype_pytorch2keras(dtype)
@@ -91,6 +91,18 @@ def converter_new_zeros(self, size, *args, **kwargs):
     return func
 
 
+@converter(torch.empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_empty(*size: _int, names: Optional[Sequence[Union[str, None]]]=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
+    def func(*size, names=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
+        size = tf.reshape(tf.convert_to_tensor(size), (-1,))
+        if dtype is not None:
+            dtype = dtype_pytorch2keras(dtype)
+            return tf.zeros(size, dtype=dtype)
+        else:
+            return tf.zeros(size)
+    return func
+
+
 @converter(torch.Tensor.new_empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_new_empty(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
     def func(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
@@ -118,9 +130,10 @@ def converter_new_full(self, size, fill_value, dtype=None, device=None, requires
 @converter(torch.full, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_full(size: _size, fill_value: Number, *, names=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
     def func(size, fill_value, *, names=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
-        dtype = dtype_pytorch2keras(dtype)
         res = tf.fill(size, fill_value)
-        res = tf.cast(res, dtype)
+        if dtype is not None:
+            dtype = dtype_pytorch2keras(dtype)
+            res = tf.cast(res, dtype)
         return res
     return func
 

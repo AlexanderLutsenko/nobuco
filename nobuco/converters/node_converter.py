@@ -2,6 +2,7 @@ from typing import Callable
 
 from nobuco.converters.validation import validate_diff_default
 from nobuco.commons import ChannelOrderingStrategy, CONVERTER_DICT
+from nobuco.entity.pytorch import PytorchNode
 from nobuco.layers.channel_order import ChangeOrderingLayer
 from nobuco.trace.trace import Tracer
 
@@ -14,9 +15,13 @@ class Pytorch2KerasNodeConverter:
         self.autocast = autocast
         self.reusable = reusable
 
-    def convert(self, *args, **kwargs):
+    def convert(self, *args, _pytorch_node: PytorchNode = None, **kwargs):
         converter_result_func = self.convert_func(*args, **kwargs)
-        return ChangeOrderingLayer(converter_result_func, self.channel_ordering_strategy, self.autocast)
+        if _pytorch_node is not None:
+            output_types = _pytorch_node.output_types
+        else:
+            output_types = None
+        return ChangeOrderingLayer(converter_result_func, self.channel_ordering_strategy, output_types, self.autocast)
 
     def validate(self, keras_op, pytorch_op, input_tensors_pt, args_pt, kwargs_pt, is_training=False):
         raise self.validate_func(keras_op, pytorch_op, input_tensors_pt, args_pt, kwargs_pt, is_training=False)

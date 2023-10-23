@@ -1,18 +1,22 @@
 from nobuco.commons import ChannelOrderingStrategy, ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.tensor import _permute, perm_keras2pytorch, perm_pytorch2keras
-from nobuco.converters.type_cast import tf_cast_recursively
+from nobuco.converters.type_cast import tf_autocast_recursively, tf_cast_recursively, dtype_pytorch2keras
 from nobuco.util import collect_recursively, replace_recursively_func
 
 
 class ChangeOrderingLayer:
-    def __init__(self, func, channel_ordering_strategy, autocast=False):
+    def __init__(self, func, channel_ordering_strategy, output_types=None, autocast=False):
         self.func = func
         self.channel_ordering_strategy = channel_ordering_strategy
+        self.output_types = output_types
         self.autocast = autocast
 
     def __call__(self, *args, **kwargs):
         tf_assert_has_attr_recursively((args, kwargs), 'channel_order')
+
+        if self.autocast:
+            args, kwargs = tf_autocast_recursively((args, kwargs))
 
         strategy = self.channel_ordering_strategy
 
@@ -49,12 +53,19 @@ class ChangeOrderingLayer:
                     channel_order = ChannelOrder.PYTORCH
 
             args, kwargs = tf_set_order_recursively((args, kwargs), channel_order=channel_order)
-
-            if self.autocast:
-                args, kwargs = tf_cast_recursively((args, kwargs))
-
             outputs = self.func(*args, **kwargs)
             outputs = tf_annotate_recursively(outputs, channel_order=channel_order)
+
+        if self.output_types is not None:
+            num_outputs_tf = len(collect_recursively(outputs, TF_TENSOR_CLASSES))
+            num_outputs_pt = len(self.output_types)
+            if num_outputs_tf != num_outputs_pt:
+                raise Exception(
+                    f"Number of outputs do not match: (Pytorch) {num_outputs_pt} vs {num_outputs_tf} (Tensorflow)")
+
+            output_types_tf = [dtype_pytorch2keras(t) for t in self.output_types]
+            outputs = tf_cast_recursively(outputs, output_types_tf)
+
         tf_assert_has_attr_recursively(outputs, 'channel_order')
         return outputs
 
