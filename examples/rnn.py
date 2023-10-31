@@ -60,6 +60,10 @@ x = torch.normal(0, 1, size=(8, 3, 4))
 h0 = torch.rand(6, 8, 4)
 c0 = torch.rand(6, 8, 4)
 
+# x = torch.normal(0, 1, size=(3, 4))
+# h0 = torch.rand(6, 4)
+# c0 = torch.rand(6, 4)
+
 pytorch_module = MyModule().eval()
 
 keras_model = nobuco.pytorch_to_keras(

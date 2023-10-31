@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nobuco"
-version = "0.8.8"
+version = "0.8.9"
 description = "Pytorch to Tensorflow conversion made intuitive"
 readme = "README.md"
 authors = [

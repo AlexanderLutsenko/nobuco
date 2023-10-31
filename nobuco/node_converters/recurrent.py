@@ -100,8 +100,16 @@ def converter_GRU(self: nn.GRU, input, hx=None):
             layer = Bidirectional(layer=layer, backward_layer=layer_reverse)
         layers.append(layer)
 
+    no_batch = input.dim() == 2
+
     def func(input, hx=None):
         x = input
+
+        if no_batch:
+            x = x[None, :, :]
+            if hx is not None:
+                hx = hx[:, None, :]
+
         initial_states = convert_initial_states(hx)
 
         hxs = []
@@ -111,6 +119,11 @@ def converter_GRU(self: nn.GRU, input, hx=None):
             x, hxo = ret[0], ret[1:]
             hxs += hxo
         hxs = tf.stack(hxs, axis=0)
+
+        if no_batch:
+            x = x[0, :, :]
+            hxs = hxs[:, 0, :]
+
         return x, hxs
     return func
 
@@ -171,8 +184,19 @@ def converter_LSTM(self: nn.LSTM, input, hx=None):
             layer = Bidirectional(layer=layer, backward_layer=layer_reverse)
         layers.append(layer)
 
+    no_batch = input.dim() == 2
+
     def func(input, hx=None):
         x = input
+
+        if no_batch:
+            x = x[None, :, :]
+            if hx is not None:
+                hxs, cxs = hx
+                hxs = hxs[:, None, :]
+                cxs = cxs[:, None, :]
+                hx = (hxs, cxs)
+
         initial_states = convert_initial_states(hx)
 
         hxs = []
@@ -183,5 +207,11 @@ def converter_LSTM(self: nn.LSTM, input, hx=None):
             cxs.append(rec_o[1::2])
         hxs = tf.concat(hxs, axis=0)
         cxs = tf.concat(cxs, axis=0)
+
+        if no_batch:
+            x = x[0, :, :]
+            hxs = hxs[:, 0, :]
+            cxs = cxs[:, 0, :]
+
         return x, (hxs, cxs)
     return func
