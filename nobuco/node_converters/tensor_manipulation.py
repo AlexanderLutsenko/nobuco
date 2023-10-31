@@ -172,13 +172,7 @@ def converter_repeat(self, *sizes):
 @converter(torch.Tensor.expand, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_expand(self, *sizes):
     def get_broadcast_shape(sizes, tensor_shape):
-        tensor_shape = list(reversed(tensor_shape))
-        res = []
-        for i, s in enumerate(reversed(sizes)):
-            if s == -1:
-                s = tensor_shape[i]
-            res.append(s)
-        return list(reversed(res))
+        return [ts if s == -1 else s for s, ts in zip(sizes, tensor_shape)]
 
     def func(self, *sizes):
         sizes = _flatten(sizes)
@@ -189,18 +183,8 @@ def converter_expand(self, *sizes):
 
 @converter(torch.Tensor.expand_as, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_expand_as(self, other):
-    def get_broadcast_shape(sizes, tensor_shape):
-        tensor_shape = list(reversed(tensor_shape))
-        res = []
-        for i, s in enumerate(reversed(sizes)):
-            if s == -1:
-                s = tensor_shape[i]
-            res.append(s)
-        return list(reversed(res))
-
     def func(self, other):
-        broadcast_shape = get_broadcast_shape(other.shape, self.shape)
-        return tf.broadcast_to(self, broadcast_shape)
+        return tf.broadcast_to(self, other.shape)
     return func
 
 

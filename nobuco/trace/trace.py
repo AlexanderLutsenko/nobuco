@@ -37,6 +37,7 @@ class Tracer:
         torch,
         torch.Tensor,
         torch.linalg,
+        torch.fft,
         torch.nn.functional,
         torchvision.transforms.functional,
     ]
@@ -118,6 +119,12 @@ class Tracer:
     def op_tracing_decorator(orig_method, op_cls, module_suffix=None, is_whitelist_op=False):
 
         def decorator(*args, **kwargs):
+
+            if is_whitelist_op:
+                print('!!!', orig_method)
+
+            # print('!!!', op_cls)
+
             if Tracer._tracing_enabled:
                 Tracer._tracing_enabled = False
                 need_trace_deeper = True
@@ -159,6 +166,9 @@ class Tracer:
                     module_name = call_op_cls.__name__ if isinstance(call_op_cls, types.ModuleType) else f'{call_op_cls.__module__}.{call_op_cls.__name__}'
                     if module_suffix:
                         module_name += '.' + module_suffix
+
+                    if is_whitelist_op:
+                        print('!!!', module_name)
 
                     # Protection from external modification
                     outputs_clone = clone_torch_tensors_recursively_with_cache(outputs, Tracer._tensor_storage)
