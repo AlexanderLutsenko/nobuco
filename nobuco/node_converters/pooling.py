@@ -24,15 +24,20 @@ def converter_max_pool_2d(input: Tensor, kernel_size: Union[_int, _size], stride
     if isinstance(padding, numbers.Number):
         padding = (padding, padding)
 
+    if not stride:
+        stride = None
+
     if padding != (0, 0):
         pad_layer = keras.layers.ZeroPadding2D(padding)
     else:
         pad_layer = None
 
+    layer = keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride, padding='valid')
+
     def func(input, kernel_size, stride=(), padding=0, dilation=1, ceil_mode=False):
         if pad_layer is not None:
             input = pad_layer(input)
-        return keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride, padding='valid')(input)
+        return layer(input)
     return func
 
 
@@ -44,15 +49,20 @@ def converter_avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=F
     if isinstance(padding, numbers.Number):
         padding = (padding, padding)
 
+    if not stride:
+        stride = None
+
     if padding != (0, 0):
         pad_layer = keras.layers.ZeroPadding2D(padding)
     else:
         pad_layer = None
 
+    layer = keras.layers.AvgPool2D(pool_size=kernel_size, strides=stride)
+
     def func(input, kernel_size, stride=None, padding=0, ceil_mode=False, count_include_pad=True, divisor_override=None):
         if pad_layer is not None:
             input = pad_layer(input)
-        return keras.layers.AvgPool2D(pool_size=kernel_size, strides=stride)(input)
+        return layer(input)
     return func
 
 

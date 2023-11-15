@@ -20,8 +20,9 @@ class MyModule(nn.Module):
         self.conv2 = nn.Conv2d(16, 16, kernel_size=(1, 3), groups=4)
         self.conv3 = nn.Conv2d(16, 16, kernel_size=(3, 3), groups=16)
 
-        self.convt1 = nn.ConvTranspose2d(16, 16, kernel_size=(3, 3), stride=(2, 2), groups=1)
-        self.convt2 = nn.ConvTranspose2d(16, 16, kernel_size=(5, 5), stride=(1, 1), groups=16)
+        self.convt1 = nn.ConvTranspose2d(16, 16, kernel_size=(3, 3), stride=(2, 2), groups=1, padding=(3, 3))
+        self.convt2 = nn.ConvTranspose2d(16, 16, kernel_size=(5, 5), stride=(1, 1), groups=16, padding=(2, 2))
+        self.convt3 = nn.ConvTranspose2d(16, 16, kernel_size=(2, 2), stride=(1, 1), groups=1, padding=(1, 1))
 
         self.conv1d1 = nn.Conv1d(16, 32, kernel_size=3, padding=2, groups=1)
         self.conv1d2 = nn.Conv1d(32, 64, kernel_size=2, padding=1, groups=16)
@@ -34,6 +35,7 @@ class MyModule(nn.Module):
 
         x = self.convt1(x)
         x = self.convt2(x)
+        x = self.convt3(x)
 
         b, c, h, w = x.shape
         x = x.view(b, c, h*w)

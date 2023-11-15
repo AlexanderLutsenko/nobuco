@@ -156,7 +156,7 @@ class Tracer:
 
                 num_output_tensors = len(collect_recursively(outputs, torch.Tensor))
 
-                if is_whitelist_op or (num_input_tensors > 0 and num_output_tensors > 0):
+                if is_whitelist_op or num_output_tensors > 0:
                     module_name = call_op_cls.__name__ if isinstance(call_op_cls, types.ModuleType) else f'{call_op_cls.__module__}.{call_op_cls.__name__}'
                     if module_suffix:
                         module_name += '.' + module_suffix

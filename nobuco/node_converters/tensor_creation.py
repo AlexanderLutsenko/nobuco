@@ -13,6 +13,21 @@ from nobuco.converters.node_converter import converter
 from nobuco.node_converters.tensor_cast import dtype_pytorch2keras
 
 
+@converter(torch.asarray, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_asarray(obj: Any, *, dtype: Optional[_dtype] = None, device: Union[_device, str, None] = None, copy: Optional[_bool] = None, requires_grad: _bool = False):
+    def func(obj, *, dtype = None, device = None, copy = None, requires_grad = False):
+        dtype = dtype_pytorch2keras(dtype)
+        if dtype is not None and isinstance(obj, TF_TENSOR_CLASSES):
+            return tf.cast(obj, dtype=dtype)
+        else:
+            # Sic!
+            if dtype is None:
+                return tf.convert_to_tensor(obj)
+            else:
+                return tf.convert_to_tensor(obj, dtype=dtype)
+    return func
+
+
 @converter(torch.tensor, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_tensor(data: Any, dtype: Optional[_dtype]=None, device: Device=None, requires_grad: _bool=False):
     def func(data, dtype=None, device=None, requires_grad=False):

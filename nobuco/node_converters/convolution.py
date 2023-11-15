@@ -219,12 +219,7 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
     if isinstance(output_padding, numbers.Number):
         output_padding = (output_padding, output_padding)
 
-    if padding != (0, 0):
-        pad = (dilation[0] * (kh - 1) - padding[0], dilation[1] * (kw - 1) - padding[1])
-        pad_layer = keras.layers.ZeroPadding2D(pad)
-    else:
-        pad_layer = None
-    pad_layer = None
+    assert output_padding == (0, 0), 'Output padding is not supported yet'
 
     if groups == 1:
         conv = keras.layers.Conv2DTranspose(out_filters,
@@ -259,13 +254,11 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
     def func(input: Tensor, output_size: Optional[List[int]] = None):
         assert output_size is None
 
-        if pad_layer is not None:
-            input = pad_layer(input)
-
         x = conv(input)
 
-        if output_padding != (0, 0):
-            x = x[:, output_padding[0]:, output_padding[1]:, :]
+        if padding != (0, 0):
+            x = x[:, padding[0]:-padding[0], padding[1]:-padding[1], :]
+
         return x
     return func
 
@@ -300,12 +293,7 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
     if isinstance(output_padding, numbers.Number):
         output_padding = (output_padding, output_padding)
 
-    if padding != (0, 0):
-        pad = (dilation[0] * (kh - 1) - padding[0], dilation[1] * (kw - 1) - padding[1])
-        pad_layer = keras.layers.ZeroPadding2D(pad)
-    else:
-        pad_layer = None
-    pad_layer = None
+    assert output_padding == (0, 0), 'Output padding is not supported yet'
 
     if groups == 1:
         conv = keras.layers.Conv2DTranspose(out_filters,
@@ -338,13 +326,11 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
         raise Exception('Unsupprorted # groups:', groups)
 
     def func(input, *args, **kwargs):
-        if pad_layer is not None:
-            input = pad_layer(input)
-
         x = conv(input)
 
-        if output_padding != (0, 0):
-            x = x[:, output_padding[0]:, output_padding[1]:, :]
+        if padding != (0, 0):
+            x = x[:, padding[0]:-padding[0], padding[1]:-padding[1], :]
+
         return x
 
     return func
