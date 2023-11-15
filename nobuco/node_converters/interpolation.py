@@ -33,8 +33,8 @@ def converter_interpolate(input: Tensor, size: Optional[int] = None, scale_facto
             size = (size, size)
 
         if size is None:
-            _, h, w, _ = input.shape
-            size = (int(h * scale_factor[0]), int(w * scale_factor[1]))
+            _, h, w, _ = tf.cast(tf.shape(input), dtype=tf.float32)
+            size = (scale_factor[0] * h, scale_factor[1] * w)
 
         if align_corners:
             return tf.compat.v1.image.resize(input, size=size, method=method, align_corners=align_corners)
