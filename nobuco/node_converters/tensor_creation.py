@@ -183,3 +183,10 @@ def converter_complex(real: Tensor, imag: Tensor, *, out: Optional[Tensor]=None)
     def func(real, imag, *, out=None):
         return tf.complex(real, imag)
     return func
+
+
+@converter(torch.linspace, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_linspace(start, end, steps: _int, *, out: Optional[Tensor] = None, dtype: Optional[_dtype] = None, layout: Optional[_layout] = None, device: Optional[Union[_device, str, None]] = None, pin_memory: Optional[_bool] = False, requires_grad: Optional[_bool] = False):
+    def func(start, end, steps, *, out = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
+        return tf.linspace(start, end, steps)
+    return func

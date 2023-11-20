@@ -18,6 +18,8 @@ from nobuco.converters.tensor import dims_pytorch2keras, perm_keras2pytorch, \
 
 
 def _permute_inner(perm_original, allow_lazy=True):
+    perm_original = _ensure_iterable(perm_original)
+
     def func(x):
         input_channel_order = get_channel_order(x)
 

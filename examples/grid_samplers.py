@@ -6,30 +6,44 @@ from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
 
 import torch
+from torch import nn
+import torch.nn.functional as F
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
 from tensorflow import keras
 
-from nobuco.addons.torch.dense_image_warp import DenseImageWarp
+
+class GridSamplers(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, image, flow):
+        outputs = []
+        for mode in ('bilinear', 'nearest'):
+            for padding_mode in ('zeros', 'border', 'reflection'):
+                for align_corners in (True, False):
+                    out = F.grid_sample(image, flow, mode=mode, padding_mode=padding_mode, align_corners=align_corners)
+                    outputs.append(out)
+        return outputs
 
 
-h = 128
-w = 128
+h = 64
+w = 127
 b = 8
-image = torch.rand(size=(b, 3, h, w))
-flow = torch.normal(0, 1, size=(b, 2, h, w))
 
-inputs = [image, flow]
-pytorch_module = DenseImageWarp().eval()
+torch.manual_seed(42)
+image = torch.rand(size=(b, 3, h, w))
+flow = torch.normal(0, 1, size=(b, h, w, 2))
+
+pytorch_module = GridSamplers().eval()
 
 keras_model = nobuco.pytorch_to_keras(
-    pytorch_module, inputs,
-    inputs_channel_order=ChannelOrder.TENSORFLOW,
+    pytorch_module, [image, flow],
+    inputs_channel_order={image: ChannelOrder.TENSORFLOW, flow: ChannelOrder.PYTORCH},
 )
 
-
-model_path = 'dense_image_warp'
+model_path = 'grid_samplers'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 
