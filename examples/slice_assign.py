@@ -17,13 +17,13 @@ class MyModule(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x, y, indices, index_x, index_y):
+    def forward(self, x, y, indices, index_x, index_y, index_z):
         x[:] = 0
         x[:, :2] = 1
         x[:, :2, 3:11:2] = (x[:, :2, 3:11:2] + 2)
         x[:, :2, 3:11:2, 1] = torch.asarray(3)
         x[torch.asarray(2, dtype=torch.int32)] = 4
-        # x[:, 2, index_x, index_y] = 1
+        x[:, 2, index_x, index_y] = 1
 
         d = x[:, indices]
 
@@ -38,12 +38,13 @@ class MyModule(nn.Module):
 
         z7 = x[x > 0]
 
-        # FIXME: does not work!
-        c1 = x[index_x, :, index_y]
+        c1 = x[index_x, :, index_y, 8]
         c2 = x[torch.stack([index_x, index_y], dim=1)]
         c3 = x[index_x][index_y]
+        c4 = x[:, index_x, index_y, index_z]
+        c5 = x[index_x[1][None, None, None], index_y[None, None, None], index_z[2][None, None, None], 1::2]
 
-        return x, y, d, z3, z4, z5, z6, z7
+        return x, y, d, z3, z4, z5, z6, z7, c1, c2, c3, c4, c5
 
 
 x = torch.normal(0, 1, size=(8, 5, 96, 128))
@@ -51,11 +52,13 @@ y = torch.normal(0, 1, size=(8, 5, 96, 128))
 index = torch.tensor([[[[0, 0, 1, 0], [0, 1, 2, 1]]]], dtype=torch.int64)
 index_x = torch.tensor([2, 3, 4], dtype=torch.int64)
 index_y = torch.tensor([0, 1, 2], dtype=torch.int64)
+index_z = torch.tensor([2, 1, 0], dtype=torch.int64)
+
 pytorch_module = MyModule().eval()
 
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
-    args=[x, y, index, index_x, index_y],
+    args=[x, y, index, index_x, index_y, index_z],
     inputs_channel_order=ChannelOrder.TENSORFLOW,
 )
 
