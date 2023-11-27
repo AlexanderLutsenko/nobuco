@@ -5,7 +5,7 @@ from tensorflow import keras
 import torch
 
 import numpy as np
-from nobuco.layers.channel_order import ChangeOrderingLayer
+from nobuco.layers.channel_order import ChangeOrderingLayer, tf_set_order_recursively
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
@@ -13,13 +13,28 @@ from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import perm_keras2pytorch, _permute, _flatten, permute_pytorch2keras, _ensure_iterable, \
     _ensure_tuple, dim_pytorch2keras
 from nobuco.layers.weight import WeightLayer
-from nobuco.node_converters.boolean_mask import converter_masked_select
 
 
 def slices_make_full(slices, n_dims):
     slices = _ensure_tuple(slices)
-    n_notnone = len([slc for slc in slices if slc is not None])
-    n_pads = n_dims - n_notnone
+
+    def count_nonnone(slices):
+        return len([slc for slc in slices if slc is not None])
+
+    def handle_ellipsis(slices, n_dims):
+        res = []
+        for s in slices:
+            if s is Ellipsis:
+                n_nonone = count_nonnone(slices)
+                for i in range(n_dims - n_nonone + 1):
+                    res.append(slice(None, None, None))
+            else:
+                res.append(s)
+        return tuple(res)
+
+    slices = handle_ellipsis(slices, n_dims)
+
+    n_pads = n_dims - count_nonnone(slices)
     slices_full = slices + (slice(None),) * n_pads
     return slices_full
 
@@ -185,37 +200,58 @@ def converter_setitem(sliced_tensor, slice_args, assigned_tensor):
     return func
 
 
-@converter(channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def getitem_indexed(self, *slices):
-    def func(self, *slices):
-        slices = _ensure_iterable(slices)
-        res = self
-        for i, slice_spec in reversed(list(enumerate(slices))):
-            if isinstance(slice_spec, (slice, numbers.Number)):
-                pads = [slice(None, None, None)]*i
-                res = self.__getitem__(*pads, slice_spec)
+def getitem_sophisticated(self, n_dims, *slices):
+    slices = _ensure_iterable(slices)
+    res = self
+
+    # Assign corresponding dims to slice specs taking into account None dimensions (i.e. unsqueeze ops) and ellipses (...)
+    def enumerate_properly(slices, n_dims):
+        res = []
+        i = 0
+        inverse = False
+        for s in slices:
+            if s is Ellipsis:
+                inverse = True
             else:
-                slice_spec = tf.convert_to_tensor(slice_spec)
-                res = keras.layers.Lambda(lambda x: tf.experimental.numpy.take(x[0], x[1], axis=i))([res, slice_spec])
+                res.append((i, s, inverse))
+                if s is not None:
+                    i += 1
+
+        max_idx = res[len(res) - 1][0]
+        res = [(n_dims - 1 + max_idx - i, s) if inverse else (i, s) for (i, s, inverse) in res]
         return res
-    return func
+
+    for i, slice_spec in reversed(list(enumerate_properly(slices, n_dims))):
+        pads = [slice(None, None, None)] * i
+        if isinstance(slice_spec, slice):
+            if not (slice_spec.start is None and slice_spec.stop is None and slice_spec.step is None):
+                res = res.__getitem__([*pads, slice_spec])
+        elif isinstance(slice_spec, numbers.Number):
+            res = res.__getitem__([*pads, slice_spec])
+        elif slice_spec is None:
+            res = res.__getitem__([*pads, slice_spec])
+        else:
+            slice_spec = tf.convert_to_tensor(slice_spec)
+
+            if slice_spec.dtype is tf.bool:
+                # Select by boolean mask
+                res = tf.boolean_mask(res, slice_spec, axis=i)
+            else:
+                # Select by integer indices
+                # Fix negative indices
+                n = tf.cast(tf.shape(res)[i], slice_spec.dtype)
+                slice_spec = tf.where(slice_spec < 0, n - slice_spec, slice_spec)
+                res = keras.layers.Lambda(lambda x: tf.experimental.numpy.take(x[0], x[1], axis=i))([res, slice_spec])
+    return res
 
 
 @converter(torch.Tensor.__getitem__, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_getitem(self, *slices):
     n_dims = self.dim()
-
     slices = _flatten(slices)
 
-    if isinstance(slices[0], torch.Tensor):
-        if slices[0].dtype == torch.bool:
-            return converter_masked_select.convert(self, slices[0])
-        elif slices[0].dtype == torch.int64:
-            return getitem_indexed.convert(self, slices)
-
-    # FIXME: add support for ellipsis!
     def is_light(slices):
-        return all(isinstance(slc, slice) for slc in slices)
+        return all(isinstance(slc, slice) or slc is Ellipsis for slc in slices)
 
     if is_light(slices):
         def func(self, *slices):
@@ -223,26 +259,21 @@ def converter_getitem(self, *slices):
             slices = _ensure_iterable(slices)
 
             if get_channel_order(x) == ChannelOrder.TENSORFLOW:
-                s = slices_make_full(slices, n_dims)
-                s = permute_pytorch2keras(s)
-                x = x.__getitem__(s)
-                # x = getitem_indexed(x, s)
+                slices = slices_make_full(slices, n_dims)
+                slices = permute_pytorch2keras(slices)
+                x = x.__getitem__(slices)
                 x = set_channel_order(x, ChannelOrder.TENSORFLOW)
             else:
                 x = x.__getitem__(slices)
-                # x = getitem_indexed(x, slices)
                 x = set_channel_order(x, ChannelOrder.PYTORCH)
             return x
     else:
         def func(self, *slices):
             x = self
             slices = _ensure_iterable(slices)
+            x, slices = tf_set_order_recursively((x, slices), channel_order=ChannelOrder.PYTORCH)
 
-            if get_channel_order(x) == ChannelOrder.TENSORFLOW:
-                perm = perm_keras2pytorch(n_dims)
-                x = _permute(perm)(x)
-            x = x.__getitem__(slices)
-            # x = getitem_indexed(x, slices)
+            x = getitem_sophisticated(x, n_dims, slices)
             x = set_channel_order(x, ChannelOrder.PYTORCH)
             return x
     return func

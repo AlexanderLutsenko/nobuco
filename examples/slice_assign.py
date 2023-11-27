@@ -23,19 +23,31 @@ class MyModule(nn.Module):
         x[:, :2, 3:11:2] = (x[:, :2, 3:11:2] + 2)
         x[:, :2, 3:11:2, 1] = torch.asarray(3)
         x[torch.asarray(2, dtype=torch.int32)] = 4
-        x[:, 2, index_x, index_y] = 1
+        # x[:, 2, index_x, index_y] = 1
 
-        d = x[indices]
-        z1 = x[torch.stack([index_x, index_y], dim=1)]
-        z2 = x[index_x][index_y]
+        d = x[:, indices]
+
+        mask = torch.ones(x.shape[1]) > 0.5
+        mask[2:] = False
+
+        z3 = x[:, None, [2, 0, -1, 1], None]
+        z4 = x[:, mask, ..., None, 0::2]
+
+        z5 = x[0, None, ..., 1::2]
+        z6 = x[..., 1::2]
+
+        z7 = x[x > 0]
 
         # FIXME: does not work!
-        # z3 = x[index_x, index_y]
-        return x, y, d, z1, z2
+        c1 = x[index_x, :, index_y]
+        c2 = x[torch.stack([index_x, index_y], dim=1)]
+        c3 = x[index_x][index_y]
+
+        return x, y, d, z3, z4, z5, z6, z7
 
 
-x = torch.normal(0, 1, size=(8, 3, 128, 128))
-y = torch.normal(0, 1, size=(8, 3, 128, 128))
+x = torch.normal(0, 1, size=(8, 5, 96, 128))
+y = torch.normal(0, 1, size=(8, 5, 96, 128))
 index = torch.tensor([[[[0, 0, 1, 0], [0, 1, 2, 1]]]], dtype=torch.int64)
 index_x = torch.tensor([2, 3, 4], dtype=torch.int64)
 index_y = torch.tensor([0, 1, 2], dtype=torch.int64)
