@@ -1,16 +1,18 @@
 import numbers
 from typing import Optional, Union, Any, Sequence
 
+import torch
+import torch.nn.functional as F
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size, _device, _layout, Device
 
 import tensorflow as tf
-import torch
-import torch.nn.functional as F
+from tensorflow import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
 from nobuco.converters.node_converter import converter
 from nobuco.node_converters.tensor_cast import dtype_pytorch2keras
+from nobuco.util import collect_recursively
 
 
 @converter(torch.asarray, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
@@ -31,6 +33,21 @@ def converter_asarray(obj: Any, *, dtype: Optional[_dtype] = None, device: Union
 @converter(torch.tensor, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_tensor(data: Any, dtype: Optional[_dtype]=None, device: Device=None, requires_grad: _bool=False):
     def func(data, dtype=None, device=None, requires_grad=False):
+        dtype = dtype_pytorch2keras(dtype)
+        if dtype is not None and isinstance(data, TF_TENSOR_CLASSES):
+            return tf.cast(data, dtype=dtype)
+        else:
+            # Sic!
+            if dtype is None:
+                return tf.convert_to_tensor(data)
+            else:
+                return tf.convert_to_tensor(data, dtype=dtype)
+    return func
+
+
+@converter(torch.as_tensor, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_as_tensor(data: Any, dtype: Optional[_dtype] = None, device: Device = None):
+    def func(data, dtype = None, device = None):
         dtype = dtype_pytorch2keras(dtype)
         if dtype is not None and isinstance(data, TF_TENSOR_CLASSES):
             return tf.cast(data, dtype=dtype)
@@ -84,61 +101,15 @@ def converter_ones(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dty
     return func
 
 
-@converter(torch.Tensor.zero_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_zero_(self):
-    def func(self):
-        return tf.zeros_like(self)
-    return func
-
-
-@converter(torch.zeros_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_zeros_like(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
-    def func(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
-        tf_type = dtype_pytorch2keras(dtype)
-        return tf.zeros_like(input, dtype=tf_type)
-    return func
-
-
-@converter(torch.Tensor.new_zeros, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_new_zeros(self, size, *args, **kwargs):
-    def func(self, size, *args, **kwargs):
-        return tf.zeros(shape=size, dtype=self.dtype)
-    return func
-
-
 @converter(torch.empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_empty(*size: _int, names: Optional[Sequence[Union[str, None]]]=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
     def func(*size, names=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
-        size = tf.reshape(tf.convert_to_tensor(size), (-1,))
+        size = tf.reshape(tf.convert_to_tensor(size, dtype=tf.int32), (-1,))
         if dtype is not None:
             dtype = dtype_pytorch2keras(dtype)
             return tf.zeros(size, dtype=dtype)
         else:
             return tf.zeros(size)
-    return func
-
-
-@converter(torch.Tensor.new_empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_new_empty(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
-    def func(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
-        if dtype is not None:
-            dtype = dtype_pytorch2keras(dtype)
-        else:
-            dtype = self.dtype
-        return tf.zeros(size, dtype=dtype)
-    return func
-
-
-@converter(torch.Tensor.new_full, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
-    def func(self, size, fill_value, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
-        if dtype is not None:
-            dtype = dtype_pytorch2keras(dtype)
-        else:
-            dtype = self.dtype
-        res = tf.fill(size, fill_value)
-        res = tf.cast(res, dtype)
-        return res
     return func
 
 
@@ -153,16 +124,88 @@ def converter_full(size: _size, fill_value: Number, *, names=None, dtype: Option
     return func
 
 
+@converter(torch.Tensor.new_zeros, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_new_zeros(self, size, *args, **kwargs):
+    def func(self, size, *args, **kwargs):
+        if len(collect_recursively(size, TF_TENSOR_CLASSES)) > 0:
+            return tf.zeros(shape=size, dtype=self.dtype)
+        else:
+            return keras.layers.Lambda(lambda self: tf.zeros(shape=size, dtype=self.dtype))(self)
+    return func
+
+
+@converter(torch.Tensor.new_ones, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_new_ones(self, size, *args, **kwargs):
+    def func(self, size, *args, **kwargs):
+        if len(collect_recursively(size, TF_TENSOR_CLASSES)) > 0:
+            return tf.ones(shape=size, dtype=self.dtype)
+        else:
+            return keras.layers.Lambda(lambda self: tf.ones(shape=size, dtype=self.dtype))(self)
+    return func
+
+
+@converter(torch.Tensor.new_empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_new_empty(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+    def func(self, size, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+        if len(collect_recursively(size, TF_TENSOR_CLASSES)) > 0:
+            return tf.zeros(shape=size, dtype=self.dtype)
+        else:
+            return keras.layers.Lambda(lambda self: tf.zeros(shape=size, dtype=self.dtype))(self)
+    return func
+
+
+@converter(torch.Tensor.new_full, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_new_full(self, size, fill_value, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+    def func(self, size, fill_value, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+        if len(collect_recursively(size, TF_TENSOR_CLASSES)) > 0:
+            return tf.fill(size, fill_value)
+        else:
+            return keras.layers.Lambda(lambda self: tf.fill(size, fill_value))(self)
+    return func
+
+
+@converter(torch.zeros_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_zeros_like(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+    def func(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        tf_type = dtype_pytorch2keras(dtype)
+        return tf.zeros_like(input, dtype=tf_type)
+    return func
+
+
+@converter(torch.ones_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_ones_like(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+    def func(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        tf_type = dtype_pytorch2keras(dtype)
+        return tf.ones_like(input, dtype=tf_type)
+    return func
+
+
+@converter(torch.empty_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_empty_like(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+    def func(input: Tensor, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
+        tf_type = dtype_pytorch2keras(dtype)
+        return tf.zeros_like(input, dtype=tf_type)
+    return func
+
+
 @converter(torch.full_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_full_like(input: Tensor, fill_value: Number, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
     def func(input: Tensor, fill_value: Number, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
-        if dtype is not None:
-            dtype = dtype_pytorch2keras(dtype)
-        else:
-            dtype = input.dtype
-        res = tf.fill(input.shape, fill_value)
-        res = tf.cast(res, dtype)
-        return res
+        return tf.experimental.numpy.full_like(input, fill_value, dtype=dtype)
+    return func
+
+
+@converter(torch.Tensor.zero_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_zero_(self):
+    def func(self):
+        return tf.zeros_like(self)
+    return func
+
+
+@converter(torch.Tensor.fill_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_fill_(self, value):
+    def func(self, value):
+        return tf.experimental.numpy.full_like(self, value, dtype=self.dtype)
     return func
 
 
