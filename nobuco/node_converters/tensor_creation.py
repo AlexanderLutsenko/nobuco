@@ -15,21 +15,6 @@ from nobuco.node_converters.tensor_cast import dtype_pytorch2keras
 from nobuco.util import collect_recursively
 
 
-@converter(torch.asarray, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_asarray(obj: Any, *, dtype: Optional[_dtype] = None, device: Union[_device, str, None] = None, copy: Optional[_bool] = None, requires_grad: _bool = False):
-    def func(obj, *, dtype = None, device = None, copy = None, requires_grad = False):
-        dtype = dtype_pytorch2keras(dtype)
-        if dtype is not None and isinstance(obj, TF_TENSOR_CLASSES):
-            return tf.cast(obj, dtype=dtype)
-        else:
-            # Sic!
-            if dtype is None:
-                return tf.convert_to_tensor(obj)
-            else:
-                return tf.convert_to_tensor(obj, dtype=dtype)
-    return func
-
-
 @converter(torch.tensor, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_tensor(data: Any, dtype: Optional[_dtype]=None, device: Device=None, requires_grad: _bool=False):
     def func(data, dtype=None, device=None, requires_grad=False):
@@ -57,6 +42,21 @@ def converter_as_tensor(data: Any, dtype: Optional[_dtype] = None, device: Devic
                 return tf.convert_to_tensor(data)
             else:
                 return tf.convert_to_tensor(data, dtype=dtype)
+    return func
+
+
+@converter(torch.asarray, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_asarray(obj: Any, *, dtype: Optional[_dtype] = None, device: Union[_device, str, None] = None, copy: Optional[_bool] = None, requires_grad: _bool = False):
+    def func(obj, *, dtype = None, device = None, copy = None, requires_grad = False):
+        dtype = dtype_pytorch2keras(dtype)
+        if dtype is not None and isinstance(obj, TF_TENSOR_CLASSES):
+            return tf.cast(obj, dtype=dtype)
+        else:
+            # Sic!
+            if dtype is None:
+                return tf.convert_to_tensor(obj)
+            else:
+                return tf.convert_to_tensor(obj, dtype=dtype)
     return func
 
 
@@ -105,11 +105,11 @@ def converter_ones(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dty
 def converter_empty(*size: _int, names: Optional[Sequence[Union[str, None]]]=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
     def func(*size, names=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
         size = tf.reshape(tf.convert_to_tensor(size, dtype=tf.int32), (-1,))
+        tf_type = dtype_pytorch2keras(dtype)
         if dtype is not None:
-            dtype = dtype_pytorch2keras(dtype)
-            return tf.zeros(size, dtype=dtype)
+            return tf.zeros(shape=size)
         else:
-            return tf.zeros(size)
+            return tf.zeros(shape=size, dtype=tf_type)
     return func
 
 
@@ -191,7 +191,8 @@ def converter_empty_like(input: Tensor, *, memory_format=None, dtype=None, layou
 @converter(torch.full_like, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_full_like(input: Tensor, fill_value: Number, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
     def func(input: Tensor, fill_value: Number, *, memory_format=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
-        return tf.experimental.numpy.full_like(input, fill_value, dtype=dtype)
+        tf_type = dtype_pytorch2keras(dtype)
+        return tf.experimental.numpy.full_like(input, fill_value, tf_type)
     return func
 
 
