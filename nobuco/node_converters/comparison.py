@@ -76,10 +76,10 @@ def converter_sort(self, dim=-1, descending=False):
 
 @converter(torch.unique, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_unique(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
-    def func(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
-        assert len(input.shape) == 1
-        assert return_inverse is False
+    assert input.dim() == 1
+    assert return_inverse is False
 
+    def func(input, sorted=True, return_inverse=False, return_counts=False, dim=None):
         x, _ = tf.unique(input)
         if sorted:
             x = tf.sort(x)

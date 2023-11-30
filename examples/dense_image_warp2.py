@@ -51,7 +51,7 @@ keras_model = nobuco.pytorch_to_keras(
 )
 
 
-model_path = 'dense_image_warp2_old'
+model_path = 'dense_image_warp2'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 

@@ -13,7 +13,7 @@ from nobuco.converters.node_converter import converter
 @converter(torch.fill, torch.Tensor.fill_, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_fill(input, value):
     def func(input, value):
-        result = tf.fill(input.shape, value)
+        result = tf.fill(tf.shape(input), value)
         result = tf.cast(result, dtype=input.dtype)
         return result
     return func

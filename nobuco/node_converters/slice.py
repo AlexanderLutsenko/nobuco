@@ -13,6 +13,7 @@ from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import perm_keras2pytorch, _permute, _flatten, permute_pytorch2keras, _ensure_iterable, \
     _ensure_tuple, dim_pytorch2keras
 from nobuco.layers.weight import WeightLayer
+from nobuco.node_converters.tensor_broadcast import broadcast
 
 
 def slices_make_full(slices, n_dims):
@@ -44,14 +45,6 @@ def to_shape_and_dtype(assigned_tensor, shape, dtype):
         assigned_tensor = tf.cast(assigned_tensor, dtype)
     assigned_tensor = tf.broadcast_to(assigned_tensor, shape)
     return assigned_tensor
-
-
-def broadcast(tensors):
-    shape = tensors[0].shape
-    for tens in tensors:
-        shape = tf.broadcast_dynamic_shape(shape, tens.shape)
-    tensors = [tf.broadcast_to(t, shape) for t in tensors]
-    return tensors
 
 
 def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):

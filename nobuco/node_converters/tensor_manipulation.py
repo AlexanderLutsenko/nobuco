@@ -186,7 +186,7 @@ def converter_expand(self, *sizes):
 @converter(torch.Tensor.expand_as, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_expand_as(self, other):
     def func(self, other):
-        return tf.broadcast_to(self, other.shape)
+        return tf.broadcast_to(self, tf.shape(other))
     return func
 
 
