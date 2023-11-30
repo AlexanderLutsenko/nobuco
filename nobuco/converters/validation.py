@@ -93,8 +93,11 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
 
     def calc_diff(t1, t2):
         def calc_diff_numerical(t1, t2):
-            nan_mask = torch.isnan(t1) & torch.isnan(t2)
-            diff = t1[~nan_mask] - t2[~nan_mask]
+            t1_nan_mask = torch.isnan(t1)
+            t2_nan_mask = torch.isnan(t2)
+            if not torch.all(torch.eq(t1_nan_mask, t2_nan_mask)):
+                return np.nan
+            diff = t1[~t1_nan_mask] - t2[~t2_nan_mask]
             if diff.numel() == 0:
                 return 0
             else:

@@ -6,7 +6,7 @@ from nobuco.trace.trace import traceable
 
 from nobuco.converters.node_converter import converter, unregister_converter
 from nobuco.convert import pytorch_to_keras
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TraceLevel
 
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     traceable,
     ChannelOrder,
     ChannelOrderingStrategy,
+    TraceLevel,
     force_tensorflow_order,
     force_pytorch_order,
     shape,

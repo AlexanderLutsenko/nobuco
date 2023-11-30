@@ -26,15 +26,19 @@ def converter_interpolate(input: Tensor, size: Optional[int] = None, scale_facto
     def func(input, size=None, scale_factor=None, mode='nearest', align_corners=None, recompute_scale_factor=None, antialias=False):
         assert not (align_corners and antialias), "'align_corners' and 'antialias' cannot both be True"
 
-        if isinstance(scale_factor, numbers.Number) or (isinstance(scale_factor, TF_TENSOR_CLASSES) and tf.size(scale_factor) == 1):
+        try:
+            scale_factor[0], scale_factor[1]
+        except Exception:
             scale_factor = (scale_factor, scale_factor)
-
-        if isinstance(size, numbers.Number) or (isinstance(size, TF_TENSOR_CLASSES) and tf.size(size) == 1):
-            size = (size, size)
 
         if size is None:
             _, h, w, _ = tf.cast(tf.shape(input), dtype=tf.float32)
             size = (scale_factor[0] * h, scale_factor[1] * w)
+        else:
+            try:
+                size[0], size[1]
+            except Exception:
+                size = (size, size)
 
         if align_corners:
             return tf.compat.v1.image.resize(input, size=size, method=method, align_corners=align_corners)

@@ -40,6 +40,8 @@ class Tracer:
         torch.fft,
         torch.nn.functional,
         torchvision.transforms.functional,
+        torchvision.ops,
+        torchvision.ops.boxes,
     ]
 
     op_blacklist = [

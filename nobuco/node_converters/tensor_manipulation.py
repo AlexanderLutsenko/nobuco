@@ -218,16 +218,14 @@ def converter_unbind(self, dim=0):
 
 @converter(torch.Tensor.flatten, torch.flatten, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_t_flatten(self, start_dim=0, end_dim=-1):
+    n_dims = self.dim()
+    start_dim_pos = _dim_make_positive(start_dim, n_dims)
+    end_dim_pos = _dim_make_positive(end_dim, n_dims)
+
     def func(self, start_dim=0, end_dim=-1):
-        start_shape = self.shape[:start_dim]
-
-        n_dims = len(self.shape)
-        end_dim = _dim_make_positive(end_dim, n_dims)
-        if end_dim < n_dims-1:
-            end_shape = self.shape[end_dim+1:]
-        else:
-            end_shape = []
-
+        shape = tf.shape(self)
+        start_shape = shape[:start_dim_pos]
+        end_shape = shape[end_dim_pos+1:]
         return tf.reshape(self, (*start_shape, -1, *end_shape))
     return func
 
@@ -253,6 +251,7 @@ def converter_narrow(self, dimension, start, length):
 @converter(torch.squeeze, torch.Tensor.squeeze, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_squeeze(input: Tensor, dim):
     n_dims = input.dim()
+
     def func(input, dim):
         x = input
         if get_channel_order(x) == ChannelOrder.TENSORFLOW:
@@ -267,6 +266,7 @@ def converter_squeeze(input: Tensor, dim):
 @converter(torch.unsqueeze, torch.Tensor.unsqueeze, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_unsqueeze(input, dim):
     n_dims = input.dim()
+
     def func(input, dim):
         x = input
         if get_channel_order(x) == ChannelOrder.TENSORFLOW:
