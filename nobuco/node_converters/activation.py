@@ -150,6 +150,17 @@ def converter_softmax(input: Tensor, dim: Union[str, None], *, dtype: Optional[_
     return func
 
 
+@converter(torch.nn.functional.softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_softmax(input: Tensor, dim: Optional[int] = None, _stacklevel: int = 3, dtype = None):
+    num_dims = input.dim()
+
+    def func(input, dim = None, _stacklevel = 3, dtype = None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        return tf.nn.softmax(input, axis=dim)
+    return func
+
+
 @converter(torch.log_softmax, torch.Tensor.log_softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_log_softmax(input: Tensor, dim, *, dtype: Optional[_dtype]=None):
     num_dims = input.dim()

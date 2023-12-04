@@ -36,13 +36,13 @@ def converter(*ops,
     def inner(convert_func: Callable) -> Pytorch2KerasNodeConverter:
         node_converter = Pytorch2KerasNodeConverter(convert_func, validate_func, channel_ordering_strategy, autocast, reusable)
         for op in ops:
-            op = Tracer.op_unwrap(op)
+            op = Tracer.op_undecorate(op)
             CONVERTER_DICT[op] = node_converter
         return node_converter
     return inner
 
 
 def unregister_converter(op):
-    op = Tracer.op_unwrap(op)
+    op = Tracer.op_undecorate(op)
     if op in CONVERTER_DICT:
         del CONVERTER_DICT[op]

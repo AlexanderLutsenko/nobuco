@@ -28,8 +28,6 @@ class DummyModel(nn.Module):
 model = DummyModel()
 dummy_image = torch.randn(1, 3, 100, 100)
 
-model(dummy_image)
-
 keras_model = nobuco.pytorch_to_keras(
     model,
     args=[dummy_image],

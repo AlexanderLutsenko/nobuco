@@ -6,7 +6,7 @@ from nobuco.converters.node_converter import CONVERTER_DICT
 
 
 def locate_converter(pytorch_node):
-    pytorch_node = Tracer.op_unwrap(pytorch_node)
+    pytorch_node = Tracer.op_undecorate(pytorch_node)
     node_converter = CONVERTER_DICT.get(pytorch_node, None)
     if node_converter is not None:
         convert_func = node_converter.convert_func

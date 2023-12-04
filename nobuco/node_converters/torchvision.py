@@ -1,6 +1,7 @@
 from nobuco.converters.node_converter import converter
 from nobuco.commons import ChannelOrderingStrategy
 
+import torch
 from torch import Tensor
 import torchvision.ops
 
@@ -42,7 +43,7 @@ def converter__upcast(t: Tensor):
     return func
 
 
-@converter(torchvision.ops.nms, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torchvision.ops.nms, torch.ops.torchvision.nms, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_nms(boxes: Tensor, scores: Tensor, iou_threshold: float):
     def func(boxes, scores, iou_threshold: float):
         return tf.image.non_max_suppression(boxes, scores, max_output_size=tf.dtypes.int32.max, iou_threshold=iou_threshold)

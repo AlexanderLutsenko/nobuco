@@ -1,7 +1,4 @@
 import os
-
-import torchvision
-
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 import nobuco
@@ -10,6 +7,7 @@ from nobuco.layers.weight import WeightLayer
 
 import torch
 from torch import nn
+import torchvision
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
@@ -22,11 +20,12 @@ class MyModule(nn.Module):
         self.iou_threshold = iou_threshold
 
     def forward(self, boxes, scores, idxs):
-        # out = torch.ops.torchvision.nms(boxes, scores, self.iou_threshold) # FIXME: cannot be traced!
-        # out = torchvision.ops.nms(boxes, scores, self.iou_threshold)
-        out1 = torchvision.ops.boxes.nms(boxes, scores, self.iou_threshold)
-        out2 = torchvision.ops.boxes.batched_nms(boxes, scores, idxs, self.iou_threshold)
-        return out1, out2
+        out1 = torch.ops.torchvision.nms(boxes, scores, self.iou_threshold)
+        out2 = torchvision.ops.nms(boxes, scores, self.iou_threshold)
+        out3 = torch.ops.torchvision.nms(boxes, scores, self.iou_threshold)
+        out4 = torchvision.ops.boxes.nms(boxes, scores, self.iou_threshold)
+        out5 = torchvision.ops.boxes.batched_nms(boxes, scores, idxs, self.iou_threshold)
+        return out1, out2, out3, out4, out5
 
 
 boxes = torch.normal(0, 1, size=(128, 4))
