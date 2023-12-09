@@ -55,14 +55,12 @@ def converter_SliceReLU(self, x):
     return keras.layers.Lambda(lambda x: model(input=x))
 
 
-args = [
-    torch.normal(0, 1, size=(1, 3, 128, 128))
-]
+x = torch.normal(0, 1, size=(1, 3, 128, 128))
 pytorch_module = MyModule().eval()
 
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
-    args=args,
+    args=[x],
     inputs_channel_order=ChannelOrder.TENSORFLOW,
 )
 

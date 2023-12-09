@@ -1,6 +1,7 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
+
 import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
@@ -17,24 +18,24 @@ class DummyModel(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x):
-        log = torch.log_(x)
-        log2 = x.log2_()
-        log10 = torch.log10(x)
-        log1p = torch.log1p(x)
-        return log, log2, log10, log1p
+    def forward(self, qkv, w, b):
+        x = torch.nn.functional._in_projection_packed(qkv, qkv, qkv, w, b)
+        return x
 
 
 model = DummyModel()
-dummy_image = torch.randn(1, 3, 1, 1) + 10
+
+qkv = torch.randn(50, 1, 1024)
+w = torch.randn(3072, 1024)
+b = torch.randn(3072)
 
 keras_model = nobuco.pytorch_to_keras(
     model,
-    args=[dummy_image],
+    args=[qkv, w, b],
     # inputs_channel_order=ChannelOrder.PYTORCH,
 )
 
-model_path = 'math_ops'
+model_path = 'projection'
 keras_model.save(model_path + '.h5')
 print('Model saved')
 

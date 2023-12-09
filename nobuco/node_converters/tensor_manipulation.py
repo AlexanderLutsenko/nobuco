@@ -217,16 +217,29 @@ def converter_unbind(self, dim=0):
 
 
 @converter(torch.Tensor.flatten, torch.flatten, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_t_flatten(self, start_dim=0, end_dim=-1):
-    n_dims = self.dim()
+def converter_t_flatten(input, start_dim=0, end_dim=-1):
+    n_dims = input.dim()
     start_dim_pos = _dim_make_positive(start_dim, n_dims)
     end_dim_pos = _dim_make_positive(end_dim, n_dims)
 
-    def func(self, start_dim=0, end_dim=-1):
-        shape = tf.shape(self)
+    def func(input, start_dim=0, end_dim=-1):
+        shape = tf.shape(input)
         start_shape = shape[:start_dim_pos]
         end_shape = shape[end_dim_pos+1:]
-        return tf.reshape(self, (*start_shape, -1, *end_shape))
+        return tf.reshape(input, (*start_shape, -1, *end_shape))
+    return func
+
+
+@converter(torch.Tensor.unflatten, torch.unflatten, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_unflatten(input: Tensor, dim: _int, sizes):
+    n_dims = input.dim()
+    dim_pos = _dim_make_positive(dim, n_dims)
+
+    def func(input: Tensor, dim, sizes):
+        shape = tf.shape(input)
+        start_shape = shape[:dim_pos]
+        end_shape = shape[dim_pos+1:]
+        return tf.reshape(input, (*start_shape, *sizes, *end_shape))
     return func
 
 

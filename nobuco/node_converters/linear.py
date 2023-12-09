@@ -33,7 +33,7 @@ def converter_Linear(self, input: Tensor):
 
 
 @converter(torch.nn.functional.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_linear(input, weight, bias, out=None):
+def converter_linear(input, weight, bias=None, out=None):
     out_filters, in_filters = weight.shape
     weights = weight.cpu().detach().numpy()
     weights = weights.transpose(1, 0)
@@ -47,7 +47,7 @@ def converter_linear(input, weight, bias, out=None):
 
     layer = keras.layers.Dense(out_filters, use_bias=use_bias, weights=params)
 
-    def func(input, weight, bias, out=None):
+    def func(input, weight, bias=None, out=None):
         return layer(input)
     return func
 
@@ -107,6 +107,19 @@ def converter_einsum(*args: Any):
 def converter_triu(self, diagonal=0):
     def func(self, diagonal=0):
         return keras.layers.Lambda(lambda x: tf.experimental.numpy.triu(x, k=diagonal))(self)
+    return func
+
+
+@converter(F.normalize, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_normalize(input: Tensor, p: float = 2.0, dim: int = 1, eps: float = 1e-12, out: Optional[Tensor] = None):
+    num_dims = input.dim()
+
+    def func(input, p=2.0, dim=1, eps=1e-12, out=None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, num_dims)
+        norm = tf.norm(input, ord=p, axis=dim, keepdims=True)
+        norm = tf.maximum(norm, eps)
+        return input / norm
     return func
 
 
