@@ -1,5 +1,6 @@
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+import keras.layers
 import torch
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size
@@ -184,7 +185,8 @@ def converter_repeat_interleave(input: Tensor, repeats, dim: Optional[_int] = No
 @converter(torch.Tensor.expand, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_expand(self, *sizes):
     def get_broadcast_shape(sizes, tensor_shape):
-        return [ts if s == -1 else s for s, ts in zip(sizes, tensor_shape)]
+        n_dims = len(tensor_shape)
+        return list(sizes[:-n_dims]) + [ts if s == -1 else s for s, ts in zip(sizes[-n_dims:], tensor_shape)]
 
     def func(self, *sizes):
         sizes = _flatten(sizes)

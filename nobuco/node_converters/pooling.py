@@ -8,35 +8,35 @@ from torch.types import _int, _bool, Number, _dtype, _size
 import tensorflow as tf
 from tensorflow import keras
 import torch
+from torch import nn
 import torch.nn.functional as F
 
 from nobuco.converters.node_converter import converter
 
 
-@converter(torch.max_pool2d, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
-def converter_max_pool_2d(input: Tensor, kernel_size: Union[_int, _size], stride: Union[_int, _size]=(), padding: Union[_int, _size]=0, dilation: Union[_int, _size]=1, ceil_mode: _bool=False):
+@converter(F.max_pool2d, torch.max_pool2d, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def converter_max_pool_2d(input: Tensor, kernel_size: Union[_int, _size], stride: Union[_int, _size]=(), padding: Union[_int, _size]=0, dilation: Union[_int, _size]=1, ceil_mode: _bool=False,
+                          *args, **kwargs):
     if isinstance(kernel_size, numbers.Number):
         kernel_size = (kernel_size, kernel_size)
-
-    if isinstance(dilation, numbers.Number):
-        dilation = (dilation, dilation)
 
     if isinstance(padding, numbers.Number):
         padding = (padding, padding)
 
+    if padding != (0, 0):
+        paddings = [[0, 0], [padding[0], padding[0]], [padding[1], padding[1]], [0, 0]]
+        pad_func = lambda x: tf.pad(x, paddings, constant_values=float('-inf'), )
+    else:
+        pad_func = None
+
     if not stride:
         stride = None
 
-    if padding != (0, 0):
-        pad_layer = keras.layers.ZeroPadding2D(padding)
-    else:
-        pad_layer = None
+    layer = keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride)
 
-    layer = keras.layers.MaxPool2D(pool_size=kernel_size, strides=stride, padding='valid')
-
-    def func(input, kernel_size, stride=(), padding=0, dilation=1, ceil_mode=False):
-        if pad_layer is not None:
-            input = pad_layer(input)
+    def func(input, kernel_size, stride=(), padding=0, dilation=1, ceil_mode=False, *args, **kwargs):
+        if pad_func is not None:
+            input = pad_func(input)
         return layer(input)
     return func
 
