@@ -4,13 +4,14 @@ from torch import Tensor
 from torch import nn
 
 import tensorflow as tf
+from tensorflow import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
 
 
 @converter(nn.modules.activation.MultiheadAttention, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_sum(self,
+def converter_MultiheadAttention(self,
             query: Tensor,
             key: Tensor,
             value: Tensor,
@@ -18,9 +19,10 @@ def converter_sum(self,
             need_weights: bool = True,
             attn_mask: Optional[Tensor] = None,
             average_attn_weights: bool = True,
-            is_causal : bool = False):
+            is_causal: bool = False):
 
     assert self._qkv_same_embed_dim, 'Different embed dims are not supported yet'
+    assert self.batch_first, 'batch_first=False is not supported yet'
 
     dropout = self.dropout
 
@@ -54,7 +56,7 @@ def converter_sum(self,
             average_attn_weights=True,
             is_causal=False
     ):
-        layer = tf.keras.layers.MultiHeadAttention(num_heads, key_dim, value_dim=value_dim, use_bias=use_bias, dropout=dropout)
+        layer = keras.layers.MultiHeadAttention(num_heads, key_dim, value_dim=value_dim, use_bias=use_bias, dropout=dropout)
         layer(query, value, key=key, attention_mask=attn_mask, return_attention_scores=need_weights, use_causal_mask=is_causal)
         layer.set_weights(params)
         output = layer(query, value, key=key, attention_mask=attn_mask, return_attention_scores=need_weights, use_causal_mask=is_causal)

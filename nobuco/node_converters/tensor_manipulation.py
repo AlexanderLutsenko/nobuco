@@ -1,11 +1,10 @@
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+import torch
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size
 
 import tensorflow as tf
-import torch
-from torch import nn
 
 import numpy as np
 
@@ -171,6 +170,17 @@ def converter_repeat(self, *sizes):
     return func
 
 
+@converter(torch.repeat_interleave, torch.Tensor.repeat_interleave, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_repeat_interleave(input: Tensor, repeats, dim: Optional[_int] = None, *, output_size: Optional[_int] = None):
+    n_dims = input.dim()
+
+    def func(input, repeats, dim = None, *, output_size = None):
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+        return tf.repeat(input, repeats, axis=dim)
+    return func
+
+
 @converter(torch.Tensor.expand, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_expand(self, *sizes):
     def get_broadcast_shape(sizes, tensor_shape):
@@ -209,10 +219,14 @@ def converter_roll(input: Tensor, shifts: Union[_int, _size], dims: Union[_int, 
     return func
 
 
-@converter(torch.Tensor.unbind, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def converter_unbind(self, dim=0):
-    def func(self, dim=0):
-        return tf.unstack(self, axis=dim)
+@converter(torch.unbind, torch.Tensor.unbind, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_unbind(input, dim=0):
+    num_partitions = input.shape[dim]
+
+    def func(input, dim=0):
+        outputs = tf.split(input, num_partitions, axis=dim)
+        outputs = [tf.squeeze(out, dim) for out in outputs]
+        return outputs
     return func
 
 
