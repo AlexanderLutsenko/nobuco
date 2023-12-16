@@ -18,6 +18,7 @@ from nobuco.converters.channel_ordering import set_channel_order, get_channel_or
 from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import perm_keras2pytorch, _permute, _ensure_iterable, _dims_make_positive, dims_pytorch2keras
 
+
 # Converters for reduce functions are made so complex to minimize the number of transpositions.
 # Hopefully, the end user will never need to see this.
 def reduce_func(inner_func: Callable, n_dims: int):

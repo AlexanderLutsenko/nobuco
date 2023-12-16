@@ -21,7 +21,7 @@ class Pytorch2KerasNodeConverter:
             output_types = _pytorch_node.output_types
         else:
             output_types = None
-        return ChangeOrderingLayer(converter_result_func, self.channel_ordering_strategy, output_types, self.autocast)
+        return ChangeOrderingLayer(converter_result_func, self.channel_ordering_strategy, output_types=output_types, autocast=self.autocast)
 
     def validate(self, keras_op, pytorch_op, input_tensors_pt, args_pt, kwargs_pt, is_training=False):
         raise self.validate_func(keras_op, pytorch_op, input_tensors_pt, args_pt, kwargs_pt, is_training=False)
@@ -31,10 +31,10 @@ def converter(*ops,
               validate_func=validate_diff_default,
               channel_ordering_strategy=ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER,
               autocast: bool = False,
-              reusable = True,
+              reusable: bool = True,
               ):
     def inner(convert_func: Callable) -> Pytorch2KerasNodeConverter:
-        node_converter = Pytorch2KerasNodeConverter(convert_func, validate_func, channel_ordering_strategy, autocast, reusable)
+        node_converter = Pytorch2KerasNodeConverter(convert_func, validate_func, channel_ordering_strategy, autocast=autocast, reusable=reusable)
         for op in ops:
             op = Tracer.op_undecorate(op)
             CONVERTER_DICT[op] = node_converter

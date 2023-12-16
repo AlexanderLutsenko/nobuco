@@ -26,7 +26,10 @@ def converter_masked_fill(input: Tensor, mask: Tensor, value: Number):
 
 
 @converter(torch.where, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_where(condition: Tensor):
-    def func(condition):
-        return tf.where(condition)[..., 0]
+def converter_where(condition: Tensor, input=None, other=None):
+    def func(condition, input=None, other=None):
+        if input is not None and other is not None:
+            return tf.where(condition, x=input, y=other)
+        else:
+            return tf.where(condition)[..., 0]
     return func
