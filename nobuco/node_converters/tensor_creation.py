@@ -75,7 +75,7 @@ def converter_scalar_tensor(s: Number, *, dtype: Optional[_dtype]=None, layout: 
     return func
 
 
-@converter(torch.zeros, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.zeros, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, autocast=True)
 def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
     def func(*size, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
         size = tf.reshape(tf.convert_to_tensor(size), (-1,))
@@ -88,7 +88,7 @@ def converter_zeros(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dt
     return func
 
 
-@converter(torch.ones, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.ones, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, autocast=True)
 def converter_ones(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dtype]=None, layout: Optional[_layout]=None, device: Optional[Union[_device, str, None]]=None, pin_memory: Optional[_bool]=False, requires_grad: Optional[_bool]=False):
     def func(*size, out=None, dtype=None, layout=None, device=None, pin_memory=False, requires_grad=False):
         size = tf.reshape(tf.convert_to_tensor(size), (-1,))
@@ -101,10 +101,10 @@ def converter_ones(*size: _int, out: Optional[Tensor]=None, dtype: Optional[_dty
     return func
 
 
-@converter(torch.empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.empty, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER, autocast=True)
 def converter_empty(*size: _int, names: Optional[Sequence[Union[str, None]]]=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
     def func(*size, names=None, memory_format = None, dtype = None, layout = None, device = None, pin_memory = False, requires_grad = False):
-        size = tf.reshape(tf.convert_to_tensor(size, dtype=tf.int32), (-1,))
+        size = tf.reshape(tf.convert_to_tensor(size), (-1,))
         tf_type = dtype_pytorch2keras(dtype)
         if dtype is not None:
             return tf.zeros(shape=size)

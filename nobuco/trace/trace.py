@@ -107,8 +107,16 @@ def traceable(func_to_trace: Callable):
 
 
 def find_call_summary(call_stack: List[traceback.FrameSummary]) -> traceback.FrameSummary:
-    for summary in reversed(call_stack[:-1]):
-        if not summary.name.endswith('_call_impl'):
+    call_stack_reversed = list(reversed(call_stack))
+
+    last_idx = 0
+    for i, summary in enumerate(call_stack_reversed):
+        if '__torch_function__' in summary.name:
+            last_idx = i
+            break
+
+    for summary in call_stack_reversed[last_idx + 1:]:
+        if not (summary.name.endswith('_call_impl') or summary.name.endswith('__call__')):
             return summary
 
 
