@@ -140,7 +140,7 @@ def converter_stack(tensors: Union[Tuple[Tensor, ...], List[Tensor]], dim: _int=
     return func
 
 
-@converter(torch.Tensor.split, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.Tensor.split, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_split(self, split_size, dim=0):
     num_dims = self.dim()
 
@@ -151,7 +151,7 @@ def converter_split(self, split_size, dim=0):
     return func
 
 
-@converter(torch.chunk, torch.Tensor.chunk, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+@converter(torch.chunk, torch.Tensor.chunk, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_chunk(input, chunks, dim=0):
     num_dims = input.dim()
 

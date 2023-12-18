@@ -27,7 +27,7 @@ keras_model = nobuco.pytorch_to_keras(
     inputs_channel_order=ChannelOrder.TENSORFLOW,
 )
 
-model_path = 'yolo'
+model_path = 'yolo5'
 
 keras_model.save(model_path + '.h5')
 print('Model saved')
