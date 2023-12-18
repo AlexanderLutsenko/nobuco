@@ -6,6 +6,7 @@ import torch
 from nobuco.commons import TF_TENSOR_CLASSES
 from nobuco.util import collect_recursively, replace_recursively_func
 
+
 TF_TYPE_PRIORITY_LIST = [
     tf.complex128,
     tf.complex64,
@@ -58,9 +59,7 @@ def tf_autocast_recursively(inputs, type_priority_list=None):
     for t in tensors:
         if t.dtype in type_priority_list:
             p = type_priority_list.index(t.dtype)
-        else:
-            raise Exception(f'Unsupported dtype: {t.dtype}')
-        min_priority = min(min_priority, p)
+            min_priority = min(min_priority, p)
 
     if min_priority >= len(type_priority_list):
         return inputs
@@ -71,7 +70,7 @@ def tf_autocast_recursively(inputs, type_priority_list=None):
         return isinstance(obj, TF_TENSOR_CLASSES)
 
     def replace_func(obj):
-        if obj.dtype != target_dtype:
+        if obj.dtype in type_priority_list and obj.dtype != target_dtype:
             obj_cast = tf.cast(obj, target_dtype)
             if hasattr(obj, 'channel_order'):
                 obj_cast.channel_order = obj.channel_order

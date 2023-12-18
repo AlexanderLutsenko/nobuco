@@ -6,7 +6,7 @@ from torch.types import _int, _bool, Number, _dtype, _size
 import tensorflow as tf
 import torch
 
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import dim_pytorch2keras
@@ -47,10 +47,13 @@ def converter_eq(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     return func
 
 
-@converter(torch.Tensor.topk, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_topk(self, k, dim=None, largest=True, sorted=True):
-    def func(self, k, dim=None, largest=True, sorted=True):
-        result = tf.math.top_k(self, k=k, sorted=sorted)
+@converter(torch.topk, torch.Tensor.topk, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_topk(input, k, dim=-1, largest=True, sorted=True, *, out=None):
+    def func(input, k, dim=-1, largest=True, sorted=True, *, out=None):
+        if isinstance(k, TF_TENSOR_CLASSES) and k.dtype != tf.int32:
+            # TopK in TFLite can only work with int32
+            k = tf.cast(k, tf.int32)
+        result = tf.math.top_k(input, k=k, sorted=sorted)
         indices = tf.cast(result.indices, tf.int64)
         return result.values, indices
     return func
