@@ -37,6 +37,8 @@ def dtype_pytorch2keras(dtype):
         tf_type = tf.int32
     elif dtype == torch.int64:
         tf_type = tf.int64
+    elif dtype == torch.uint8:
+        tf_type = tf.uint8
     elif dtype == torch.bool:
         tf_type = tf.bool
     elif dtype == torch.complex64:

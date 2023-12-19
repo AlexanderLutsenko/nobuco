@@ -17,7 +17,7 @@
 <!-- toc -->
 
 ## Installation <img src="https://img.shields.io/pypi/v/nobuco?color=blue&style=flat-square">
-<img src="https://img.shields.io/badge/PyTorch-2.0.0-EE4C2C.svg?style=flat&logo=pytorch"> <img src="https://img.shields.io/badge/TensorFlow-2.13-FF6F00.svg?style=flat&logo=tensorflow">
+<img src="https://img.shields.io/badge/PyTorch-2.1-EE4C2C.svg?style=flat&logo=pytorch"> <img src="https://img.shields.io/badge/TensorFlow-2.15-FF6F00.svg?style=flat&logo=tensorflow">
 
 ```bash
 pip install -U nobuco
