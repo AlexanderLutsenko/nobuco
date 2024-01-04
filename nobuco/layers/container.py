@@ -18,7 +18,7 @@ class TransientContainer:
         children_descr_list = [(node.input_names, node.output_names, node.keras_op, node.pytorch_node.make_inputs_template()) for node in children_converted_nodes]
         if constants_to_variables:
             const_input_name = input_names[0]
-            disconnected_tensors_descr_list = [([const_input_name], [output_name], WeightLayer.create(t), ([TensorPlaceholder(0)], {})) for output_name, t in disconnected_tensors_keras.items()]
+            disconnected_tensors_descr_list = [([const_input_name], [output_name], WeightLayer.create(t, trainable=True), ([TensorPlaceholder(0)], {})) for output_name, t in disconnected_tensors_keras.items()]
             return TransientContainer(children_descr_list, input_names, output_names, outputs_template, constants_dict={}, disconnected_tensors_descr_list=disconnected_tensors_descr_list)
         else:
             return TransientContainer(children_descr_list, input_names, output_names, outputs_template, constants_dict=disconnected_tensors_keras, disconnected_tensors_descr_list=[])

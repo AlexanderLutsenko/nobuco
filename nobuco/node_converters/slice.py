@@ -106,7 +106,8 @@ def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):
 
     if not isinstance(assigned_tensor, TF_TENSOR_CLASSES):
         assigned_tensor = tf.convert_to_tensor(assigned_tensor)
-        assigned_tensor = WeightLayer.create(assigned_tensor)(sliced_tensor)
+        assigned_tensor = tf.cast(assigned_tensor, sliced_tensor.dtype)
+        assigned_tensor = WeightLayer.create(assigned_tensor, trainable=False)(sliced_tensor)
 
     if not dims_to_index:
         assigned_tensor = to_shape_and_dtype(assigned_tensor, sliced_tensor.shape, sliced_tensor.dtype)

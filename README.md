@@ -6,7 +6,7 @@
 **No** **Bu**llshit **Co**nverter is a tool that helps you translate Pytorch models into Keras/Tensorflow graphs without losing your mind.
 
 - Supports a wide range of architectures
-  - [x] Control flow ops (If, While)
+  - [x] Control flow ops (If, For, While)
   - [x] Recurrent layers (LSTM, GRU)
   - [x] Arbitrary torch functions
 - Simple
@@ -180,7 +180,6 @@ pytorch_module = MyModule().eval()
 inputs = [
     torch.normal(0, 1, size=(1, 12, 32)),
 ]
-You can
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module, inputs,
     inputs_channel_order=ChannelOrder.PYTORCH,
