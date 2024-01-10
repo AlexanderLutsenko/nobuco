@@ -1,8 +1,7 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from transformers.models.detr.modeling_detr import DetrFrozenBatchNorm2d
-
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from transformers import DetrForObjectDetection
 
