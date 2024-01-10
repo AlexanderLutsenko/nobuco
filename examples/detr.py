@@ -1,4 +1,7 @@
 import os
+
+from transformers.models.detr.modeling_detr import DetrFrozenBatchNorm2d
+
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from transformers import DetrForObjectDetection
@@ -14,6 +17,18 @@ import keras
 device = 'cpu'
 
 pytorch_module = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50").eval().to(device)
+
+
+@nobuco.converter(DetrFrozenBatchNorm2d)
+def converter_DetrFrozenBatchNorm(self, input):
+    weight = self.weight.cpu().detach().numpy()
+    bias = self.bias.cpu().detach().numpy()
+    running_mean = self.running_mean.cpu().detach().numpy()
+    running_var = self.running_var.cpu().detach().numpy()
+
+    layer = keras.layers.BatchNormalization(epsilon=1e-5, weights=[weight, bias, running_mean, running_var])
+    return layer
+
 
 x = torch.normal(0, 1, size=(1, 3, 256, 256)).to(device)
 
