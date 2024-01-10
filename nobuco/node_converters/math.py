@@ -13,16 +13,17 @@ from nobuco.converters.channel_ordering import set_channel_order, get_channel_or
 from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import _dim_make_positive, dim_pytorch2keras, perm_keras2pytorch, _permute, \
     perm_pytorch2keras, _ensure_iterable, _dims_make_positive, dims_pytorch2keras
+from nobuco.converters.type_cast import dtype_pytorch2keras
 
 
-@converter(torch.sin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.sin, torch.Tensor.sin, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_sin(input, *args, **kwargs):
     def func(input, *args, **kwargs):
         return tf.math.sin(input)
     return func
 
 
-@converter(torch.cos, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.cos, torch.Tensor.cos, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_cos(input, *args, **kwargs):
     def func(input, *args, **kwargs):
         return tf.math.cos(input)
@@ -64,17 +65,26 @@ def converter_mul(self, value):
     return func
 
 
+def divide(x, y, rounding_mode):
+    if rounding_mode is None:
+        return x / y
+    elif rounding_mode is 'trunc':
+        return tf.truncatediv(x, y)
+    elif rounding_mode is 'floor':
+        return x // y
+
+
 @converter(torch.Tensor.__truediv__, torch.Tensor.__idiv__, torch.div, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_div(input: Union[Tensor, Number], other: Union[Tensor, Number], *, rounding_mode: Optional[str] = None, out: Optional[Tensor]=None):
     def func(input, other, *, rounding_mode=None, out=None):
-        return input / other
+        return divide(input, other, rounding_mode)
     return func
 
 
 @converter(torch.Tensor.div, torch.Tensor.div_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
-def converter_div(self, value, *args, **kwargs):
-    def func(self, value, *args, **kwargs):
-        return self / value
+def converter_div(self, value, rounding_mode=None, *args, **kwargs):
+    def func(self, value, rounding_mode=None, *args, **kwargs):
+        return divide(self, value, rounding_mode)
     return func
 
 
@@ -93,7 +103,7 @@ def converter_floor_divide(input: Union[Tensor, Number], other: Union[Tensor, Nu
 
 
 @converter(torch.Tensor.__mod__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
-def converter_div(self, value, *args, **kwargs):
+def converter_mod(self, value, *args, **kwargs):
     def func(self, value, *args, **kwargs):
         return self % value
     return func
@@ -244,6 +254,9 @@ def converter_cumsum(input: Tensor, dim, *, dtype: Optional[_dtype] = None, out:
     def func(input, dim, *, dtype = None, out = None):
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, num_dims)
+        if dtype is not None:
+            tf_type = dtype_pytorch2keras(dtype)
+            input =  tf.cast(input, tf_type)
         return tf.cumsum(input, axis=dim)
     return func
 
