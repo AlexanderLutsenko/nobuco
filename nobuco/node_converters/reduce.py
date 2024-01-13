@@ -1,13 +1,11 @@
 import math
 from typing import Optional, Union, List, Tuple, Sequence, Any, Callable
 
-
 from nobuco.node_converters.math import converter_maximum, converter_minimum
 
 from nobuco.layers.channel_order import tf_annotate_recursively
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size, _layout, _device
-
 
 import tensorflow as tf
 from tensorflow import keras

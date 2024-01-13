@@ -68,9 +68,9 @@ def converter_mul(self, value):
 def divide(x, y, rounding_mode):
     if rounding_mode is None:
         return x / y
-    elif rounding_mode is 'trunc':
+    elif rounding_mode == 'trunc':
         return tf.truncatediv(x, y)
-    elif rounding_mode is 'floor':
+    elif rounding_mode == 'floor':
         return x // y
 
 
@@ -116,22 +116,22 @@ def converter_sqrt(input: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
-@converter(torch.Tensor.rsqrt, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_rsqrt(self):
-    def func(self):
-        # return tf.math.rsqrt(self)
-        return 1 / tf.math.sqrt(self)
+@converter(torch.rsqrt, torch.Tensor.rsqrt, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_rsqrt(input: Tensor, *, out: Optional[Tensor] = None):
+    def func(input: Tensor, *, out: Optional[Tensor] = None):
+        # return tf.math.rsqrt(input)
+        return 1 / tf.math.sqrt(input)
     return func
 
 
-@converter(torch.Tensor.__pow__, torch.pow, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.pow, torch.Tensor.pow, torch.Tensor.__pow__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_pow(input: Tensor, exponent: Number, *, out: Optional[Tensor]=None):
     def func(input, exponent, *, out=None):
         return input ** exponent
     return func
 
 
-@converter(torch.Tensor.__rpow__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.__rpow__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_rpow(self, other):
     def func(self, other):
         return other ** self
@@ -212,21 +212,21 @@ def converter_t_round(self, decimals=0):
     return func
 
 
-@converter(torch.clamp, torch.Tensor.clamp, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.clamp, torch.Tensor.clamp, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_clamp(input: Tensor, min: Optional[Number]=None, max: Optional[Number]=None, *, out: Optional[Tensor]=None):
     def func(input, min=None, max=None, *, out=None):
         return tf.keras.backend.clip(input, min_value=min, max_value=max)
     return func
 
 
-@converter(torch.Tensor.clamp_min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.clamp_min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_clamp(self, min):
     def func(self, min):
         return tf.keras.backend.clip(self, min_value=min, max_value=None)
     return func
 
 
-@converter(torch.Tensor.clamp_max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.Tensor.clamp_max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_clamp(self, max):
     def func(self, max):
         return tf.keras.backend.clip(self, min_value=None, max_value=max)

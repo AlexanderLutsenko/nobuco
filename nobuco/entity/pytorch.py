@@ -266,7 +266,10 @@ class PytorchNodeHierarchy:
             result += get_tier_str(tier_statuses, is_additional=True)
 
             if status == ValidationStatus.INACCURATE:
-                result += stylizer.stylize(f' (!) Max diff {validation_result.diff:.6f} ', stylizer.styles_join(style, stylizer.style_inverse)) + ' '
+                status_str = f' (!) Max diff {validation_result.diff_abs:.5f} '
+                if validation_result.diff_rel is not None:
+                    status_str += f'({validation_result.diff_rel*100:.3f}%) '
+                result += stylizer.stylize(status_str, stylizer.styles_join(style, stylizer.style_inverse)) + ' '
             if is_disconnected:
                 result += stylizer.stylize(f' (!) Subgraph disconnected ', stylizer.style_inverse) + ' '
             if is_inplace:

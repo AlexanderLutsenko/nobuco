@@ -162,8 +162,7 @@ def convert_hierarchy(
             conversion_result = ConversionResult(converted_manually=False, is_implemented=False, converter=converter)
 
         if full_validation or depth == 0:
-            diff, status = validate(node, node.wrapped_op.op, keras_op, node.input_args, node.input_kwargs, node.output_tensors, node.get_type(), tolerance=tolerance)
-            validation_result = ValidationResult(diff, status)
+            validation_result = validate(node, node.wrapped_op.op, keras_op, node.input_args, node.input_kwargs, node.output_tensors, node.get_type(), tolerance=tolerance)
         else:
             validation_result = None
 
