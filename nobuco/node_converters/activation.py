@@ -37,6 +37,13 @@ def converter_sigmoid(input: Tensor, *, out: Optional[Tensor]=None):
     return func
 
 
+@converter(F.logsigmoid, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_logsigmoid(input: Tensor, *, out: Optional[Tensor]=None):
+    def func(input, *, out=None):
+        return tf.math.log_sigmoid(input)
+    return func
+
+
 @converter(torch.tanh, torch.Tensor.tanh, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_tanh(input: Tensor, *, out: Optional[Tensor]=None):
     def func(input: Tensor, *, out=None):
@@ -161,7 +168,7 @@ def converter_softmax(input: Tensor, dim: Optional[int] = None, _stacklevel: int
     return func
 
 
-@converter(torch.log_softmax, torch.Tensor.log_softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(F.log_softmax, torch.log_softmax, torch.Tensor.log_softmax, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_log_softmax(input: Tensor, dim, *, dtype: Optional[_dtype]=None):
     num_dims = input.dim()
 

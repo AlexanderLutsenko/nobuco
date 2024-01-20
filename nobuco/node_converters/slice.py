@@ -47,7 +47,7 @@ def to_shape_and_dtype(assigned_tensor, shape, dtype):
     return assigned_tensor
 
 
-def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):
+def slice_assign(sliced_tensor, slice_args, assigned_tensor):
     slice_args = _ensure_iterable(slice_args)
     """Assign a tensor to the slice of another tensor.
     No broadcast is performed.
@@ -97,8 +97,9 @@ def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):
 
                 corresponding_range = tf.cast(tf.range(start, stop, step), dtype=tf.int32)
             else:
-                slice_spec = tf.convert_to_tensor(slice_spec)
-                corresponding_range = tf.cast(slice_spec, dtype=tf.int32)
+                idx = tf.convert_to_tensor(slice_spec)
+                idx = tf.where(idx < 0, idx + shape[real_index], idx)
+                corresponding_range = tf.cast(idx, dtype=tf.int32)
                 n_indexed_dims += 1
 
             corresponding_ranges.append(corresponding_range)
@@ -133,14 +134,24 @@ def slice_assign(sliced_tensor, slice_args, assigned_tensor, is_scatter=False):
         for slicing_range in mesh_ranges
     ], axis=-1)
 
-    if isinstance(assigned_tensor, TF_TENSOR_CLASSES) and len(assigned_tensor.shape) == len(scatted_nd_perm):
-        assigned_tensor = tf.transpose(assigned_tensor, scatted_nd_perm)
+    if isinstance(assigned_tensor, TF_TENSOR_CLASSES):
+        if 1 < len(assigned_tensor.shape) < len(scatted_nd_perm):
+            new_shape = []
+            k = 0
+            for i in range(n_dims):
+                if i in dims_to_index:
+                    d = tf.size(corresponding_ranges[k])
+                    k += 1
+                else:
+                    d = assigned_tensor.shape[i]
+                new_shape.append(d)
+            assigned_tensor = tf.reshape(assigned_tensor, new_shape)
 
-    if is_scatter:
-        assigned_tensor_reshaped = assigned_tensor
-    else:
-        assigned_tensor_reshaped = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
-        assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
+        if len(assigned_tensor.shape) == len(scatted_nd_perm):
+            assigned_tensor = tf.transpose(assigned_tensor, scatted_nd_perm)
+
+    assigned_tensor_reshaped = to_shape_and_dtype(assigned_tensor, sliced_shape, sliced_tensor.dtype)
+    assigned_tensor_reshaped = tf.reshape(assigned_tensor_reshaped, [-1] + left_out_shape)
 
     # NOTE: the tensors are reshaped to allow for easier indexing with
     sliced_tensor_reshaped = tf.transpose(sliced_tensor, perm=scatted_nd_perm)

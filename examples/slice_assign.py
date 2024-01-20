@@ -44,7 +44,11 @@ class MyModule(nn.Module):
         c4 = x[:, index_x, index_y, index_z]
         c5 = x[index_x[1][None, None, None], index_y[None, None, None], index_z[2][None, None, None], 1::2]
 
-        return x, y, d, z3, z4, z5, z6, z7, c1, c2, c3, c4, c5
+        scores = torch.zeros(size=(1, 78, 58))
+        assign = torch.ones(size=(1, 77))
+        scores[:, 1:, -1] = assign
+
+        return x, y, d, z3, z4, z5, z6, z7, c1, c2, c3, c4, c5, scores
 
 
 x = torch.normal(0, 1, size=(8, 5, 96, 128))

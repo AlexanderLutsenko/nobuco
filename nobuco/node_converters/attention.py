@@ -2,6 +2,7 @@ from typing import Optional, Union, List, Tuple, Sequence, Any
 
 from torch import Tensor
 from torch import nn
+import torch.nn.functional as F
 
 import tensorflow as tf
 from tensorflow import keras
@@ -61,4 +62,39 @@ def converter_MultiheadAttention(self,
         layer.set_weights(params)
         output = layer(query, value, key=key, attention_mask=attn_mask, return_attention_scores=need_weights, use_causal_mask=is_causal)
         return output
+    return func
+
+
+def tril(h, w):
+    y = tf.range(0, h)[:, None]
+    x = tf.range(0, w)[None, :]
+    return y >= x
+
+
+@converter(F.scaled_dot_product_attention, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_p=0.0, is_causal=False, scale=None):
+    def func(query, key, value, attn_mask=None, dropout_p=0.0, is_causal=False, scale=None):
+        L, D = tf.shape(query)[-2:]
+        S = tf.shape(key)[-2]
+
+        if scale is None:
+            scale = tf.cast(D, query.dtype) ** -0.5
+
+        # Corby's numerically more stable attention
+        # See: https://github.com/bigscience-workshop/Megatron-DeepSpeed/pull/118
+        s_scale = tf.cast(tf.sqrt(scale), query.dtype)
+        query = query * s_scale
+        key = key * s_scale
+
+        sim = query @ tf.experimental.numpy.swapaxes(key, -2, -1)
+
+        if attn_mask is not None:
+            sim = tf.where(attn_mask, sim, float("-inf"))
+        elif is_causal:
+            causal_mask = tril(L, S)
+            sim = tf.where(causal_mask, sim, float("-inf"))
+
+        attn = tf.nn.softmax(sim, axis=-1)
+        attn = keras.layers.Dropout(dropout_p)(attn)
+        return attn @ value
     return func

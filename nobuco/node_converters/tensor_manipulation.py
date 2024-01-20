@@ -328,7 +328,7 @@ def torch_gather(x, indices, gather_axis):
     return reshaped
 
 
-@converter(torch.gather, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.gather, torch.Tensor.gather, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_gather(input: Tensor, dim, index: Tensor, *, sparse_grad: _bool=False, out: Optional[Tensor]=None):
     n_dims = input.dim()
 

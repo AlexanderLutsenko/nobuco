@@ -51,6 +51,13 @@ def converter_rsub(self, other):
     return func
 
 
+@converter(torch.Tensor.neg, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
+def converter_neg(self):
+    def func(self):
+        return -self
+    return func
+
+
 @converter(torch.mul, torch.Tensor.__mul__, torch.Tensor.__imul__, torch.Tensor.__rmul__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS_OR_PYTORCH, autocast=True)
 def converter_mul(input: Union[Tensor, Number], other: Union[Tensor, Number], *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
@@ -215,21 +222,28 @@ def converter_t_round(self, decimals=0):
 @converter(torch.clamp, torch.Tensor.clamp, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_clamp(input: Tensor, min: Optional[Number]=None, max: Optional[Number]=None, *, out: Optional[Tensor]=None):
     def func(input, min=None, max=None, *, out=None):
-        return tf.keras.backend.clip(input, min_value=min, max_value=max)
+        # return tf.keras.backend.clip(input, min_value=min, max_value=max)
+        if min is not None:
+            input = tf.maximum(input, min)
+        if max is not None:
+            input = tf.minimum(input, max)
+        return input
     return func
 
 
-@converter(torch.Tensor.clamp_min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
-def converter_clamp(self, min):
-    def func(self, min):
-        return tf.keras.backend.clip(self, min_value=min, max_value=None)
+@converter(torch.clamp_min, torch.Tensor.clamp_min, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
+def converter_clamp_min(input: Tensor, min, *, out = None):
+    def func(input, min, *, out = None):
+        # return tf.keras.backend.clip(self, min_value=min, max_value=None)
+        return tf.maximum(input, min)
     return func
 
 
-@converter(torch.Tensor.clamp_max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
-def converter_clamp(self, max):
-    def func(self, max):
-        return tf.keras.backend.clip(self, min_value=None, max_value=max)
+@converter(torch.clamp_max, torch.Tensor.clamp_max, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
+def converter_clamp_max(input: Tensor, max, *, out = None):
+    def func(input, max, *, out = None):
+        # return tf.keras.backend.clip(self, min_value=None, max_value=max)
+        return tf.minimum(input, max)
     return func
 
 

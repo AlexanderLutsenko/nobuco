@@ -30,6 +30,21 @@ def converter_tensor(data: Any, dtype: Optional[_dtype]=None, device: Device=Non
     return func
 
 
+@converter(torch.Tensor.new_tensor, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_new_tensor(self, data, *, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+    def func(self, data, *, dtype=None, device=None, requires_grad=False, layout=torch.strided, pin_memory=False):
+        dtype = dtype_pytorch2keras(dtype)
+        if dtype is not None and isinstance(data, TF_TENSOR_CLASSES):
+            return tf.cast(data, dtype=dtype)
+        else:
+            # Sic!
+            if dtype is None:
+                return tf.convert_to_tensor(data)
+            else:
+                return tf.convert_to_tensor(data, dtype=dtype)
+    return func
+
+
 @converter(torch.as_tensor, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_as_tensor(data: Any, dtype: Optional[_dtype] = None, device: Device = None):
     def func(data, dtype = None, device = None):
