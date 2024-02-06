@@ -184,14 +184,19 @@ def converter_repeat_interleave(input: Tensor, repeats, dim: Optional[_int] = No
 
 @converter(torch.Tensor.expand, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_expand(self, *sizes):
+    n_dims = self.dim()
+
     def get_broadcast_shape(sizes, tensor_shape):
-        n_dims = len(tensor_shape)
-        return list(sizes[:-n_dims]) + [ts if s == -1 else s for s, ts in zip(sizes[-n_dims:], tensor_shape)]
+        sizes_hd, sizes_tl = sizes[:-n_dims], sizes[-n_dims:]
+        sizes_tl = tf.where(sizes_tl == -1, tensor_shape, sizes_tl)
+        return tf.concat([sizes_hd, sizes_tl], axis=0)
 
     def func(self, *sizes):
         sizes = _flatten(sizes)
-        broadcast_shape = get_broadcast_shape(sizes, self.shape)
+        sizes = tf.convert_to_tensor(sizes)
+        broadcast_shape = get_broadcast_shape(sizes, tf.shape(self))
         return tf.broadcast_to(self, broadcast_shape)
+
     return func
 
 
