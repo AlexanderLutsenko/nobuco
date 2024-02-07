@@ -15,7 +15,7 @@ device = 'cpu'
 tokenizer = AutoTokenizer.from_pretrained('stabilityai/stablelm-2-zephyr-1_6b', trust_remote_code=True)
 next_token_id, attention_mask, positional_ids, past_key_values_flat, prompt_size = prepare_inputs_pt(prompt, tokenizer, past_kv_flattened=False, device=device)
 
-pytorch_model = AutoModelForCausalLM.from_pretrained('stabilityai/stablelm-2-zephyr-1_6b', trust_remote_code=True).to(device)
+pytorch_model = AutoModelForCausalLM.from_pretrained('stabilityai/stablelm-2-zephyr-1_6b', trust_remote_code=True).eval().to(device)
 print('Model loaded')
 
 generated_tokens = []
