@@ -22,16 +22,17 @@ generated_tokens = []
 
 # First run, no padding
 start = time.time()
-all = pytorch_model(next_token_id, attention_mask, positional_ids, past_key_values_flat)
+with torch.inference_mode():
+    outputs = pytorch_model(next_token_id, attention_mask, positional_ids, past_key_values_flat)
 print('First elapsed:', time.time() - start)
 
 # Pad inputs to `max_tokens`
-past_key_values_flat = all['past_key_values']
+past_key_values_flat = outputs['past_key_values']
 s1, s2, s3, s4 = past_key_values_flat[0][0].shape
 kv_pad = torch.zeros(size=(s1, s2, max_tokens - s3 - 1, s4))
 past_key_values_flat = [(torch.cat([kv_pad, k], dim=2), torch.cat([kv_pad, v], dim=2)) for (k, v) in past_key_values_flat]
 
-next_logits = all['logits']
+next_logits = outputs['logits']
 next_logits = next_logits[:, -1:]
 next_token_id = torch.argmax(next_logits, dim=-1)
 
@@ -46,13 +47,14 @@ generated_tokens.append(next_token_id.detach().cpu().numpy().item())
 # Run inference on padded inputs
 for cycle in range(1, num_steps):
     start = time.time()
-    all = pytorch_model(next_token_id, attention_mask, positional_ids, past_key_values_flat)
+    with torch.inference_mode():
+        outputs = pytorch_model(next_token_id, attention_mask, positional_ids, past_key_values_flat)
     print('Elapsed:', time.time() - start)
 
-    past_key_values_flat = all['past_key_values']
+    past_key_values_flat = outputs['past_key_values']
     past_key_values_flat = [(k[:, :, 1:], v[:, :, 1:]) for (k, v) in past_key_values_flat]
 
-    next_logits = all['logits']
+    next_logits = outputs['logits']
     next_logits = next_logits[:, -1:]
     next_token_id = torch.argmax(next_logits, dim=-1)
 
