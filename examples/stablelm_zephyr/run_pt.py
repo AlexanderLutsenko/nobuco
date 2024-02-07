@@ -29,7 +29,7 @@ print('First elapsed:', time.time() - start)
 # Pad inputs to `max_tokens`
 past_key_values_flat = outputs['past_key_values']
 s1, s2, s3, s4 = past_key_values_flat[0][0].shape
-kv_pad = torch.zeros(size=(s1, s2, max_tokens - s3 - 1, s4))
+kv_pad = torch.zeros(size=(s1, s2, max_tokens - s3 - 1, s4), device=device)
 past_key_values_flat = [(torch.cat([kv_pad, k], dim=2), torch.cat([kv_pad, v], dim=2)) for (k, v) in past_key_values_flat]
 
 next_logits = outputs['logits']
@@ -37,7 +37,7 @@ next_logits = next_logits[:, -1:]
 next_token_id = torch.argmax(next_logits, dim=-1)
 
 m1, m2 = attention_mask.shape
-mask_pad = torch.zeros(size=(m1, max_tokens - m2))
+mask_pad = torch.zeros(size=(m1, max_tokens - m2), device=device)
 attention_mask = torch.cat([mask_pad, attention_mask, torch.ones((1, 1), dtype=torch.int64, device=device)], dim=1)[:, 1:]
 
 positional_ids = torch.asarray([[prompt_size + 0]], dtype=torch.int64, device=device)
