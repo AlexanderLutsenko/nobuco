@@ -62,9 +62,9 @@ class MyModule(nn.Module):
         return x, x1, x2
 
 
-nobuco.unregister_converter(nn.Conv1d)
-nobuco.unregister_converter(nn.Conv2d)
-nobuco.unregister_converter(nn.ConvTranspose2d)
+# nobuco.unregister_converter(nn.Conv1d)
+# nobuco.unregister_converter(nn.Conv2d)
+# nobuco.unregister_converter(nn.ConvTranspose2d)
 
 
 input = torch.normal(0, 1, size=(1, 16, 128, 128))

@@ -25,21 +25,9 @@ class TracingTensor(torch.Tensor):
         func = Tracer.op_undecorate(func_raw)
         is_decorated = Tracer.is_decorated(func_raw)
 
-        # if func in Tracer.op_trace_blacklist:
-        #     with Tracer.tracing_suspend():
-        #         args, kwargs = unwrap_torch_tensors_recursively((args, kwargs))
-        #         outputs = func(*args, **kwargs)
-        #         outputs = wrap_torch_tensors_recursively(outputs)
-        #         return outputs
-        # elif is_decorated:
-        #     with Tracer.tracing_suspend():
-        #         args, kwargs = unwrap_torch_tensors_recursively((args, kwargs))
-        #     outputs = func(*args, **kwargs)
-        #     with Tracer.tracing_suspend():
-        #         outputs = wrap_torch_tensors_recursively(outputs)
-        #     return outputs
-
-        if is_decorated or func in Tracer.op_trace_blacklist:
+        # FIXME: https://github.com/AlexanderLutsenko/nobuco/issues/26
+        # if is_decorated or func in Tracer.op_trace_blacklist:
+        if func in Tracer.op_trace_blacklist:
             with Tracer.tracing_suspend():
                 args, kwargs = unwrap_torch_tensors_recursively((args, kwargs))
                 outputs = func(*args, **kwargs)

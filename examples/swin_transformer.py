@@ -5,6 +5,8 @@ from nobuco.layers.weight import WeightLayer
 import torch
 from torchvision import models
 
+import tensorflow as tf
+
 
 device = 'cuda'
 
@@ -12,6 +14,8 @@ pytorch_module = models.swin_v2_t().eval().to(device)
 
 x = torch.normal(0, 1, size=(1, 3, 224, 224)).to(device)
 
+# Disable GPU for Tensorflow
+# tf.config.experimental.set_visible_devices([], 'GPU')
 keras_model = nobuco.pytorch_to_keras(
     pytorch_module,
     args=[x],
