@@ -37,15 +37,19 @@ def converter_Conv1d(self, input: Tensor):
 
     if isinstance(padding, numbers.Number):
         padding = (padding,)
-    if padding != (0,) and padding != 'valid':
+
+    pad_str = 'valid'
+    pad_layer = None
+
+    if padding == 'same':
+        pad_str = 'same'
+    elif padding != (0,):
         pad_layer = keras.layers.ZeroPadding1D(padding[0])
-    else:
-        pad_layer = None
 
     conv = keras.layers.Conv1D(filters=out_filters,
                                kernel_size=kw,
                                strides=stride,
-                               padding='valid',
+                               padding=pad_str,
                                dilation_rate=dilation,
                                groups=groups,
                                use_bias=use_bias,
@@ -76,15 +80,19 @@ def converter_conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor]=None,
 
     if isinstance(padding, numbers.Number):
         padding = (padding,)
-    if padding != (0,) and padding != 'valid':
+
+    pad_str = 'valid'
+    pad_layer = None
+
+    if padding == 'same':
+        pad_str = 'same'
+    elif padding != (0,):
         pad_layer = keras.layers.ZeroPadding1D(padding[0])
-    else:
-        pad_layer = None
 
     conv = keras.layers.Conv1D(filters=out_filters,
                                kernel_size=kw,
                                strides=stride,
-                               padding='valid',
+                               padding=pad_str,
                                dilation_rate=dilation,
                                groups=groups,
                                use_bias=use_bias,
@@ -121,15 +129,24 @@ def converter_Conv2d(self, input: Tensor):
         params = [weights]
         use_bias = False
 
-    if padding != 0 and padding != (0, 0) and padding != 'valid':
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
+    pad_str = 'valid'
+    pad_layer = None
+
+    if padding == 'same':
+        pad_str = 'same'
+    elif padding != (0, 0):
         pad_layer = keras.layers.ZeroPadding2D(padding)
-    else:
-        pad_layer = None
 
     conv = keras.layers.Conv2D(filters=out_filters,
                                kernel_size=(kh, kw),
                                strides=stride,
-                               padding='valid',
+                               padding=pad_str,
                                dilation_rate=dilation,
                                groups=groups,
                                use_bias=use_bias,
@@ -161,15 +178,24 @@ def converter_conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
         params = [weights]
         use_bias = False
 
-    if padding != 0 and padding != (0, 0) and padding != 'valid':
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
+    pad_str = 'valid'
+    pad_layer = None
+
+    if padding == 'same':
+        pad_str = 'same'
+    elif padding != (0, 0):
         pad_layer = keras.layers.ZeroPadding2D(padding)
-    else:
-        pad_layer = None
 
     conv = keras.layers.Conv2D(filters=out_filters,
                                kernel_size=(kh, kw),
                                strides=stride,
-                               padding='valid',
+                               padding=pad_str,
                                dilation_rate=dilation,
                                groups=groups,
                                use_bias=use_bias,
