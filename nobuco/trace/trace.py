@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import inspect
 import traceback
 import types
@@ -332,12 +333,31 @@ class Tracer:
 
     @staticmethod
     def decorate_module():
-        def decorated_new(cls, *args, **kwargs):
-            self = object.__new__(cls)
+
+        def decorate_forward(self):
             if not Tracer.is_decorated(self.forward):
                 self.forward = types.MethodType(Tracer.module_forward_tracing_decorator(self.forward), self)
+
+        def decorated_new(cls, *args, **kwargs):
+            self = object.__new__(cls)
+            decorate_forward(self)
             return self
+
+        # Needed for deepcopy to work correctly
+        # See https://github.com/AlexanderLutsenko/nobuco/issues/26#issuecomment-1969473903
+        def decorated__deepcopy__(self, memo):
+            self.__deepcopy__ = None
+            copied = copy.deepcopy(self, memo)
+            del self.__deepcopy__
+            del copied.__deepcopy__
+
+            del copied.forward
+            decorate_forward(copied)
+            return copied
+
         nn.Module.__new__ = decorated_new
+        nn.Module.__deepcopy__ = decorated__deepcopy__
+
 
     @staticmethod
     def decorate_ops():
