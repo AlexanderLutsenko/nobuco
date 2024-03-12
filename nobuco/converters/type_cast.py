@@ -95,7 +95,7 @@ def tf_cast_recursively(obj, types):
         nonlocal i
         if tf_tensor.dtype != types[i]:
             tf_tensor_cast = tf.cast(tf_tensor, types[i])
-            if hasattr(obj, 'channel_order'):
+            if hasattr(tf_tensor, 'channel_order'):
                 tf_tensor_cast.channel_order = tf_tensor.channel_order
             tf_tensor = tf_tensor_cast
         i += 1
