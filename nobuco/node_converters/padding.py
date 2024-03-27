@@ -31,6 +31,6 @@ def converter_pad(input: Tensor, pad: List[int], mode: str = "constant", value: 
         pad = pad_full
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             pad = permute_pytorch2keras(pad)
-        x = tf.pad(input, pad)
+        x = tf.pad(input, pad, mode=mode.upper(), constant_values=value)
         return x
     return func
