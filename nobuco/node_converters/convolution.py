@@ -375,7 +375,12 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
         x = conv(input)
 
         if padding != (0, 0):
-            x = x[:, padding[0]:-padding[0], padding[1]:-padding[1], :]
+            if padding[0] == 0:
+                x = x[:, :, padding[1]:-padding[1], :]
+            elif padding[1] == 0:
+                x = x[:, padding[0]:-padding[0], :]
+            else:
+                x = x[:, padding[0]:-padding[0], padding[1]:-padding[1], :]
 
         return x
 
@@ -447,7 +452,12 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
         x = conv(input)
 
         if padding != (0, 0):
-            x = x[:, padding[0]:-padding[0], padding[1]:-padding[1], :]
+            if padding[0] == 0:
+                x = x[:, :, padding[1]:-padding[1], :]
+            elif padding[1] == 0:
+                x = x[:, padding[0]:-padding[0], :]
+            else:
+                x = x[:, padding[0]:-padding[0], padding[1]:-padding[1], :]
 
         return x
 
