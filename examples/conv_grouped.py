@@ -1,8 +1,6 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-import tensorflowjs
-
 import nobuco
 from nobuco import ChannelOrder, ChannelOrderingStrategy
 from nobuco.layers.weight import WeightLayer
@@ -34,8 +32,7 @@ class MyModule(nn.Module):
                 for padding in [(0, 0), (1, 0), (0, 1), (1, 1)]:
                     for groups in [1, 4, 8]:
                         for dilation in [1, 2]:
-                            conv = nn.ConvTranspose2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups,
-                                             dilation=dilation)
+                            conv = nn.ConvTranspose2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
                             self.convs_transpose_2d.append(conv)
 
         self.convs_1d = nn.ModuleList()
@@ -52,27 +49,28 @@ class MyModule(nn.Module):
             for kernel_size in [1, 3]:
                 for padding in [0, 1]:
                     for groups in [1, 4, 8]:
-                        for dilation in [1, 2]:
+                        for dilation in [1]:
                             conv = nn.ConvTranspose1d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
                             self.convs_transpose_1d.append(conv)
 
     def forward(self, x):
         outputs = []
 
-        # for conv in self.convs_2d:
-        #     out = conv(x)
-        #     outputs.append(out)
-        #
-        # for conv in self.convs_transpose_2d:
-        #     out = conv(x)
-        #     outputs.append(out)
+        for conv in self.convs_2d:
+            out = conv(x)
+            outputs.append(out)
+
+        for conv in self.convs_transpose_2d:
+            out = conv(x)
+            outputs.append(out)
 
         b, c, h, w = x.shape
         x = x.view(b, c, h*w)
+        x = nobuco.force_tensorflow_order(x)
 
-        # for conv in self.convs_1d:
-        #     out = conv(x)
-        #     outputs.append(out)
+        for conv in self.convs_1d:
+            out = conv(x)
+            outputs.append(out)
 
         for conv in self.convs_transpose_1d:
             out = conv(x)
@@ -81,9 +79,9 @@ class MyModule(nn.Module):
         return outputs
 
 
-
 # nobuco.unregister_converter(nn.Conv1d)
 # nobuco.unregister_converter(nn.Conv2d)
+# nobuco.unregister_converter(nn.ConvTranspose1d)
 # nobuco.unregister_converter(nn.ConvTranspose2d)
 
 
@@ -111,5 +109,6 @@ tflite_model = converter.convert()
 with open(model_path + '.tflite', 'wb') as f:
     f.write(tflite_model)
 
+# import tensorflowjs
 # keras_model.save(model_path)
 # tensorflowjs.converters.convert_tf_saved_model(model_path, model_path + '.js', skip_op_check=False)

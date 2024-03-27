@@ -15,20 +15,75 @@ from tensorflow import keras
 import tensorflowjs
 
 
-class ExampleModel(nn.Module):
-    def __init__(self,
-                 **kwargs):
-        super(ExampleModel, self).__init__()
-        self.layer1 = nn.Conv2d(16, 16, (3, 3), (1, 1), (0, 0), (1, 1), 16)
-        self.layer2 = nn.ReLU()
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        in_channels = 16
+
+        self.convs_2d = nn.ModuleList()
+        for out_channels in [16, 32]:
+            for kernel_size in [(3, 3)]:
+                for padding in [(1, 1), 'same']:
+                    for groups in [1, min(in_channels, out_channels)]:
+                        for dilation in [1, 2]:
+                            conv = nn.Conv2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
+                            self.convs_2d.append(conv)
+
+        self.convs_transpose_2d = nn.ModuleList()
+        for out_channels in [16, 32]:
+            for kernel_size in [(3, 3)]:
+                for padding in [(1, 1)]:
+                    for groups in [1, min(in_channels, out_channels)]:
+                        for dilation in [1, 2]:
+                            conv = nn.ConvTranspose2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
+                            self.convs_transpose_2d.append(conv)
+
+        self.convs_1d = nn.ModuleList()
+        for out_channels in [16, 32]:
+            for kernel_size in [3]:
+                for padding in [1, 'same']:
+                    for groups in [1, min(in_channels, out_channels)]:
+                        for dilation in [1, 2]:
+                            conv = nn.Conv1d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
+                            self.convs_1d.append(conv)
+
+        self.convs_transpose_1d = nn.ModuleList()
+        for out_channels in [16, 32]:
+            for kernel_size in [3]:
+                for padding in [1]:
+                    for groups in [1, min(in_channels, out_channels)]:
+                        for dilation in [1]:
+                            conv = nn.ConvTranspose1d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
+                            self.convs_transpose_1d.append(conv)
 
     def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        return x
+        outputs = []
+
+        for conv in self.convs_2d:
+            out = conv(x)
+            outputs.append(out)
+
+        for conv in self.convs_transpose_2d:
+            out = conv(x)
+            outputs.append(out)
+
+        b, c, h, w = x.shape
+        x = x.view(b, c, h*w)
+        x = nobuco.force_tensorflow_order(x)
+
+        for conv in self.convs_1d:
+            out = conv(x)
+            outputs.append(out)
+
+        for conv in self.convs_transpose_1d:
+            out = conv(x)
+            outputs.append(out)
+
+        return outputs
 
 
-model = ExampleModel()
+model = MyModule()
 
 # Put model in inference mode
 model.eval()
