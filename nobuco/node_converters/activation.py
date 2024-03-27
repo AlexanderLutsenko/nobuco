@@ -208,3 +208,10 @@ def converter_gelu(input: Tensor, approximate='none'):
         else:
             return tf.nn.gelu(input, approximate=approximate)
     return func
+
+
+@converter(F.elu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_elu(input: Tensor, alpha: float = 1.0, inplace: bool = False):
+    def func(input, alpha: float = 1.0, inplace: bool = False):
+        return keras.activations.elu(input, alpha=alpha)
+    return func
