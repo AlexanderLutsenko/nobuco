@@ -117,7 +117,7 @@ And the happy result:
 </p>
 
 The example above is artificial, but it illustrates the point.
-It's not feasible to provide a node converter for every existing Pytorch op. There's literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
+It's not feasible to provide a node converter for every existing Pytorch op. There are literally [thousands](https://dev-discuss.pytorch.org/t/where-do-the-2000-pytorch-operators-come-from-more-than-you-wanted-to-know/) of them! 
 Best we can do without the converter constantly lacking essential functionality, being riddled with bugs, doing weird stuff and breaking apart with every other PT/TF release 
 is to keep the tool simple and customizable, make it clear where a problem comes from and let the _user_ sort things out.
 Usually it's easy for a human to translate an isolated operation from one framework to another.
@@ -754,7 +754,7 @@ Just look what `torch.onnx.export` gives us:
 </p>
 
 `onnx_tf` does a fair job optimizing the monstrosity of a graph it's given,
-but combining consecutive `slice` ops seems to be too much to ask.
+but combining consecutive `slice` ops seems too much to ask.
 It also leaves out garbage nodes sometimes (note the free-floating `While` in this example).
 
 Nobuco evades these types of problems by simply not dealing with `onnx`.
@@ -781,7 +781,7 @@ Nobuco evades these types of problems by simply not dealing with `onnx`.
 ## Nobuco knowledge base
 
 Don't want to convert anything but looking for a Tensorflow equivalent of a certain Pytorch node (operation or module)?
-Nobuco already implements quite a few node converters, most written in concise and, hopefully, understandable way.
+Nobuco already implements quite a few node converters, most written in a concise and, hopefully, understandable way.
 These are located in [nobuco/node_converters](https://github.com/AlexanderLutsenko/nobuco/tree/master/nobuco/node_converters),
 and there's a utility function to help you find what you need:
 

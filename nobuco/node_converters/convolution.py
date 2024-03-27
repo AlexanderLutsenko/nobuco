@@ -314,18 +314,11 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
     dilation = self.dilation
     output_padding = self.output_padding
 
-    in_filters, out_filters, kh, kw = weight.shape
-    out_filters = out_filters * groups
+    in_filters, depth_multiplier, kh, kw = weight.shape
+    out_filters = groups * depth_multiplier
 
     weights = weight.cpu().detach().numpy()
-
-    depth_multiplier = out_filters // groups
-
-    if groups == 1:
-        weights = weights.transpose((2, 3, 1, 0))
-    else:
-        weights = weights.reshape((in_filters * depth_multiplier, 1, kh, kw))
-        weights = weights.transpose((2, 3, 0, 1))
+    weights = weights.transpose((2, 3, 1, 0))
 
     if bias is not None:
         biases = bias.cpu().detach().numpy()
@@ -356,13 +349,14 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
                                             use_bias=use_bias,
                                             weights=params
                                             )
-    elif groups == in_filters:
+    else:
         weights = params[0]
 
-        weights_full = np.zeros(shape=(*weights.shape[:-1], in_filters))
-        for d in range(depth_multiplier):
-            for i in range(in_filters):
-                weights_full[..., i*depth_multiplier + d, i] = weights[..., i*depth_multiplier + d, 0]
+        weights_full = np.zeros(shape=(kh, kw, out_filters, in_filters))
+        for i in range(in_filters):
+            chunk = i // (in_filters // groups)
+            for d in range(depth_multiplier):
+                weights_full[..., chunk*depth_multiplier + d, i] = weights[..., d, i]
         params[0] = weights_full
 
         conv = keras.layers.Conv2DTranspose(out_filters,
@@ -374,8 +368,6 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
                                             use_bias=use_bias,
                                             weights=params
                                             )
-    else:
-        raise Exception('Unsupported # groups:', groups)
 
     def func(input: Tensor, output_size: Optional[List[int]] = None):
         assert output_size is None
@@ -396,18 +388,11 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
                                stride: Union[_int, _size] = 1, padding: Union[_int, _size] = 0,
                                output_padding: Union[_int, _size] = 0,
                                groups: _int = 1, dilation: Union[_int, _size] = 1):
-    in_filters, out_filters, kh, kw = weight.shape
-    out_filters = out_filters * groups
+    in_filters, depth_multiplier, kh, kw = weight.shape
+    out_filters = groups * depth_multiplier
 
     weights = weight.cpu().detach().numpy()
-
-    depth_multiplier = out_filters // groups
-
-    if groups == 1:
-        weights = weights.transpose((2, 3, 1, 0))
-    else:
-        weights = weights.reshape((in_filters * depth_multiplier, 1, kh, kw))
-        weights = weights.transpose((2, 3, 0, 1))
+    weights = weights.transpose((2, 3, 1, 0))
 
     if bias is not None:
         biases = bias.cpu().detach().numpy()
@@ -438,13 +423,14 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
                                             use_bias=use_bias,
                                             weights=params
                                             )
-    elif groups == in_filters:
+    else:
         weights = params[0]
 
-        weights_full = np.zeros(shape=(*weights.shape[:-1], in_filters))
-        for d in range(depth_multiplier):
-            for i in range(in_filters):
-                weights_full[..., i * depth_multiplier + d, i] = weights[..., i * depth_multiplier + d, 0]
+        weights_full = np.zeros(shape=(kh, kw, out_filters, in_filters))
+        for i in range(in_filters):
+            chunk = i // (in_filters // groups)
+            for d in range(depth_multiplier):
+                weights_full[..., chunk * depth_multiplier + d, i] = weights[..., d, i]
         params[0] = weights_full
 
         conv = keras.layers.Conv2DTranspose(out_filters,
@@ -456,8 +442,6 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
                                             use_bias=use_bias,
                                             weights=params
                                             )
-    else:
-        raise Exception('Unsupported # groups:', groups)
 
     def func(input, *args, **kwargs):
         x = conv(input)

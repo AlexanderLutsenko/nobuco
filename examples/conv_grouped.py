@@ -27,7 +27,7 @@ class MyModule(nn.Module):
         self.conv2s3 = nn.Conv2d(64, 128, kernel_size=(3, 3), groups=64, padding='same')
 
         self.conv2t1 = nn.ConvTranspose2d(16, 32, kernel_size=(3, 3), stride=(2, 2), groups=1, padding=(3, 3))
-        self.conv2t2 = nn.ConvTranspose2d(32, 64, kernel_size=(5, 5), stride=(1, 1), groups=32, padding=(2, 2))
+        self.conv2t2 = nn.ConvTranspose2d(32, 64, kernel_size=(5, 5), stride=(1, 1), groups=8, padding=(2, 2))
         self.conv2t3 = nn.ConvTranspose2d(64, 128, kernel_size=(2, 2), stride=(1, 1), groups=1, padding=(1, 1))
 
         self.conv1d1 = nn.Conv1d(16, 64, kernel_size=3, padding=2, groups=1)
