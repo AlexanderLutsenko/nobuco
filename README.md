@@ -29,11 +29,12 @@ pip install -U nobuco
 ## Table of Contents
 - [Essentials](#essentials)
 - [Channel order wizardry](#channel-order-wizardry)
-- [In-place operations](#in-place-operations)
 - [Implementation mismatch: pick your poison](#implementation-mismatch-pick-your-poison)
 - [Going dynamic](#going-dynamic)
   - [Control flows](#control-flows)
   - [Dynamic shapes](#dynamic-shapes)
+- [In-place operations](#in-place-operations)
+- [A little white lie: tracing mode](#a-little-white-lie-tracing-mode)
 - [Ad hoc modifications](#ad-hoc-modifications) 
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 - [But was it worth it?](#but-was-it-worth-it)
@@ -222,54 +223,6 @@ def converter_force_tensorflow_order(inputs):
 ```
 
 `force_pytorch_order` is defined analogously.
-
-## In-place operations
-
-Nobuco can handle most situations where tensors are modified in-place. For instance, these will work just fine:
-
-```python
-class MyModule(nn.Module):
-    def forward(self, x):
-        x[:, 1:2, 16:25, 8::2] *= 2
-        torch.relu_(x)
-        return x
-```
-
-<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace1.svg" width="100%">
-
-However, applying in-place operation to a slice yields incorrect result. What gives?
-
-```python
-class MyModule(nn.Module):
-    def forward(self, x):
-        torch.relu_(x[:, 1:2, 16:25, 8::2])
-        return x
-```
-
-<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace2.svg" width="100%">
-
-You see, Tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
-So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
-This copy is then passed to `relu` (which is not in-place either), and its result is not used anywhere. 
-As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations are excluded from the graph.
-In fact, it's empty:
-
-<p align="center">
-<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace_empty.png" width="30%">
-</p>
-
-The easiest way of fixing this is to explicitly assign the result to the slice.
-Conveniently enough, most standard in-place operations in Pytorch do return their modified arguments as outputs.
-
-```python
-class MyModule(nn.Module):
-    def forward(self, x):
-        x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
-        return x
-```
-
-<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace3.svg" width="100%">
-
 
 ## Implementation mismatch: pick your poison
 
@@ -568,6 +521,116 @@ keras_model = nobuco.pytorch_to_keras(
   trace_shape=True
 )
 ```
+
+## In-place operations
+
+Nobuco can handle most situations where tensors are modified in-place. For instance, these will work just fine:
+
+```python
+class MyModule(nn.Module):
+    def forward(self, x):
+        x[:, 1:2, 16:25, 8::2] *= 2
+        torch.relu_(x)
+        return x
+```
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace1.svg" width="100%">
+
+However, applying in-place operation to a slice yields incorrect result. What gives?
+
+```python
+class MyModule(nn.Module):
+    def forward(self, x):
+        torch.relu_(x[:, 1:2, 16:25, 8::2])
+        return x
+```
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace2.svg" width="100%">
+
+You see, Tensorflow graphs (and many other formats like ONNX) do not support in-place ops.
+So when we take slice (`x[:, 1:2, 16:25, 8::2]`) in TF/ONNX, the result is not a view of the original tensor but a copy. 
+This copy is then passed to `relu` (which is not in-place either), and its result is not used anywhere. 
+As you can see above, the output tensors of `__getitem__` and `relu_` are <span style="color:gray">grayed out</span>, and these operations are excluded from the graph.
+In fact, it's empty:
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace_empty.png" width="30%">
+</p>
+
+The easiest way of fixing this is to explicitly assign the result to the slice.
+Conveniently enough, most standard in-place operations in Pytorch do return their modified arguments as outputs.
+
+```python
+class MyModule(nn.Module):
+    def forward(self, x):
+        x[:, 1:2, 16:25, 8::2] = torch.relu_(x[:, 1:2, 16:25, 8::2])
+        return x
+```
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/inplace3.svg" width="100%">
+
+## A little white lie: tracing mode
+
+The flexibility and dynamic nature of Pytorch graphs can make it quite challenging to directly translate them not only to Tensorflow but ONNX as well.
+How are these types of problems solved for real-world models?
+Once again, we'll learn by example:
+
+```python
+pytorch_module = torchvision.models.detection.ssdlite320_mobilenet_v3_large(weights=SSDLite320_MobileNet_V3_Large_Weights.DEFAULT).eval()
+
+x = torch.rand(size=(1, 3, 320, 320))
+
+keras_model = nobuco.pytorch_to_keras(
+    pytorch_module, 
+    args=[x],
+)
+```
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/tracing1.svg" width="100%">
+
+Is that Nobuco's failure to handle in-place `copy_`? Yes, but there's more to the story.
+Let's peek into the model's source code (set `debug_traces=nobuco.TraceLevel.ALWAYS` for easier navigation). Here's the culprit:
+
+```python
+def batch_images(self, images: List[Tensor], size_divisible: int = 32) -> Tensor:
+    if torchvision._is_tracing():
+        # batch_images() does not export well to ONNX
+        # call _onnx_batch_images() instead
+        return self._onnx_batch_images(images, size_divisible) # <- Alternative ONNX-friendly implementation
+
+    max_size = self.max_by_axis([list(img.shape) for img in images])
+    stride = float(size_divisible)
+    max_size = list(max_size)
+    max_size[1] = int(math.ceil(float(max_size[1]) / stride) * stride)
+    max_size[2] = int(math.ceil(float(max_size[2]) / stride) * stride)
+
+    batch_shape = [len(images)] + max_size
+    batched_imgs = images[0].new_full(batch_shape, 0)
+    for i in range(batched_imgs.shape[0]):
+        img = images[i]
+        batched_imgs[i, : img.shape[0], : img.shape[1], : img.shape[2]].copy_(img) # <- In-place copy
+
+    return batched_imgs
+```
+
+This method is certainly not fit for tracing. 
+The model's authors knew it and provided an alternative implementation in case we'd want to export it to ONNX (works for Keras, too!).
+`torchvision._is_tracing()` returns True whenever the model is being traced (e.g. invoked inside `torch.onnx.export(...)`).
+This state is not directly controllable by the user, yet Nobuco can gaslight the model into thinking it's being traced by Pytorch itself:
+
+```python
+keras_model = nobuco.pytorch_to_keras(
+    # ...
+    enable_torch_tracing=True
+)
+```
+
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/tracing2.svg" width="100%">
+
+Why is it not enabled by default, then? 
+You see, the other effect of tracing mode is equivalent to that of `trace_shape=True`: `shape` calls return tensors instead of ints.
+Many Pytorch models were never meant to be converted to anything, and tracing mode may break them.
+Nobuco tries to minimize silent/obscure errors and user's confusion, and not being too smart is a reasonable tradeoff.
 
 ## Ad hoc modifications
 

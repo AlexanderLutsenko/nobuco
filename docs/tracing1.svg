@@ -1,0 +1,1187 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="264.583mm" height="110.067mm"
+ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  version="1.2" baseProfile="tiny">
+<desc>Created by HiQPdf</desc>
+<defs>
+</defs>
+<g fill="none" stroke="black" stroke-width="1" fill-rule="evenodd" stroke-linecap="square" stroke-linejoin="bevel" >
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="20" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >SSD[torchvision.models.detection.ssd]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="304" y="20" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="312" y="20" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_0&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="488" y="20" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; [{&quot;boxes&quot;: </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="616" y="20" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_2064&lt;300,4&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="768" y="20" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;scores&quot;:</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="36" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_2065&lt;300&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="144" y="36" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;labels&quot;: </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="240" y="36" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >int64_2066&lt;300&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="360" y="36" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >}]</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="52" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >unbind[torch.Tensor]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="200" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="208" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_0&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="384" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, 0) -&gt; (</text>
+</g>
+
+<g fill="#656565" fill-opacity="1" stroke="#656565" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#656565" fill-opacity="1" stroke="none" xml:space="preserve" x="456" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_1&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="616" y="52" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >)</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="68" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="68" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
+>
+<path vector-effect="none" fill-rule="evenodd" d="M40,56 L272,56 L272,72 L40,72 L40,56"/>
+</g>
+
+<g fill="#ffffff" fill-opacity="1" stroke="#ffffff" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ffffff" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="68" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > (!) Max diff 0.99999 (inf%) </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="272" y="68" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="84" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="84" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="84" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >GeneralizedRCNNTransform[torchvision.models.detection.transform]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="552" y="84" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="560" y="84" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_0&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="736" y="84" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, None) -&gt; (ImageList(tensors =</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="100" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_12&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="192" y="100" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, image_sizes = [(320, 320)]), None)</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="116" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >unbind[torch.Tensor]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="232" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="240" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_0&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="416" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, 0) -&gt; (</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="488" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_2&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="648" y="116" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >)</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="132" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__getitem__[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="264" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_3&lt;3&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+<polyline fill="none" vector-effect="none" points="264,133.5 359,133.5 " />
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="360" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, (:, None, None)) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="536" y="132" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_4&lt;3,1,1&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="148" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__sub__[torch.Tensor]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="240" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="248" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_2&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="408" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="424" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_4&lt;3,1,1&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="552" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="592" y="148" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_5&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="164" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ > └·</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="96" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="104" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >sub[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="224" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="232" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_2&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="392" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="408" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_4&lt;3,1,1&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="536" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="576" y="164" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_5&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="180" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__getitem__[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="264" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_6&lt;3&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+<polyline fill="none" vector-effect="none" points="264,181.5 359,181.5 " />
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="360" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, (:, None, None)) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="536" y="180" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_7&lt;3,1,1&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="196" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__truediv__[torch.Tensor]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="272" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="280" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_5&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="440" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="456" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_7&lt;3,1,1&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="584" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="624" y="196" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_8&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="212" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ > └·</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="96" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="104" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >div[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="224" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="232" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_5&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="392" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="408" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_7&lt;3,1,1&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="536" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="576" y="212" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_8&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="228" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__getitem__[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="264" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_8&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="424" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, None) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="512" y="228" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_9&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="244" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >interpolate[torch.nn.functional]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="328" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="336" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_9&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="512" y="244" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, size=[320, 320], scale_factor=None, mode=&quot;bilinear&quot;,</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="260" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >recompute_scale_factor=None, align_corners=False) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="432" y="260" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_10&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="276" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__getitem__[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="264" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_10&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="448" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, 0) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="512" y="276" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_11&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > ├·</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="292" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >new_full[torch.Tensor]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="248" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_11&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="424" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, [1, 3, 320, 320], 0) -&gt; </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="632" y="292" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_12&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="308" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >__getitem__[TensorBase]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="264" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_12&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="448" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, (0, :3, :320, :320)) -&gt; </text>
+</g>
+
+<g fill="#656565" fill-opacity="1" stroke="#656565" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#656565" fill-opacity="1" stroke="none" xml:space="preserve" x="656" y="308" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_13&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="324" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="324" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="324" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="324" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#063fdb" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
+>
+<path vector-effect="none" fill-rule="evenodd" d="M72,312 L176,312 L176,328 L72,328 L72,312"/>
+</g>
+
+<g fill="#ffffff" fill-opacity="1" stroke="#ffffff" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ffffff" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="324" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > (!) Inplace </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="176" y="324" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#b28c00" fill-opacity="1" stroke="#b28c00" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#b28c00" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="64" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="72" y="340" font-family="Courier New" font-size="13" font-weight="700" font-style="normal" 
+ >copy_[torch.Tensor]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="224" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="232" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_13&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="400" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="416" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_11&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="584" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; </text>
+</g>
+
+<g fill="#656565" fill-opacity="1" stroke="#656565" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#656565" fill-opacity="1" stroke="none" xml:space="preserve" x="624" y="340" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_13&lt;3,320,320&gt;</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="356" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="356" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > </text>
+</g>
+
+<g fill="#008000" fill-opacity="1" stroke="#008000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#008000" fill-opacity="1" stroke="none" xml:space="preserve" x="40" y="356" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >SSDLiteFeatureExtractorMobileNet[torchvision.models.detection.ssdlite]</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="600" y="356" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >(</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="608" y="356" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_12&lt;1,3,320,320&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="792" y="356" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >) -&gt; {&quot;0&quot;:</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_322&lt;1,672,20,20&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="200" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;1&quot;: </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="256" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_415&lt;1,480,10,10&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="448" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;2&quot;: </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="504" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_436&lt;1,512,5,5&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="680" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;3&quot;: </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="736" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_457&lt;1,256,3,3&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="912" y="372" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;4&quot;:</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="388" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_478&lt;1,256,2,2&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="184" y="388" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >, &quot;5&quot;: </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="240" y="388" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >float32_499&lt;1,128,1,1&gt;</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="416" y="388" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ >}</text>
+</g>
+
+<g fill="#ce0505" fill-opacity="1" stroke="#ce0505" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#ce0505" fill-opacity="1" stroke="none" xml:space="preserve" x="8" y="404" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > │ </text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="bevel" transform="matrix(1,0,0,1,0,0)"
+>
+<text fill="#000000" fill-opacity="1" stroke="none" xml:space="preserve" x="32" y="404" font-family="Courier New" font-size="13" font-weight="400" font-style="normal" 
+ > ...</text>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="2" transform="matrix(1,0,0,1,0,0)"
+>
+</g>
+</g>
+</svg>

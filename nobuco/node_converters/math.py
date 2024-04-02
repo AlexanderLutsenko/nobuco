@@ -277,7 +277,7 @@ def converter_cumsum(input: Tensor, dim, *, dtype: Optional[_dtype] = None, out:
             dim = dim_pytorch2keras(dim, num_dims)
         if dtype is not None:
             tf_type = dtype_pytorch2keras(dtype)
-            input =  tf.cast(input, tf_type)
+            input = tf.cast(input, tf_type)
         return tf.cumsum(input, axis=dim)
     return func
 
@@ -292,7 +292,7 @@ def converter_arange(start: Number, end: Number=None, step: Number=1, *, out: Op
 @converter(torch.lerp, torch.Tensor.lerp, torch.Tensor.lerp_, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_lerp(input: Tensor, end: Tensor, weight, *, out: Optional[Tensor] = None):
     def func(input: Tensor, end: Tensor, weight, *, out: Optional[Tensor] = None):
-        return input + weight*(end - input)
+        return input + weight * (end - input)
     return func
 
 
@@ -303,7 +303,7 @@ def converter_one_hot(tensor, num_classes=-1):
     return func
 
 
-def squared_dist(A, B):
+def l2_dist(A, B):
     row_norms_A = tf.reduce_sum(tf.square(A), axis=-1, keepdims=True)
 
     row_norms_B = tf.reduce_sum(tf.square(B), axis=-1, keepdims=True)
@@ -318,7 +318,5 @@ def converter_cdist(x1, x2, p=2., compute_mode='use_mm_for_euclid_dist_if_necess
     assert p == 2, "Currently, only p == 2 is supported"
 
     def func(x1, x2, p=2., compute_mode='use_mm_for_euclid_dist_if_necessary'):
-        return squared_dist(x1, x2)
+        return l2_dist(x1, x2)
     return func
-
-

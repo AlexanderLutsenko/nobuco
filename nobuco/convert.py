@@ -248,6 +248,7 @@ def pytorch_to_keras(
         inputs_channel_order: ChannelOrder | Dict[torch.Tensor, ChannelOrder] = ChannelOrder.TENSORFLOW,
         outputs_channel_order: ChannelOrder | Dict[int, ChannelOrder] | None = None,
         trace_shape: bool = False,
+        enable_torch_tracing: bool = False,
         constants_to_variables: bool = True,
         full_validation: bool = True,
         validation_tolerance: float = 1e-4,
@@ -270,8 +271,12 @@ def pytorch_to_keras(
         outputs_channel_order: Desired channel order of the converted graph's outputs.
             Set to None if you don't care to minimize the amount of transpositions.
             Default: None
-        trace_shape: If True, replaces all `torch.Tensor.shape` and `torch.Tensor.size` calls with `nobuco.shape`
+        trace_shape: If True, replaces all `torch.Tensor.shape` and `torch.Tensor.size` calls with `nobuco.shape`,
             so they can be traced and added to the Keras graph.
+            Default: False
+        enable_torch_tracing: If True, makes the model think it is being traced/scripted by Pytorch itself, i.e.
+            torch.jit.is_tracing(), torch.jit.is_scripting(), torchvision._is_tracing() will return True,
+            and calls to tensor shape will return tensors instead of python ints.
             Default: False
         constants_to_variables: If True, replaces each Pytorch constant tensor with `WeightLayer` returning corresponding value.
             Due to how Keras works, this allows multiple layers to use the same set of constants without parameter duplication.
@@ -300,7 +305,7 @@ def pytorch_to_keras(
         kwargs = {}
 
     start = time.time()
-    node_hierarchy = Tracer.trace(model, trace_shape, args, kwargs)
+    node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs)
 
     keras_converted_node = convert_hierarchy(node_hierarchy, CONVERTER_DICT,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,

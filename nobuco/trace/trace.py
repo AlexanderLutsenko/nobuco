@@ -152,6 +152,38 @@ class Tracer:
     _tracing_enabled: bool = False
     _trace_shape: bool = False
 
+    class enter_torch_tracing_state(object):
+        def __init__(self, enable_torch_tracing):
+            self.enable_torch_tracing = enable_torch_tracing
+            self.get_tracing_state = torch._C._get_tracing_state
+            self.is_tracing = torch.jit.is_tracing
+            self.is_scripting = torch.jit.is_scripting
+
+        def __enter__(self):
+            torch._C._get_tracing_state = lambda: self.enable_torch_tracing
+            torch.jit.is_tracing = lambda: self.enable_torch_tracing
+            torch.jit.is_scripting = lambda: self.enable_torch_tracing
+
+        def __exit__(self, *args):
+            torch._C._get_tracing_state = self.get_tracing_state
+            torch.jit.is_tracing = self.is_tracing
+            torch.jit.is_scripting = self.is_scripting
+
+    class handle_tracing_globals(object):
+        def __init__(self, trace_shape):
+            self.trace_shape = trace_shape
+
+        def __enter__(self):
+            Tracer._trace_shape = self.trace_shape
+            Tracer._tracing_enabled = True
+
+        def __exit__(self, *args):
+            Tracer._trace_shape = False
+            Tracer._tracing_enabled = False
+            Tracer._node_list = []
+            Tracer._parent_list = []
+            Tracer._tensor_storage = TensorStorage()
+
     class tracing_set_allowed(object):
         def __init__(self, is_allowed):
             self.is_allowed = is_allowed
@@ -384,6 +416,15 @@ class Tracer:
         Tracer.decorate_ops()
 
     @staticmethod
+    def apply_module_tracing_recursively(module):
+        for child in module.children():
+            Tracer.apply_module_tracing_recursively(child)
+
+        if not Tracer.is_decorated(module.forward):
+            module.forward = types.MethodType(Tracer.module_forward_tracing_decorator(module.forward), module)
+        return module
+
+    @staticmethod
     def build_hierarchy(node_list: Collection[PytorchNode]) -> PytorchNodeHierarchy:
 
         def build(node_list: Collection[PytorchNode]) -> List[PytorchNodeHierarchy]:
@@ -403,37 +444,21 @@ class Tracer:
         return hierarchies[-1]
 
     @staticmethod
-    def trace(module_or_function: nn.Module | Callable, trace_shape: bool, args, kwargs) -> PytorchNodeHierarchy:
-        ### Module tracing routines
-        def apply_module_tracing_recursively(module):
-            for child in module.children():
-                apply_module_tracing_recursively(child)
-
-            if not Tracer.is_decorated(module.forward):
-                module.forward = types.MethodType(Tracer.module_forward_tracing_decorator(module.forward), module)
-            return module
-
-        ### Initiate tracing
+    def trace(module_or_function: nn.Module | Callable, trace_shape: bool, enable_torch_tracing: bool, args, kwargs) -> PytorchNodeHierarchy:
         Tracer.decorate_all()
 
         if isinstance(module_or_function, nn.Module):
-            apply_module_tracing_recursively(module_or_function)
+            Tracer.apply_module_tracing_recursively(module_or_function)
         else:
             module_or_function = traceable(module_or_function)
 
         args, kwargs = wrap_torch_tensors_recursively((args, kwargs))
 
-        Tracer._trace_shape = trace_shape
-        Tracer._tracing_enabled = True
-        with torch.no_grad():
-            module_or_function(*args, **kwargs)
-        Tracer._tracing_enabled = False
-        Tracer._trace_shape = False
+        with Tracer.handle_tracing_globals(trace_shape or enable_torch_tracing):
+            with Tracer.enter_torch_tracing_state(enable_torch_tracing):
+                with torch.no_grad():
+                    module_or_function(*args, **kwargs)
 
-        hierarchy = Tracer.build_hierarchy(Tracer._node_list)
-
-        Tracer._node_list = []
-        Tracer._parent_list = []
-        Tracer._tensor_storage = TensorStorage()
+            hierarchy = Tracer.build_hierarchy(Tracer._node_list)
 
         return hierarchy
