@@ -27,7 +27,7 @@ def clone_torch_tensors_recursively_with_cache(obj, storage: TensorStorage):
 
     def clone(tensor):
         tensor_id = get_torch_tensor_identifier(tensor)
-        cloned = tensor.cpu().clone()
+        cloned = tensor.detach().cpu().clone()
         set_torch_tensor_id(cloned, tensor_id)
         return cloned
 

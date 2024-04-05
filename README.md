@@ -87,7 +87,7 @@ Nobuco says it doesn't know how to handle hard sigmoid.
 Apparently, it's our job to provide a node converter for either `F.hardsigmoid` or the enclosing `Hardsigmoid` module (or the entire `MyModule`, but that makes little sense). Here, we'll go for the former.
 
 Conversion is done directly. No layers upon layers of abstraction, no obscure intermediate representation. 
-A node converter is just a `Callable` that takes in the same arguments as the corresponding node in Pytorch and outputs an equivalent node in Tensorflow. 
+A node converter is just a `Callable` that takes the same arguments as the corresponding node in Pytorch and outputs an equivalent node in Tensorflow. 
 The converted node preserves the original node's signature, but Pytorch tensors replaced with Tensorflow counterparts (be that `tf.Tensor`, `KerasTensor`, `tf.Variable`, or `ResourceVariable`).
 
 This should do the trick:
