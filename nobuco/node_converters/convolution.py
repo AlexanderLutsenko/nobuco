@@ -50,10 +50,11 @@ def converter_Conv1d(self, input: Tensor):
     pad_str = 'valid'
     pad_layer = None
 
-    if padding == 'same':
-        pad_str = 'same'
-    elif padding != (0,):
-        pad_layer = keras.layers.ZeroPadding1D(padding[0])
+    if padding != 'valid':
+        if padding == 'same':
+            pad_str = 'same'
+        elif padding != (0,):
+            pad_layer = keras.layers.ZeroPadding1D(padding[0])
 
     if is_depthwise:
         conv = keras.layers.DepthwiseConv1D(
@@ -118,10 +119,11 @@ def converter_conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
     pad_str = 'valid'
     pad_layer = None
 
-    if padding == 'same':
-        pad_str = 'same'
-    elif padding != (0,):
-        pad_layer = keras.layers.ZeroPadding1D(padding[0])
+    if padding != 'valid':
+        if padding == 'same':
+            pad_str = 'same'
+        elif padding != (0,):
+            pad_layer = keras.layers.ZeroPadding1D(padding[0])
 
     if is_depthwise:
         conv = keras.layers.DepthwiseConv1D(
@@ -329,10 +331,11 @@ def converter_Conv2d(self, input: Tensor):
     pad_str = 'valid'
     pad_layer = None
 
-    if padding == 'same':
-        pad_str = 'same'
-    elif padding != (0, 0):
-        pad_layer = keras.layers.ZeroPadding2D(padding)
+    if padding != 'valid':
+        if padding == 'same':
+            pad_str = 'same'
+        elif padding != (0, 0):
+            pad_layer = keras.layers.ZeroPadding2D(padding)
 
     if is_depthwise:
         conv = keras.layers.DepthwiseConv2D(
@@ -400,10 +403,11 @@ def converter_conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
     pad_str = 'valid'
     pad_layer = None
 
-    if padding == 'same':
-        pad_str = 'same'
-    elif padding != (0, 0):
-        pad_layer = keras.layers.ZeroPadding2D(padding)
+    if padding != 'valid':
+        if padding == 'same':
+            pad_str = 'same'
+        elif padding != (0, 0):
+            pad_layer = keras.layers.ZeroPadding2D(padding)
 
     if is_depthwise:
         conv = keras.layers.DepthwiseConv2D(
