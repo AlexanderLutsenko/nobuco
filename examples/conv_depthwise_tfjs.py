@@ -2,7 +2,7 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 import nobuco
-from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
+from nobuco import ChannelOrder, ChannelOrderingStrategy
 
 import torch.nn as nn
 import torch

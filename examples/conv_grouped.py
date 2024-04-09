@@ -23,8 +23,9 @@ class MyModule(nn.Module):
                 for padding in [(0, 0), (1, 0), (0, 1), (1, 1), 'same']:
                     for groups in [1, 4, 8]:
                         for dilation in [1, 2]:
-                            conv = nn.Conv2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
-                            self.convs_2d.append(conv)
+                            for stride in [(1, 1)]:
+                                conv = nn.Conv2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation, stride=stride)
+                                self.convs_2d.append(conv)
 
         self.convs_transpose_2d = nn.ModuleList()
         for out_channels in [8, 16, 32]:
@@ -34,6 +35,16 @@ class MyModule(nn.Module):
                         for dilation in [1, 2]:
                             conv = nn.ConvTranspose2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation)
                             self.convs_transpose_2d.append(conv)
+
+        self.convs_2d_strided = nn.ModuleList()
+        for out_channels in [8, 16, 32]:
+            for kernel_size in [(3, 1), (1, 3)]:
+                for padding in [(1, 0), (0, 1)]:
+                    for groups in [1, 4, 8]:
+                        for dilation in [1]:
+                            for stride in [(1, 2), (2, 1)]:
+                                conv = nn.Conv2d(16, out_channels, kernel_size=kernel_size, padding=padding, groups=groups, dilation=dilation, stride=stride)
+                                self.convs_2d.append(conv)
 
         self.convs_1d = nn.ModuleList()
         for out_channels in [8, 16, 32]:
@@ -57,6 +68,10 @@ class MyModule(nn.Module):
         outputs = []
 
         for conv in self.convs_2d:
+            out = conv(x)
+            outputs.append(out)
+
+        for conv in self.convs_2d_strided:
             out = conv(x)
             outputs.append(out)
 

@@ -22,14 +22,20 @@ def converter_Conv1d(self, input: Tensor):
     stride = self.stride
     dilation = self.dilation
 
+    if isinstance(stride, numbers.Number):
+        stride = (stride,)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding,)
+
     _, in_filters, _ = input.shape
     out_filters, _, kw = weight.shape
 
-    is_depthwise = groups == in_filters
+    use_depthwise = (groups == in_filters) and all([stride[0] == x for x in stride])
 
     weights = weight.cpu().detach().numpy()
 
-    if is_depthwise:
+    if use_depthwise:
         depth_multiplier = out_filters // groups
         weights = np.transpose(weights, (2, 0, 1))
         weights = np.reshape(weights, (kw, groups, depth_multiplier))
@@ -44,9 +50,6 @@ def converter_Conv1d(self, input: Tensor):
         params = [weights]
         use_bias = False
 
-    if isinstance(padding, numbers.Number):
-        padding = (padding,)
-
     pad_str = 'valid'
     pad_layer = None
 
@@ -56,7 +59,7 @@ def converter_Conv1d(self, input: Tensor):
         elif padding != (0,):
             pad_layer = keras.layers.ZeroPadding1D(padding[0])
 
-    if is_depthwise:
+    if use_depthwise:
         conv = keras.layers.DepthwiseConv1D(
             kernel_size=kw,
             strides=stride,
@@ -91,14 +94,20 @@ def converter_Conv1d(self, input: Tensor):
 @converter(F.conv1d)
 def converter_conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride: Union[_int, _size] = 1,
                      padding: str = "valid", dilation: Union[_int, _size] = 1, groups: _int = 1):
+    if isinstance(stride, numbers.Number):
+        stride = (stride,)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding,)
+
     _, in_filters, _ = input.shape
     out_filters, _, kw = weight.shape
 
-    is_depthwise = groups == in_filters
+    use_depthwise = (groups == in_filters) and all([stride[0] == x for x in stride])
 
     weights = weight.cpu().detach().numpy()
 
-    if is_depthwise:
+    if use_depthwise:
         depth_multiplier = out_filters // groups
         weights = np.transpose(weights, (2, 0, 1))
         weights = np.reshape(weights, (kw, groups, depth_multiplier))
@@ -113,9 +122,6 @@ def converter_conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
         params = [weights]
         use_bias = False
 
-    if isinstance(padding, numbers.Number):
-        padding = (padding,)
-
     pad_str = 'valid'
     pad_layer = None
 
@@ -125,7 +131,7 @@ def converter_conv1d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
         elif padding != (0,):
             pad_layer = keras.layers.ZeroPadding1D(padding[0])
 
-    if is_depthwise:
+    if use_depthwise:
         conv = keras.layers.DepthwiseConv1D(
             kernel_size=kw,
             strides=stride,
@@ -167,6 +173,11 @@ def converter_ConvTranspose1d(self, input: Tensor, output_size: Optional[List[in
     dilation = self.dilation
     output_padding = self.output_padding
 
+    if isinstance(padding, numbers.Number):
+        padding = (padding,)
+
+    assert output_padding == (0,), 'Output padding is not supported yet'
+
     in_filters, depth_multiplier, kw = weight.shape
     out_filters = groups * depth_multiplier
 
@@ -180,11 +191,6 @@ def converter_ConvTranspose1d(self, input: Tensor, output_size: Optional[List[in
     else:
         params = [weights]
         use_bias = False
-
-    if isinstance(padding, numbers.Number):
-        padding = (padding,)
-
-    assert output_padding == (0,), 'Output padding is not supported yet'
 
     if groups == 1:
         conv = keras.layers.Conv1DTranspose(out_filters,
@@ -231,6 +237,11 @@ def converter_ConvTranspose1d(self, input: Tensor, output_size: Optional[List[in
 
 @converter(F.conv_transpose1d)
 def converter_conv_transpose1d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride = 1, padding = 0, output_padding = 0, groups = 1, dilation = 1):
+    if isinstance(padding, numbers.Number):
+        padding = (padding,)
+
+    assert output_padding == (0,), 'Output padding is not supported yet'
+
     in_filters, depth_multiplier, kw = weight.shape
     out_filters = groups * depth_multiplier
 
@@ -244,11 +255,6 @@ def converter_conv_transpose1d(input: Tensor, weight: Tensor, bias: Optional[Ten
     else:
         params = [weights]
         use_bias = False
-
-    if isinstance(padding, numbers.Number):
-        padding = (padding,)
-
-    assert output_padding == (0,), 'Output padding is not supported yet'
 
     if groups == 1:
         conv = keras.layers.Conv1DTranspose(out_filters,
@@ -300,14 +306,23 @@ def converter_Conv2d(self, input: Tensor):
     stride = self.stride
     dilation = self.dilation
 
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(stride, numbers.Number):
+        stride = (stride, stride)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
     _, in_filters, _, _ = input.shape
     out_filters, _, kh, kw = weight.shape
 
-    is_depthwise = groups == in_filters
+    use_depthwise = (groups == in_filters) and all([stride[0] == x for x in stride])
 
     weights = weight.cpu().detach().numpy()
 
-    if is_depthwise:
+    if use_depthwise:
         depth_multiplier = out_filters // groups
         weights = np.transpose(weights, (2, 3, 0, 1))
         weights = np.reshape(weights, (kh, kw, groups, depth_multiplier))
@@ -322,12 +337,6 @@ def converter_Conv2d(self, input: Tensor):
         params = [weights]
         use_bias = False
 
-    if isinstance(dilation, numbers.Number):
-        dilation = (dilation, dilation)
-
-    if isinstance(padding, numbers.Number):
-        padding = (padding, padding)
-
     pad_str = 'valid'
     pad_layer = None
 
@@ -337,7 +346,7 @@ def converter_Conv2d(self, input: Tensor):
         elif padding != (0, 0):
             pad_layer = keras.layers.ZeroPadding2D(padding)
 
-    if is_depthwise:
+    if use_depthwise:
         conv = keras.layers.DepthwiseConv2D(
             kernel_size=(kh, kw),
             strides=stride,
@@ -372,14 +381,23 @@ def converter_Conv2d(self, input: Tensor):
 @converter(F.conv2d)
 def converter_conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = None, stride: Union[_int, _size] = 1,
                      padding: str = "valid", dilation: Union[_int, _size] = 1, groups: _int = 1):
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(stride, numbers.Number):
+        stride = (stride, stride)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
     _, in_filters, _, _ = input.shape
     out_filters, _, kh, kw = weight.shape
 
-    is_depthwise = groups == in_filters
+    use_depthwise = (groups == in_filters) and all([stride[0] == x for x in stride])
 
     weights = weight.cpu().detach().numpy()
 
-    if is_depthwise:
+    if use_depthwise:
         depth_multiplier = out_filters // groups
         weights = np.transpose(weights, (2, 3, 0, 1))
         weights = np.reshape(weights, (kh, kw, groups, depth_multiplier))
@@ -394,12 +412,6 @@ def converter_conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
         params = [weights]
         use_bias = False
 
-    if isinstance(dilation, numbers.Number):
-        dilation = (dilation, dilation)
-
-    if isinstance(padding, numbers.Number):
-        padding = (padding, padding)
-
     pad_str = 'valid'
     pad_layer = None
 
@@ -409,7 +421,7 @@ def converter_conv2d(input: Tensor, weight: Tensor, bias: Optional[Tensor] = Non
         elif padding != (0, 0):
             pad_layer = keras.layers.ZeroPadding2D(padding)
 
-    if is_depthwise:
+    if use_depthwise:
         conv = keras.layers.DepthwiseConv2D(
             kernel_size=(kh, kw),
             strides=stride,
@@ -452,6 +464,17 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
     dilation = self.dilation
     output_padding = self.output_padding
 
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
+    if isinstance(output_padding, numbers.Number):
+        output_padding = (output_padding, output_padding)
+
+    assert output_padding == (0, 0), 'Output padding is not supported yet'
+
     in_filters, depth_multiplier, kh, kw = weight.shape
     out_filters = groups * depth_multiplier
 
@@ -465,17 +488,6 @@ def converter_ConvTranspose2d(self, input: Tensor, output_size: Optional[List[in
     else:
         params = [weights]
         use_bias = False
-
-    if isinstance(dilation, numbers.Number):
-        dilation = (dilation, dilation)
-
-    if isinstance(padding, numbers.Number):
-        padding = (padding, padding)
-
-    if isinstance(output_padding, numbers.Number):
-        output_padding = (output_padding, output_padding)
-
-    assert output_padding == (0, 0), 'Output padding is not supported yet'
 
     if groups == 1:
         conv = keras.layers.Conv2DTranspose(out_filters,
@@ -531,6 +543,17 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
                                stride: Union[_int, _size] = 1, padding: Union[_int, _size] = 0,
                                output_padding: Union[_int, _size] = 0,
                                groups: _int = 1, dilation: Union[_int, _size] = 1):
+    if isinstance(dilation, numbers.Number):
+        dilation = (dilation, dilation)
+
+    if isinstance(padding, numbers.Number):
+        padding = (padding, padding)
+
+    if isinstance(output_padding, numbers.Number):
+        output_padding = (output_padding, output_padding)
+
+    assert output_padding == (0, 0), 'Output padding is not supported yet'
+
     in_filters, depth_multiplier, kh, kw = weight.shape
     out_filters = groups * depth_multiplier
 
@@ -544,17 +567,6 @@ def converter_conv_transpose2d(input: Tensor, weight: Tensor, bias: Optional[Ten
     else:
         params = [weights]
         use_bias = False
-
-    if isinstance(dilation, numbers.Number):
-        dilation = (dilation, dilation)
-
-    if isinstance(padding, numbers.Number):
-        padding = (padding, padding)
-
-    if isinstance(output_padding, numbers.Number):
-        output_padding = (output_padding, output_padding)
-
-    assert output_padding == (0, 0), 'Output padding is not supported yet'
 
     if groups == 1:
         conv = keras.layers.Conv2DTranspose(out_filters,
