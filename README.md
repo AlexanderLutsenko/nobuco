@@ -897,17 +897,17 @@ class MyModule(nn.Module):
         self.conv1 = nn.Conv1d(3, 3, kernel_size=1)
         self.conv2 = nn.Conv1d(6, 6, kernel_size=1)
     
-                                        ################################
-                                        # How it's translated to Keras #
-                                        ################################
-    def forward(self, x):               #
-        x = self.conv1(x)               # <- Output is in TENSORFLOW order
-                                        #
-        x = x.reshape(-1, 6, 2)         # <- Expects input in PYTORCH order, transposition needed
-                                        #    Output is in PYTORCH order
-                                        #
-        x = self.conv2(x)               # <- Expects input in TENSORFLOW order, transposition needed 
-        return x                        #
+                                    ################################
+                                    # How it's translated to Keras #
+                                    ################################
+    def forward(self, x):           #
+        x = self.conv1(x)           # <- Output is in TENSORFLOW order
+                                    #
+        x = x.reshape(-1, 6, 2)     # <- Expects input in PYTORCH order, transposition needed
+                                    #    Output is in PYTORCH order
+                                    #
+        x = self.conv2(x)           # <- Expects input in TENSORFLOW order, transposition needed 
+        return x                    #
 ```
 
 <p align="center">
@@ -1019,22 +1019,22 @@ Instead, when it sees a `permute` op, it checks whether the op can be construed 
 If so, no work is done on the input tensor, only its metadata (`channel_order` field) is changed.
 
 ```python
-class MyModule(nn.Module):              ################################
-    # ...                               # How it's translated to Keras #
-                                        ################################
-    def forward(self, x):               #
-        x = self.conv1(x)               # <- Output is in TENSORFLOW order
-                                        #
-        # BCH -> BHC                    #
-        x = x.permute(0, 2, 1)          # <- No actual transposition done, just order marked as PYTORCH
-        # Reshape transposed input      #
-        x = x.reshape(-1, 2, 6)         # <- Expects input in PYTORCH order, no transposition needed
-                                        #    Output is in PYTORCH order
-        # BHC -> BCH                    #
-        x = x.permute(0, 2, 1)          # <- No actual transposition done, just order marked as TENSORFLOW
-                                        #
-        x = self.conv2(x)               # <- Expects input in TENSORFLOW order, no transposition needed 
-        return x                        #
+class MyModule(nn.Module):          ################################
+    # ...                           # How it's translated to Keras #
+                                    ################################
+    def forward(self, x):           #
+        x = self.conv1(x)           # <- Output is in TENSORFLOW order
+                                    #
+        # BCH -> BHC                #
+        x = x.permute(0, 2, 1)      # <- No actual transposition done, just order marked as PYTORCH
+        # Reshape transposed input  #
+        x = x.reshape(-1, 2, 6)     # <- Expects input in PYTORCH order, no transposition needed
+                                    #    Output is in PYTORCH order
+        # BHC -> BCH                #
+        x = x.permute(0, 2, 1)      # <- No actual transposition done, just order marked as TENSORFLOW
+                                    #
+        x = self.conv2(x)           # <- Expects input in TENSORFLOW order, no transposition needed 
+        return x                    #
 ```
 
 <p align="center">
