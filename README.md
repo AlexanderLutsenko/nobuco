@@ -39,6 +39,11 @@ pip install -U nobuco
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 - [But was it worth it?](#but-was-it-worth-it)
 - [Nobuco knowledge base](#nobuco-knowledge-base)
+
+<!-- tocstop -->
+
+<!-- toc -->
+
 - [Deep dive](#deep-dive)
   - [Aggressive transposition removal: fighting fire with fire](#aggressive-transposition-removal-fighting-fire-with-fire)
 
