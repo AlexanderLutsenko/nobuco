@@ -1012,7 +1012,7 @@ Is there a better way? Yes, if we can afford to modify the Pytorch model. Rememb
 > 3) permute outputs back to Pytorch channel order
 
 Solving the transposition problem with more transpositions, huh?
-No mystery here, two adjacent permutations are easily fused into one. Being the opposites, `pytorch->tensorflow` and `tensorflow->pytorch` permutations just cancel each other out.
+No mystery here, two adjacent permutations are easily fused into one. Being opposites, `pytorch->tensorflow` and `tensorflow->pytorch` permutations just cancel each other out.
 
 But wait, is Nobuco sophisticated enough to perform global optimization? It's not, and it doesn't.
 Instead, when it sees a `permute` op, it checks whether the op can be construed as transposition from Pytorch to Keras or vice versa. 
