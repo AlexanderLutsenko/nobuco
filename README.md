@@ -39,6 +39,8 @@ pip install -U nobuco
 - [So we put a converter inside your converter](#so-we-put-a-converter-inside-your-converter)
 - [But was it worth it?](#but-was-it-worth-it)
 - [Nobuco knowledge base](#nobuco-knowledge-base)
+- [Deep dive](#deep-dive)
+  - [Aggressive transposition removal: fighting fire with fire](#aggressive-transposition-removal-fighting-fire-with-fire)
 
 <!-- tocstop -->
 
@@ -848,7 +850,6 @@ Nobuco already implements quite a few node converters, most written in a concise
 These are located in [nobuco/node_converters](https://github.com/AlexanderLutsenko/nobuco/tree/master/nobuco/node_converters),
 and there's a utility function to help you find what you need:
 
-
 ```python
 node = torch.Tensor.repeat
 # node = F.relu_
@@ -874,6 +875,168 @@ def converter_repeat(self, *sizes):
         return tf.tile(self, sizes)
     return func
 ```
+
+---
+
+## Deep dive
+
+<details>
+<summary><h3>Aggressive transposition removal: fighting fire with fire</h3></summary>
+
+Despite trying its best, Nobuco may produce outrageously inefficient graphs:
+
+```python
+class MyModule(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv1d(3, 3, kernel_size=1)
+        self.conv2 = nn.Conv1d(6, 6, kernel_size=1)
+    
+                                        ################################
+                                        # How it's translated to Keras #
+                                        ################################
+    def forward(self, x):               #
+        x = self.conv1(x)               # <- Output is in TENSORFLOW order
+                                        #
+        x = x.reshape(-1, 6, 2)         # <- Expects input in PYTORCH order, transposition needed
+                                        #    Output is in PYTORCH order
+                                        #
+        x = self.conv2(x)               # <- Expects input in TENSORFLOW order, transposition needed 
+        return x                        #
+```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/reshape1.png" width="10%">
+</p>
+
+Two transpositions out of nowhere?! How could Nobuco fail so miserably?
+
+Let's try it ourselves, then. First, the original operation. (implemented in Numpy, just not to be partial to either of the two frameworks)
+
+```python
+import numpy as np
+
+x_torch = np.asarray([
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12]
+])
+print('x_torch:\n', x_torch)
+
+y_torch = x_torch.reshape((6, 2))
+print('y_torch:\n', y_torch)
+```
+
+```console
+x_torch:
+ [[ 1  2  3  4]
+ [ 5  6  7  8]
+ [ 9 10 11 12]]
+y_torch:
+ [[ 1  2]
+ [ 3  4]
+ [ 5  6]
+ [ 7  8]
+ [ 9 10]
+ [11 12]]
+```
+
+But remember the catch: in Keras, the inputs to `reshape` are transposed relative to the original Pytorch implementation, because that's how `conv1` returns them.
+
+```python
+x_keras = x_torch.transpose()
+print('x_keras:\n', x_torch)
+```
+
+```console
+x_keras:
+ [[ 1  2  3  4]
+ [ 5  6  7  8]
+ [ 9 10 11 12]]
+```
+
+So, if we just permute the `shape` parameter accordingly, will that work? No, the result is scrambled beyond recognition!
+
+
+```python
+def reshape_keras_incorrect(x_keras, shape_torch):
+    shape_keras = list(reversed(shape_torch))
+    return x_keras.reshape(shape_keras)
+
+y_keras = reshape_keras_incorrect(x_keras, (6, 2))
+print('y_keras:\n', y_keras)
+print('Is correct:', np.array_equal(y_keras.transpose(), y_torch))
+```
+
+```console
+y_keras:
+ [[ 1  5  9  2  6 10]
+ [ 3  7 11  4  8 12]]
+Is correct: False
+```
+
+To get it work correctly for all shapes, we have to perform `reshape` on the original non-transposed tensor, i.e. prepare the input beforehand.
+We also transpose the output to later pass it to Keras convolution. 
+
+
+```python
+def reshape_keras(x_keras, shape_torch):
+    x_torch = x_keras.transpose()
+    y_torch = x_torch.reshape(shape_torch)
+    y_keras = y_torch.transpose()
+    return y_keras
+
+y_keras = reshape_keras(x_keras, (6, 2))
+print('y_keras:\n', y_keras)
+print('Is correct:', np.array_equal(y_keras.transpose(), y_torch))
+```
+
+```console
+y_keras:
+ [[ 1  3  5  7  9 11]
+ [ 2  4  6  8 10 12]]
+Is correct: True
+```
+
+Is there a better way? Yes, if we can afford to modify the Pytorch model. Remember the [pick-your-poison](#implementation-mismatch-pick-your-poison) section? Same thing.
+
+> :dart:
+> Here's the general recipe to get rid of redundant transpositions: 
+> 1) permute inputs to Tensorflow channel order
+> 2) define the subgraph as you want to see it in the converted model
+> 3) permute outputs back to Pytorch channel order
+
+Solving the transposition problem with more transpositions, huh?
+No mystery here, two adjacent permutations are easily fused into one. Being the opposites, `pytorch->tensorflow` and `tensorflow->pytorch` permutations just cancel each other out.
+
+But wait, is Nobuco sophisticated enough to perform global optimization? It's not, and it doesn't.
+Instead, when it sees a `permute` op, it checks whether the op can be construed as transposition from Pytorch to Keras or vice versa. 
+If so, no work is done on the input tensor, only its metadata (`channel_order` field) is changed.
+
+```python
+class MyModule(nn.Module):              ################################
+    # ...                               # How it's translated to Keras #
+                                        ################################
+    def forward(self, x):               #
+        x = self.conv1(x)               # <- Output is in TENSORFLOW order
+                                        #
+        # BCH -> BHC                    #
+        x = x.permute(0, 2, 1)          # <- No actual transposition done, just order marked as PYTORCH
+        # Reshape transposed input      #
+        x = x.reshape(-1, 2, 6)         # <- Expects input in PYTORCH order, no transposition needed
+                                        #    Output is in PYTORCH order
+        # BHC -> BCH                    #
+        x = x.permute(0, 2, 1)          # <- No actual transposition done, just order marked as TENSORFLOW
+                                        #
+        x = self.conv2(x)               # <- Expects input in TENSORFLOW order, no transposition needed 
+        return x                        #
+```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/reshape2.png" width="10%">
+</p>
+
+</details>
 
 ---
 
