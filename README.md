@@ -911,7 +911,7 @@ class MyModule(nn.Module):
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/reshape1.png" width="10%">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/reshape1.png" width="15%">
 </p>
 
 Two transpositions out of nowhere?! How could Nobuco fail so miserably?
@@ -1038,7 +1038,7 @@ class MyModule(nn.Module):          ################################
 ```
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/reshape2.png" width="10%">
+  <img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/reshape2.png" width="15%">
 </p>
 
 </details>
