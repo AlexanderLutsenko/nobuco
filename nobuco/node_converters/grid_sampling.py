@@ -1,11 +1,10 @@
-import numbers
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+import torch
 from torch import Tensor
+import torch.nn.functional as F
 
 import tensorflow as tf
-import torch
-import torch.nn.functional as F
 
 from nobuco.commons import TF_TENSOR_CLASSES, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter

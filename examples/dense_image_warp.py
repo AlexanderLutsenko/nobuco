@@ -9,7 +9,7 @@ import torch
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 from nobuco.addons.torch.dense_image_warp import DenseImageWarp
 

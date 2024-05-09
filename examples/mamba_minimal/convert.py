@@ -10,7 +10,7 @@ from transformers import AutoTokenizer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 from einops import einsum
 

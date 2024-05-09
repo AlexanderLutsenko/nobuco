@@ -12,7 +12,7 @@ from torchvision.ops import FrozenBatchNorm2d
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 
 class DummyModel(nn.Module):

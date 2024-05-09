@@ -1,4 +1,3 @@
-import numbers
 from typing import Optional, Union, Any, Sequence
 
 import torch
@@ -7,7 +6,7 @@ from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size, _device, _layout, Device
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES
 from nobuco.converters.node_converter import converter

@@ -1,14 +1,12 @@
-import numbers
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
-from tensorflow.python.ops.image_ops_impl import ResizeMethod
-from torch import Tensor
-
-import tensorflow as tf
 import torch
+from torch import Tensor
 import torch.nn.functional as F
 
-from nobuco.commons import TF_TENSOR_CLASSES
+import tensorflow as tf
+from tensorflow.python.ops.image_ops_impl import ResizeMethod
+
 from nobuco.converters.node_converter import converter
 
 

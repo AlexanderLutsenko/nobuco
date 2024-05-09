@@ -9,7 +9,7 @@ from torch import Tensor
 import torch.nn.functional as F
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 
 # NB: tensorflow and pytorch implementations of batchnorm behave differently in train mode

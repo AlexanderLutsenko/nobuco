@@ -6,10 +6,11 @@ import warnings
 from typing import Callable, Dict, Collection, Optional, List, Union, Tuple
 
 import torch
+
 from nobuco.converters.tensor import permute_pytorch2keras
 from torch import nn
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES, TraceLevel
 from nobuco.converters.channel_ordering import t_pytorch2keras, set_channel_order, t_keras2pytorch

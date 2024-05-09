@@ -11,7 +11,7 @@ from torchvision.models.detection import SSDLite320_MobileNet_V3_Large_Weights
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter, TFLiteConverterV2
-from tensorflow import keras
+import keras
 
 
 torch.manual_seed(0)

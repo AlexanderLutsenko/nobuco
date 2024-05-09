@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 
 class DenseImageWarp2(nn.Module):

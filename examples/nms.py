@@ -11,7 +11,7 @@ import torchvision
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 
 class MyModule(nn.Module):

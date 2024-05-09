@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 
 import tensorflow_addons
-from tensorflow import keras
+import keras
 
 import nobuco
 from nobuco import ChannelOrderingStrategy

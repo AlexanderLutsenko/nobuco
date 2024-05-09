@@ -1,8 +1,9 @@
 import numbers
 
-import tensorflow as tf
-from tensorflow import keras
 import torch
+
+import tensorflow as tf
+import keras
 
 import numpy as np
 from nobuco.layers.channel_order import ChangeOrderingLayer, tf_set_order_recursively

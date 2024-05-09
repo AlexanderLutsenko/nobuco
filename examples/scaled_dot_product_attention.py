@@ -7,7 +7,7 @@ from torch import nn
 import torch.nn.functional as F
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 
 class MyModule(nn.Module):

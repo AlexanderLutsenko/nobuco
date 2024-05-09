@@ -1,6 +1,5 @@
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
-import keras.layers
 import torch
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size

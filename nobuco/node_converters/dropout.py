@@ -1,8 +1,8 @@
-from torch import Tensor
-
-from tensorflow import keras
 import torch
 import torch.nn.functional as F
+from torch import Tensor
+
+import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter

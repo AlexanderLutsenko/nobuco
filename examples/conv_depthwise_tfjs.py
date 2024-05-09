@@ -10,9 +10,7 @@ import torch
 from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 
 import tensorflow as tf
-from tensorflow import keras
-
-import tensorflowjs
+import keras
 
 
 class MyModule(nn.Module):
@@ -96,6 +94,8 @@ keras_model = nobuco.pytorch_to_keras(
 
 model_name = 'conv_depthwise'
 keras_model.save(model_name)
+
+import tensorflowjs
 tensorflowjs.converters.convert_tf_saved_model(model_name, model_name + '.js')
 
 # Assuming 'model' is your Keras model

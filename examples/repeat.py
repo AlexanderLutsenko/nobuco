@@ -10,7 +10,7 @@ from torch import nn
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 
 class DummyModel(nn.Module):

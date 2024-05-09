@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 from nobuco.commons import ChannelOrderingStrategy
 from nobuco.layers.channel_order import ChangeOrderingLayer

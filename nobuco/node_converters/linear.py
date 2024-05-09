@@ -1,18 +1,16 @@
 from numbers import Number
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
-from nobuco.converters.tensor import dim_pytorch2keras
-from nobuco.converters.channel_ordering import get_channel_order
+import torch
+from torch import nn
 from torch import Tensor
+import torch.nn.functional as F
 
 import tensorflow as tf
-from tensorflow import keras
-import torch
-import torch.nn.functional as F
-from torch import nn
+import keras
 
-import numpy as np
-
+from nobuco.converters.tensor import dim_pytorch2keras
+from nobuco.converters.channel_ordering import get_channel_order
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
 

@@ -13,7 +13,7 @@ from torch.nn.modules.conv import _ConvNd
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 import numpy as np
 

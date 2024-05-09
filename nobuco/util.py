@@ -20,7 +20,7 @@ def get_torch_tensor_identifier(tensor):
     if hasattr(tensor, 'original_id'):
         return tensor.original_id
     else:
-        tid = int(f'{time.time_ns()}{random.randint(0, 10^9)}')
+        tid = int(f'{id(tensor)}{time.time_ns()}{random.randint(0, 10**3)}')
         tensor.original_id = tid
         return tid
 

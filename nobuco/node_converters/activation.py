@@ -1,13 +1,13 @@
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+import torch
+import torch.nn.functional as F
+from torch import nn
 from torch import Tensor
 from torch.types import _int, _bool, Number, _dtype, _size
 
 import tensorflow as tf
-from tensorflow import keras
-import torch
-import torch.nn.functional as F
-from torch import nn
+import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order

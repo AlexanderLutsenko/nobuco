@@ -7,7 +7,7 @@ from nobuco.layers.weight import WeightLayer
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter
-from tensorflow import keras
+import keras
 
 import torch
 from torch import nn

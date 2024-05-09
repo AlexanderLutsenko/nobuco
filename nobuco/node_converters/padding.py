@@ -1,9 +1,10 @@
 from typing import Optional, Union, List, Tuple, Sequence, Any
+
+import torch
 from torch import Tensor
+import torch.nn.functional as F
 
 import tensorflow as tf
-import torch
-import torch.nn.functional as F
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order

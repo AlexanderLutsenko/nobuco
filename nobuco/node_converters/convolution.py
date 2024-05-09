@@ -7,7 +7,7 @@ from torch import nn, Tensor
 from torch.types import _int, _bool, Number, _dtype, _size
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 import numpy as np
 from nobuco.converters.node_converter import converter

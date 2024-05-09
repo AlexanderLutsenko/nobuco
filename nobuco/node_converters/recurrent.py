@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 import numpy as np
 

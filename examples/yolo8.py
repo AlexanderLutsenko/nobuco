@@ -9,7 +9,7 @@ import torch
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteConverter, TFLiteConverterV2
-from tensorflow import keras
+import keras
 
 import ultralytics
 

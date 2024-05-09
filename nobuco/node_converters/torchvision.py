@@ -6,7 +6,7 @@ from torch import Tensor
 import torchvision.ops
 
 import tensorflow as tf
-from tensorflow import keras
+import keras
 
 
 @converter(torchvision.ops.StochasticDepth, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)

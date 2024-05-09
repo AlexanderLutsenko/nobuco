@@ -1,8 +1,9 @@
-import tensorflow as tf
 import torch
-from nobuco.converters.tensor import permute_pytorch2keras
 from torch import Tensor
 
+import tensorflow as tf
+
+from nobuco.converters.tensor import permute_pytorch2keras
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.channel_ordering import set_channel_order, get_channel_order
 from nobuco.converters.node_converter import converter

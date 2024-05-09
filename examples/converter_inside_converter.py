@@ -11,7 +11,7 @@ from torch import nn
 
 import tensorflow as tf
 from tensorflow.lite.python.lite import TFLiteKerasModelConverterV2, TFLiteKerasModelConverter
-from tensorflow import keras
+import keras
 
 import onnx
 from onnx_tf.backend import prepare
