@@ -46,7 +46,7 @@ def find_unimplemented(hierarchy: PytorchNodeHierarchy, converter_dict: Dict[obj
     # Test if the node itself has a converter
     if has_converter(hierarchy.node, converter_dict):
         return None
-    elif len(hierarchy.children) == 0:
+    elif len(hierarchy.children) == 0 and not isinstance(hierarchy.node.get_op(), nn.Module):
         return PytorchNodeHierarchy(hierarchy.node, hierarchy.children)
     else:
         children_unimplemented = []
@@ -149,7 +149,7 @@ def convert_hierarchy(
                 traceback.print_exc()
                 keras_op = FailedConversionStub(node.get_op())
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
-        elif len(children) > 0:
+        elif len(children) > 0 or isinstance(node.get_op(), nn.Module):
             children_converted_nodes = [convert(child, converted_op_dict, reuse_layers, full_validation, depth + 1) for child in children]
             keras_op = convert_container(node, children, children_converted_nodes, input_names, output_names, node.output_tensors, constants_to_variables=constants_to_variables)
 
