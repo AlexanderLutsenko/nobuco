@@ -1,0 +1,5 @@
+unittest_env/
+__pycache__/
+*egg-info
+.vscode/
+trace.html
