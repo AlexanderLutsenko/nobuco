@@ -320,3 +320,10 @@ def converter_cdist(x1, x2, p=2., compute_mode='use_mm_for_euclid_dist_if_necess
     def func(x1, x2, p=2., compute_mode='use_mm_for_euclid_dist_if_necessary'):
         return l2_dist(x1, x2)
     return func
+
+
+@converter(torch.sign, torch.Tensor.sign, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_sign(input, *args, **kwargs):
+    def func(input, *args, **kwargs):
+        return tf.math.sign(input)
+    return func
