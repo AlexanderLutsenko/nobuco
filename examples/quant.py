@@ -21,7 +21,7 @@ class Model(nn.Module):
         self.scales = 1.0
         self.zero_points = 128
         # reduce_range=True to avoid occasional overflow
-        weight = torch.quantize_per_tensor_dynamic(weight, torch.qint8, reduce_range=False)
+        weight = torch.quantize_per_tensor_dynamic(weight, torch.qint8, reduce_range=True)
         self.packed = torch.ops.quantized.linear_prepack(weight, bias)
 
     def forward(self, x: torch.Tensor):
@@ -29,7 +29,6 @@ class Model(nn.Module):
         x = Identity()(x)
         x = ops.quantized.linear(x, self.packed, self.scales, self.zero_points)
         x = x.dequantize()
-        print(x)
         return x
 
 
@@ -94,8 +93,8 @@ def converter_linear_quantized(x: torch.Tensor, packed, out_scale, out_zero):
     return func
 
 
-weight = torch.zeros((100, 100))
-bias = torch.zeros((100,))
+weight = torch.rand((100, 100))
+bias = torch.rand((100,))
 model = Model(weight, bias)
 
 x = torch.rand(size=(1, 100)) * 200 - 100
