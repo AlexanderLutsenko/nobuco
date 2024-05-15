@@ -81,6 +81,8 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
     #     outputs_pt = pytorch_op(*args_pt, **kwargs_pt)
     #     outputs_pt = collect_recursively(outputs_pt, torch.Tensor)
 
+    outputs_pt = [t.dequantize() for t in outputs_pt]
+
     if len(outputs_tf_converted) != len(outputs_pt):
         raise Exception(f"Number of outputs do not match: (Pytorch) {len(outputs_pt)} vs {len(outputs_tf_converted)} (Tensorflow)")
 
@@ -120,7 +122,6 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
             if diff.numel() == 0:
                 return 0, 0
             else:
-                # return diff.abs().max().numpy()
                 diff_abs = diff.abs().numpy()
                 diff_max = diff_abs.max()
                 diff_argmax = diff_abs.argmax()

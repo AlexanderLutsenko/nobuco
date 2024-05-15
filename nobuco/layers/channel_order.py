@@ -48,7 +48,7 @@ class ChangeOrderingLayer:
                 channel_order = ChannelOrder.PYTORCH
             elif strategy == ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS:
                 input_tensors = collect_recursively((args, kwargs), TF_TENSOR_CLASSES)
-                num_reordered = sum(t.channel_order == ChannelOrder.TENSORFLOW for t in input_tensors)
+                num_reordered = sum(get_channel_order(t) == ChannelOrder.TENSORFLOW for t in input_tensors)
                 num_unchanged = len(input_tensors) - num_reordered
                 if num_reordered >= num_unchanged:
                     channel_order = ChannelOrder.TENSORFLOW

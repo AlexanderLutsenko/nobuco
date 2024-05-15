@@ -45,6 +45,14 @@ def dtype_pytorch2keras(dtype):
         tf_type = tf.complex64
     elif dtype == torch.complex128:
         tf_type = tf.complex128
+    elif dtype == torch.quint8:
+        tf_type = tf.quint8
+    elif dtype == torch.qint8:
+        tf_type = tf.qint8
+    elif dtype == torch.qint16:
+        tf_type = tf.qint16
+    elif dtype == torch.qint32:
+        tf_type = tf.qint32
     elif dtype is None:
         tf_type = None
     else:
