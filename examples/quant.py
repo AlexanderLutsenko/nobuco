@@ -47,7 +47,7 @@ def quantize(x: torch.Tensor, scale: float, zero: int, dtype: torch.dtype):
     return func
 
 
-@nobuco.converter(torch.Tensor.dequantize)
+@nobuco.converter(torch.Tensor.dequantize, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def dequantize(x: torch.Tensor):
     scale, zero = x.q_scale(), x.q_zero_point()
     min_q = -zero * scale
@@ -58,7 +58,7 @@ def dequantize(x: torch.Tensor):
     return func
 
 
-@nobuco.converter(ops.quantized.linear)
+@nobuco.converter(ops.quantized.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def linear_quantized(x: torch.Tensor, packed, out_scale, out_zero):
     weight, bias = ops.quantized.linear_unpack(packed)
     weight = weight.dequantize()
