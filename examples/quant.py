@@ -20,7 +20,8 @@ class Model(nn.Module):
         super().__init__()
         self.scales = 1.0
         self.zero_points = 128
-        weight = torch.quantize_per_tensor_dynamic(weight, torch.qint8, False)
+        # reduce_range=True to avoid occasional overflow in Tensorflow
+        weight = torch.quantize_per_tensor_dynamic(weight, torch.qint8, reduce_range=True)
         self.packed = torch.ops.quantized.linear_prepack(weight, bias)
 
     def forward(self, x: torch.Tensor):
@@ -32,7 +33,7 @@ class Model(nn.Module):
 
 
 @nobuco.converter(torch.quantize_per_tensor, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def quantize(x: torch.Tensor, scale: float, zero: int, dtype: torch.dtype):
+def converter_quantize_per_tensor(x: torch.Tensor, scale: float, zero: int, dtype: torch.dtype):
     dtype_tf = dtype_pytorch2keras(dtype)
 
     min_q = -zero * scale
@@ -48,7 +49,7 @@ def quantize(x: torch.Tensor, scale: float, zero: int, dtype: torch.dtype):
 
 
 @nobuco.converter(torch.Tensor.dequantize, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def dequantize(x: torch.Tensor):
+def converter_dequantize(x: torch.Tensor):
     scale, zero = x.q_scale(), x.q_zero_point()
     min_q = -zero * scale
     max_q = (255 - zero) * scale
@@ -59,7 +60,7 @@ def dequantize(x: torch.Tensor):
 
 
 @nobuco.converter(ops.quantized.linear, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
-def linear_quantized(x: torch.Tensor, packed, out_scale, out_zero):
+def converter_linear_quantized(x: torch.Tensor, packed, out_scale, out_zero):
     weight, bias = ops.quantized.linear_unpack(packed)
     weight = weight.dequantize()
     bias = bias.dequantize()
@@ -76,12 +77,15 @@ def linear_quantized(x: torch.Tensor, packed, out_scale, out_zero):
     min_q = -zero * scale
     max_q = (255 - zero) * scale
 
+    min_q_out = -out_zero * out_scale
+    max_q_out = (255 - out_zero) * out_scale
+
     def func(x, packed, out_scale, out_zero):
         x = tf.quantization.dequantize(x, min_q, max_q)
 
         x = layer(x)
 
-        q = tf.quantization.quantize(x, min_q, max_q, tf.quint8)
+        q = tf.quantization.quantize(x, min_q_out, max_q_out, tf.quint8)
         tensor_tf = q.output
         tensor_tf.output_min = q.output_min
         tensor_tf.output_max = q.output_max
@@ -89,11 +93,11 @@ def linear_quantized(x: torch.Tensor, packed, out_scale, out_zero):
     return func
 
 
-weight = torch.rand((10, 10))
-bias = torch.rand((10,))
+weight = torch.rand((100, 100))
+bias = torch.rand((100,))
 model = Model(weight, bias)
 
-x = torch.normal(0, 100, size=(1, 10))
+x = torch.rand(size=(1, 100)) * 200 - 100
 
 keras_model = nobuco.pytorch_to_keras(
     model,
