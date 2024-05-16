@@ -61,6 +61,10 @@ def converter_MultiheadAttention(self,
         layer(query, value, key=key, attention_mask=attn_mask, return_attention_scores=need_weights, use_causal_mask=is_causal)
         layer.set_weights(params)
         output = layer(query, value, key=key, attention_mask=attn_mask, return_attention_scores=need_weights, use_causal_mask=is_causal)
+        if need_weights:
+            attention_output, attention_scores = output
+            attention_scores = tf.reduce_mean(attention_scores, axis=1)
+            output = (attention_output, attention_scores)
         return output
     return func
 
