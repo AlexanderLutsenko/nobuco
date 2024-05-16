@@ -7,7 +7,7 @@ from nobuco.converters.node_converter import converter
 from nobuco.node_converters.tensor_manipulation import _permute_inner
 
 @converter(torch.Tensor.__getattribute__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_getattribute(self, attribute:str):
+def converter_getattribute(self, attribute: str):
     try:
         if attribute == 'T':
             def func(self, attribute):
@@ -16,8 +16,8 @@ def converter_getattribute(self, attribute:str):
             def func(self, attribute):
                 return self
         else:
-            def func(self, name):
-                return tf.math.__getattribute__(name)(self)
+            def func(self, attribute):
+                return tf.math.__getattribute__(attribute)(self)
     except:
         raise Exception(f'Unsupported attribute: {attribute}')
     return func
