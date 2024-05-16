@@ -79,24 +79,6 @@ def converter_t(self: Tensor):
     return func
 
 
-# tensor.T
-@converter(torch.Tensor.__getattribute__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_getattribute(self, attribute):
-    try:
-        if attribute == 'T':
-            def func(self, attribute):
-                return _permute_inner([1, 0])(self)
-        elif attribute == 'data':
-            def func(self, attribute):
-                return self
-        else:
-            def func(self, name):
-                return tf.math.__getattribute__(name)(self)
-    except:
-        raise Exception(f'Unsupported attribute: {attribute}')
-    return func
-
-
 @converter(torch.moveaxis, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_moveaxis(input: Tensor, source: _size, destination: _size):
     a = np.zeros(shape=perm_identity(input.dim()))
