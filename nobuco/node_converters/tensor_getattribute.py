@@ -6,6 +6,7 @@ from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
 from nobuco.node_converters.tensor_manipulation import _permute_inner
 
+
 @converter(torch.Tensor.__getattribute__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_getattribute(self, attribute: str):
     try:
