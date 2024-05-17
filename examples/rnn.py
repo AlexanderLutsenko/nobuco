@@ -47,14 +47,58 @@ class MyModule(nn.Module):
             bidirectional=True
         )
 
+        self.lstm_time_first = nn.LSTM(
+            input_size=4,
+            hidden_size=4,
+            num_layers=6,
+            batch_first=False,
+            bidirectional=False,
+            bias=False
+        )
+        self.lstm_bidirectional_time_first = nn.LSTM(
+            input_size=4,
+            hidden_size=4,
+            num_layers=3,
+            batch_first=False,
+            bidirectional=True
+        )
+        self.gru_time_first = nn.GRU(
+            input_size=4,
+            hidden_size=4,
+            num_layers=6,
+            batch_first=False,
+            bidirectional=False,
+            bias=False,
+        )
+        self.gru_bidirectional_time_first = nn.GRU(
+            input_size=4,
+            hidden_size=4,
+            num_layers=3,
+            batch_first=False,
+            bidirectional=True
+        )
+
     def forward(self, x, h0, c0):
         y1, _ = self.lstm(x, (h0, c0))
         y2, _ = self.lstm_bidirectional(x, (h0, c0))
 
-        z1, _ = self.gru(x, h0)
-        z2, _ = self.gru_bidirectional(x, h0)
-        return y1, y2, z1, z2
+        y3, _ = self.gru(x, h0)
+        y4, _ = self.gru_bidirectional(x, h0)
 
+        x = x.permute((1, 0, 2))
+
+        y5, _ = self.lstm_time_first(x, (h0, c0))
+        y6, _ = self.lstm_bidirectional_time_first(x, (h0, c0))
+
+        y7, _ = self.gru_time_first(x, h0)
+        y8, _ = self.gru_bidirectional_time_first(x, h0)
+
+        return y1, y2, y3, y4, y5, y6, y7, y8
+
+
+# x = torch.normal(0, 1, size=(8, 3, 4))
+# h0 = torch.rand(6, 8, 4)
+# c0 = torch.rand(6, 8, 4)
 
 x = torch.normal(0, 1, size=(8, 3, 4))
 h0 = torch.rand(6, 8, 4)

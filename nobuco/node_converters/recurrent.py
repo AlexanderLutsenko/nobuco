@@ -28,15 +28,17 @@ class Bidirectional:
         ret_b = self.backward_layer(x, state_b)
         y_f, h_f = ret_f[0], ret_f[1:]
         y_b, h_b = ret_b[0], ret_b[1:]
-        y_b = tf.reverse(y_b, axis=(1,))
+        if self.layer.time_major:
+            reverse_axis = 0
+        else:
+            reverse_axis = 1
+        y_b = tf.reverse(y_b, axis=(reverse_axis,))
         y_cat = tf.concat([y_f, y_b], axis=-1)
         return y_cat, *h_f, *h_b
 
 
 @converter(nn.GRU, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_GRU(self: nn.GRU, input, hx=None):
-    assert self.batch_first, 'Only batch_first mode is supported at the moment'
-
     bidirectional = self.bidirectional
     num_layers = self.num_layers
 
@@ -92,7 +94,7 @@ def converter_GRU(self: nn.GRU, input, hx=None):
             return None
 
     layers = []
-    for i in range(self.num_layers):
+    for i in range(num_layers):
         layer = create_layer(i, reverse=False)
         if bidirectional:
             layer_reverse = create_layer(i, reverse=True)
@@ -130,8 +132,6 @@ def converter_GRU(self: nn.GRU, input, hx=None):
 
 @converter(nn.LSTM, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_LSTM(self: nn.LSTM, input, hx=None):
-    assert self.batch_first, 'Only batch_first mode is supported at the moment'
-
     bidirectional = self.bidirectional
     num_layers = self.num_layers
 
@@ -176,7 +176,7 @@ def converter_LSTM(self: nn.LSTM, input, hx=None):
             return None
 
     layers = []
-    for i in range(self.num_layers):
+    for i in range(num_layers):
         layer = create_layer(i, reverse=False)
         if bidirectional:
             layer_reverse = create_layer(i, reverse=True)
