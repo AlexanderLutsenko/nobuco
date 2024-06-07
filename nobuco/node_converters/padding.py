@@ -12,6 +12,34 @@ from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import permute_pytorch2keras
 
 
+def tf_pad_replicate(x, pad):
+    for dim, (pl, pr) in enumerate(pad):
+        if pl != 0 or pr != 0:
+            slice_left = [slice(None)]*dim + [slice(None, 1)]
+            pad_left = x.__getitem__(slice_left)
+            pad_left = tf.repeat(pad_left, pl, axis=dim)
+
+            slice_right = [slice(None)]*dim + [slice(-1, None)]
+            pad_right = x.__getitem__(slice_right)
+            pad_right = tf.repeat(pad_right, pr, axis=dim)
+
+            x = tf.concat([pad_left, x, pad_right], axis=dim)
+    return x
+
+
+def tf_pad_circular(x, pad):
+    for dim, (pl, pr) in enumerate(pad):
+        if pl != 0 or pr != 0:
+            slice_left = [slice(None)]*dim + [slice(-pl, None)]
+            pad_left = x.__getitem__(slice_left)
+
+            slice_right = [slice(None)]*dim + [slice(None, pr)]
+            pad_right = x.__getitem__(slice_right)
+
+            x = tf.concat([pad_left, x, pad_right], axis=dim)
+    return x
+
+
 # TODO: add support for 'negative' paddings
 @converter(F.pad, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_pad(input: Tensor, pad: List[int], mode: str = "constant", value: float = 0.0):
@@ -32,6 +60,12 @@ def converter_pad(input: Tensor, pad: List[int], mode: str = "constant", value: 
         pad = pad_full
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
             pad = permute_pytorch2keras(pad)
-        x = tf.pad(input, pad, mode=mode.upper(), constant_values=value)
+
+        if mode == 'replicate':
+            x = tf_pad_replicate(input, pad)
+        elif mode == 'circular':
+            x = tf_pad_circular(input, pad)
+        else:
+            x = tf.pad(input, pad, mode=mode.upper(), constant_values=value)
         return x
     return func
