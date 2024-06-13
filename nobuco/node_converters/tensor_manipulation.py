@@ -132,7 +132,9 @@ def converter_split(self, split_size, dim=0):
     def func(self, split_size, dim=0):
         if get_channel_order(self) == ChannelOrder.TENSORFLOW:
             dim = dim_pytorch2keras(dim, num_dims)
-        return tf.split(self, num_or_size_splits=split_size, axis=dim)
+        num_splits = tf.shape(self)[dim] // split_size
+        size_splits = tf.repeat(tf.convert_to_tensor(split_size), num_splits)
+        return tf.split(self, num_or_size_splits=size_splits, axis=dim)
     return func
 
 
