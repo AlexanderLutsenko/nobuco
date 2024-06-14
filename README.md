@@ -3,7 +3,7 @@
 <sup><a href="https://www.behance.net/diliajl">diliajl</a></sup>
 </p>
 
-**No** **Bu**llshit **Co**nverter is a tool that helps you translate Pytorch models into Keras/Tensorflow graphs without losing your mind.
+**No** **Bu**llshit **Co**nverter is a tool that helps you translate Pytorch models into Keras/Tensorflow/TFLite graphs without losing your mind.
 
 - Supports a wide range of architectures
   - [x] Control flow ops (If, For, While)
