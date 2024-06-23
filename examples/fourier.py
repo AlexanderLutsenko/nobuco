@@ -25,22 +25,30 @@ class MyModule(nn.Module):
         y2d = torch.fft.rfft2(x2d)
         z2d = torch.fft.irfft2(y2d)
 
-        window = torch.ones((64,))*3
-        ys1d = torch.stft(x1d, n_fft=64, hop_length=32, win_length=64, center=True, window=window,
-                          return_complex=True, onesided=False, normalized=True)
+        n_fft = 64
+        hop_length = 4
+        win_length = 64
+        center = True
+        return_complex = True
+        onesided = False
+        normalized = False
 
-        print('!!!', ys1d)
-        # zs1d = torch.istft(ys1d, n_fft=64, hop_length=32, win_length=64, center=True, window=window,
-        #                   return_complex=True, onesided=False, normalized=True)
+        window = torch.normal(0, 3, size=(win_length,))
+        # window = torch.hann_window(win_length)
+        # window = None
 
-        return y1d, z1d, y2d, z2d, ys1d, #zs1d
+        ys1d = torch.stft(x1d, n_fft=n_fft, hop_length=hop_length, win_length=win_length, center=center, window=window,
+                          return_complex=return_complex, onesided=onesided, normalized=normalized)
+
+        # FIXME: currently, converted istft does not work with windows containing zeros
+        zs1d = torch.istft(ys1d, n_fft=n_fft, hop_length=hop_length, win_length=win_length, center=center, window=window,
+                          return_complex=return_complex, onesided=onesided, normalized=normalized)
+
+        return y1d, z1d, y2d, z2d, ys1d, zs1d
 
 
-# x1d = torch.normal(0, 1, size=(1, 128))
-# x2d = torch.normal(0, 1, size=(1, 128, 128))
-
-x1d = torch.ones(size=(1, 128))
-x2d = torch.ones(size=(1, 128, 128))
+x1d = torch.normal(0, 1, size=(1, 128))
+x2d = torch.normal(0, 1, size=(1, 128, 128))
 pytorch_module = MyModule().eval()
 
 keras_model = nobuco.pytorch_to_keras(
