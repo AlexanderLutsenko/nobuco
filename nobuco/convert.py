@@ -30,7 +30,7 @@ from nobuco.vis.html_stylizer import HtmlStylizer
 # noinspection PyUnresolvedReferences
 from nobuco.node_converters import *
 
-# Trace pytorch ops right away
+# Decorate pytorch ops right away
 Tracer.decorate_all()
 
 
@@ -192,7 +192,7 @@ def collect_conversion_results(keras_node: KerasConvertedNode) -> Dict[PytorchNo
     return conversion_result_dict
 
 
-def prepare_inputs_tf(inputs_pt, inputs_channel_order, input_shapes):
+def prepare_inputs_tf(inputs_pt, inputs_channel_order, input_shapes, input_names):
 
     def collect_func(obj):
         return isinstance(obj, torch.Tensor)
@@ -211,14 +211,17 @@ def prepare_inputs_tf(inputs_pt, inputs_channel_order, input_shapes):
                 shape = permute_pytorch2keras(shape)
         else:
             shape = tens.shape
-        return set_channel_order(keras.backend.placeholder(shape=shape, dtype=tens.dtype), channel_order)
+
+        placeholder = keras.backend.placeholder(shape=shape, dtype=tens.dtype, name=input_names.get(obj, None))
+        return set_channel_order(placeholder, channel_order)
 
     return replace_recursively_func(inputs_pt, collect_func, replace_func)
 
 
-def postprocess_outputs_tf(outputs, outputs_channel_order):
+def postprocess_outputs_tf(outputs, outputs_channel_order, output_names):
     processed = []
     outputs = collect_recursively(outputs, TF_TENSOR_CLASSES)
+
     for i, output in enumerate(outputs):
         if isinstance(outputs_channel_order, Dict):
             channel_order = outputs_channel_order.get(i, None)
@@ -237,7 +240,7 @@ def postprocess_outputs_tf(outputs, outputs_channel_order):
         processed.append(output)
 
     # Ensure outputs order
-    processed = [tf.identity(t) for t in processed]
+    processed = [keras.layers.Identity(name=output_names.get(i, None))(t) for i, t in enumerate(processed)]
     return processed
 
 
@@ -248,6 +251,8 @@ def pytorch_to_keras(
         input_shapes: Dict[torch.Tensor, Collection[Optional[int]]] = None,
         inputs_channel_order: ChannelOrder | Dict[torch.Tensor, ChannelOrder] = ChannelOrder.TENSORFLOW,
         outputs_channel_order: ChannelOrder | Dict[int, ChannelOrder] | None = None,
+        input_names: Dict[torch.Tensor, str] | None = None,
+        output_names: Dict[int, str] | None = None,
         trace_shape: bool = False,
         enable_torch_tracing: bool = False,
         constants_to_variables: bool = True,
@@ -265,12 +270,16 @@ def pytorch_to_keras(
             Default: None
         kwargs: Pytorch model keyword arguments.
             Default: None
-        input_shapes: Desired input shapes. Set dim to None for dynamic size.
+        input_shapes: Desired input shapes. Dictionary keys are input tensors. Set dim to None for dynamic size.
             Default: None
-        inputs_channel_order: Desired channel order of the converted graph's inputs.
+        inputs_channel_order: Desired channel order of the converted graph's inputs. Dictionary keys are input tensors.
             Default: `ChannelOrder.TENSORFLOW`
-        outputs_channel_order: Desired channel order of the converted graph's outputs.
-            Set to None if you don't care to minimize the amount of transpositions.
+        outputs_channel_order: Desired channel order of the converted graph's outputs. Dictionary keys are indices of output tensors.
+            Set to None if you don't care, to minimize the amount of transpositions.
+            Default: None
+        input_names: Desired input names. Dictionary keys are input tensors.
+            Default: None
+        output_names: Desired output names. Dictionary keys are indices of output tensors.
             Default: None
         trace_shape: If True, replaces all `torch.Tensor.shape` and `torch.Tensor.size` calls with `nobuco.shape`,
             so they can be traced and added to the Keras graph.
@@ -305,6 +314,12 @@ def pytorch_to_keras(
     if kwargs is None:
         kwargs = {}
 
+    if input_names is None:
+        input_names = {}
+
+    if output_names is None:
+        output_names = {}
+
     start = time.time()
     node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs)
 
@@ -337,9 +352,9 @@ def pytorch_to_keras(
 
     keras_op = keras_converted_node.keras_op
 
-    args_tf, kwargs_tf = prepare_inputs_tf((args, kwargs), inputs_channel_order, input_shapes)
+    args_tf, kwargs_tf = prepare_inputs_tf((args, kwargs), inputs_channel_order, input_shapes, input_names)
     outputs_tf = keras_op(*args_tf, **kwargs_tf)
-    outputs_tf = postprocess_outputs_tf(outputs_tf, outputs_channel_order)
+    outputs_tf = postprocess_outputs_tf(outputs_tf, outputs_channel_order, output_names)
 
     inputs_tf_flat = collect_recursively((args_tf, kwargs_tf), TF_TENSOR_CLASSES)
     keras_model = keras.Model(inputs_tf_flat, outputs_tf)
