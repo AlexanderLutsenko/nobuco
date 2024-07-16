@@ -12,35 +12,35 @@ from nobuco.converters.node_converter import converter
 from nobuco.converters.tensor import dim_pytorch2keras
 
 
-@converter(torch.greater, torch.Tensor.__gt__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.greater, torch.Tensor.__gt__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_gt(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.greater(input, other)
     return func
 
 
-@converter(torch.greater_equal, torch.Tensor.__ge__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.greater_equal, torch.Tensor.__ge__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_ge(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.greater_equal(input, other)
     return func
 
 
-@converter(torch.less, torch.Tensor.__lt__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.less, torch.Tensor.__lt__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_lt(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.less(input, other)
     return func
 
 
-@converter(torch.less_equal, torch.Tensor.__le__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.less_equal, torch.Tensor.__le__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_le(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.less_equal(input, other)
     return func
 
 
-@converter(torch.eq, torch.equal, torch.Tensor.__eq__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.eq, torch.equal, torch.Tensor.__eq__, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS, autocast=True)
 def converter_eq(input: Tensor, other: Number, *, out: Optional[Tensor]=None):
     def func(input, other, *, out=None):
         return tf.equal(input, other)

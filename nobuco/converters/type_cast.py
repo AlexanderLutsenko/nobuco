@@ -19,6 +19,8 @@ TF_TYPE_PRIORITY_LIST = [
     tf.int32,
     tf.int16,
     tf.int8,
+
+    tf.bool,
 ]
 
 
