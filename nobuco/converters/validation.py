@@ -5,6 +5,7 @@ import math
 
 import numpy as np
 import torch
+from nobuco.layers.channel_order import ChangeOrderingLayer
 
 from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import t_keras2pytorch, pytorch2keras_recursively
@@ -71,6 +72,9 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
 def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, is_training=False):
     args_tf = pytorch2keras_recursively(args_pt, channel_order=ChannelOrder.TENSORFLOW)
     kwargs_tf = pytorch2keras_recursively(kwargs_pt, channel_order=ChannelOrder.TENSORFLOW)
+
+    if hasattr(keras_op, 'reset_states'):
+        keras_op.reset_states()
 
     outputs_tf = keras_op(*args_tf, **kwargs_tf)
 

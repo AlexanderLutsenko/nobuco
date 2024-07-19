@@ -72,6 +72,10 @@ class ChangeOrderingLayer:
         tf_assert_has_attr_recursively(outputs, 'channel_order')
         return outputs
 
+    def reset_states(self):
+        if hasattr(self.func, 'reset_states'):
+            self.func.reset_states()
+
     def __str__(self):
         return f"{self.__class__.__name__}(func={self.func})"
 

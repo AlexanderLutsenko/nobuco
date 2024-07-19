@@ -76,3 +76,7 @@ class TransientContainer:
         output_tensors = [node_dict[name] for name in self.output_names]
         outputs = template_insert_recursively(self.outputs_template, output_tensors)
         return outputs
+
+    def reset_states(self):
+        for input_names, output_names, op, (args_template, kwargs_template) in self.op_descr_list:
+            op.reset_states()

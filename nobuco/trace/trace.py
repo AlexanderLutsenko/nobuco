@@ -248,10 +248,10 @@ class Tracer:
                         args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
 
                         # Inner function may change the input structure, insure against that
-                        args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively((args, kwargs), torch.Tensor)})
+                        # args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively((args, kwargs), torch.Tensor)})
 
                         # Transform `torch.Tensor`s into `TracingTensor`s, just in case
-                        args_inner, kwargs_inner = wrap_torch_tensors_recursively((args_inner, kwargs_inner))
+                        args_inner, kwargs_inner = wrap_torch_tensors_recursively((args, kwargs))
 
                 with Tracer.register_parent(wrapped_op):
                     outputs = forward_func(*args_inner, **kwargs_inner)
@@ -314,10 +314,10 @@ class Tracer:
                         args_clone, kwargs_clone = clone_torch_tensors_recursively_with_cache((args, kwargs), Tracer._tensor_storage)
 
                         # Inner function may change the input structure, insure against that
-                        args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively((args, kwargs), torch.Tensor)})
+                        # args_inner, kwargs_inner = deepcopy((args, kwargs), memo={id(t): t for t in collect_recursively((args, kwargs), torch.Tensor)})
 
                         # Transform `torch.Tensor`s into `TracingTensor`s, just in case
-                        # args_inner, kwargs_inner = wrap_torch_tensors_recursively((args_inner, kwargs_inner))
+                        args_inner, kwargs_inner = wrap_torch_tensors_recursively((args, kwargs))
 
                         num_input_tensors = len(collect_recursively((args, kwargs), torch.Tensor))
 

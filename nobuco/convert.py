@@ -62,11 +62,13 @@ def find_unimplemented(hierarchy: PytorchNodeHierarchy, converter_dict: Dict[obj
 
 def convert_node(node: PytorchNode, node_converter: Pytorch2KerasNodeConverter) -> Callable:
     input_args = node.input_args
-    if node.instance is not None:
-        input_args = (node.instance, *input_args)
 
     # clone the inputs to be on the safe side
     input_args, input_kwargs = clone_torch_tensors_recursively((input_args, node.input_kwargs))
+
+    if node.instance is not None:
+        input_args = (node.instance, *input_args)
+
     layer = node_converter.convert(_pytorch_node=node, *input_args, **input_kwargs)
     return layer
 
@@ -98,11 +100,11 @@ def convert_container(
         for hierarchy in node_hierarchies:
             for input_tensor in hierarchy.node.input_tensors:
                 input_id = get_torch_tensor_identifier(input_tensor)
-                if input_id in tensor_ids:
+                if input_id in tensor_ids and input_id not in result:
                     result[input_id] = input_tensor
         for tensor in output_tensors:
             output_id = get_torch_tensor_identifier(tensor)
-            if output_id in tensor_ids:
+            if output_id in tensor_ids and output_id not in result:
                 result[output_id] = tensor
         return result
 
@@ -125,7 +127,7 @@ def convert_hierarchy(
         constants_to_variables: bool = True,
 ) -> KerasConvertedNode:
 
-    def convert(hierarchy: PytorchNodeHierarchy, converted_op_dict:Dict, reuse_layers: bool, full_validation: bool, depth):
+    def convert(hierarchy: PytorchNodeHierarchy, converted_op_dict: Dict, reuse_layers: bool, full_validation: bool, depth):
         node = hierarchy.node
         children = hierarchy.children
 
