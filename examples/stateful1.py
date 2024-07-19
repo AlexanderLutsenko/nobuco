@@ -33,6 +33,7 @@ class EMAModel(nn.Module):
 class EMAModelKeras(keras.layers.Layer):
     def __init__(self, linear_in, linear_out, alpha, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.stateful = True  # Mark as stateful, otherwise reset_states() will not work
         self.linear_in = linear_in
         self.linear_out = linear_out
         self.alpha = alpha

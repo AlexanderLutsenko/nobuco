@@ -37,6 +37,7 @@ class EMAModel(nn.Module):
 class EMAModelKeras(keras.layers.Layer):
     def __init__(self, forward_stateless, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.stateful = True  # Mark as stateful, otherwise reset_states() will not work
         self.forward_stateless = forward_stateless
         self.x_ema = tf.Variable(tf.ones((1, 4)), trainable=False)
 
