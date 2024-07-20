@@ -20,7 +20,7 @@ class ValidationStatus(Enum):
 
 
 class ValidationResult:
-    def __init__(self, diff_abs, diff_rel, status):
+    def __init__(self, diff_abs: float, diff_rel: float, status: ValidationStatus):
         self.diff_abs = diff_abs
         self.diff_rel = diff_rel
         self.status = status
