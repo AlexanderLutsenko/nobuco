@@ -15,6 +15,7 @@ import nobuco
 from nobuco.entity.pytorch import PytorchNode, WrappedOp, PytorchNodeHierarchy
 from nobuco.trace.tensor_storage import clone_torch_tensors_recursively_with_cache, TensorStorage
 from nobuco.util import collect_recursively, set_torch_tensor_id, get_torch_tensor_identifier, collect_recursively_func
+from nobuco.vis.progress import ProgressBar
 
 
 class TracingTensor(torch.Tensor):
@@ -152,6 +153,8 @@ class Tracer:
     _tracing_enabled: bool = False
     _trace_shape: bool = False
 
+    progress_bar = None
+
     class enter_torch_tracing_state(object):
         def __init__(self, enable_torch_tracing):
             self.enable_torch_tracing = enable_torch_tracing
@@ -283,7 +286,6 @@ class Tracer:
         orig_method = Tracer.op_undecorate(orig_method)
 
         def decorator(*args, **kwargs):
-
             def is_duplicate(orig_method):
                 if not Tracer._parent_list:
                     return False
@@ -337,6 +339,10 @@ class Tracer:
                         num_output_tensors = len(collect_recursively(outputs, torch.Tensor))
 
                         if is_whitelist_op or (num_input_tensors > 0 and num_output_tensors > 0):
+
+                            if Tracer.progress_bar is not None:
+                                Tracer.progress_bar.update()
+
                             if isinstance(call_op_cls, str):
                                 module_name = call_op_cls
                             elif isinstance(call_op_cls, types.ModuleType):
@@ -444,7 +450,10 @@ class Tracer:
         return hierarchies[-1]
 
     @staticmethod
-    def trace(module_or_function: nn.Module | Callable, trace_shape: bool, enable_torch_tracing: bool, args, kwargs) -> PytorchNodeHierarchy:
+    def trace(module_or_function: nn.Module | Callable, trace_shape: bool, enable_torch_tracing: bool, args, kwargs, progress_bar: ProgressBar = None) -> PytorchNodeHierarchy:
+        if progress_bar is not None:
+            Tracer.progress_bar = progress_bar
+
         Tracer.decorate_all()
 
         if isinstance(module_or_function, nn.Module):
@@ -461,4 +470,6 @@ class Tracer:
 
             hierarchy = Tracer.build_hierarchy(Tracer._node_list)
 
+        if progress_bar is not None:
+            Tracer.progress_bar = None
         return hierarchy

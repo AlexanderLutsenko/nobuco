@@ -29,6 +29,7 @@ from nobuco.vis.html_stylizer import HtmlStylizer
 # Load default converters
 # noinspection PyUnresolvedReferences
 from nobuco.node_converters import *
+from nobuco.vis.progress import ProgressBar
 
 # Decorate pytorch ops right away
 Tracer.decorate_all()
@@ -125,6 +126,7 @@ def convert_hierarchy(
         full_validation: bool = True,
         tolerance=1e-4,
         constants_to_variables: bool = True,
+        progress_bar: ProgressBar = None,
 ) -> KerasConvertedNode:
 
     def convert(hierarchy: PytorchNodeHierarchy, converted_op_dict: Dict, reuse_layers: bool, full_validation: bool, depth):
@@ -151,6 +153,7 @@ def convert_hierarchy(
                 traceback.print_exc()
                 keras_op = FailedConversionStub(node.get_op())
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
+            progress_bar.update(hierarchy.get_op_count())
         elif len(children) > 0 or isinstance(node.get_op(), nn.Module):
             children_converted_nodes = [convert(child, converted_op_dict, reuse_layers, full_validation, depth + 1) for child in children]
             keras_op = convert_container(node, children, children_converted_nodes, input_names, output_names, node.output_tensors, constants_to_variables=constants_to_variables)
@@ -323,12 +326,21 @@ def pytorch_to_keras(
         output_names = {}
 
     start = time.time()
-    node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs)
 
+    progress_bar = ProgressBar("Tracing", bar_format="{desc}: {n_fmt} ops [{elapsed}]")
+    node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs, progress_bar)
+    progress_bar.close()
+
+    progress_bar = ProgressBar("Converting",
+                               total=node_hierarchy.get_op_count(),
+                               bar_format="{desc}: |{bar}| {n_fmt}/{total_fmt} ops [{elapsed}]"
+                               )
     keras_converted_node = convert_hierarchy(node_hierarchy, CONVERTER_DICT,
                                              reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
                                              tolerance=validation_tolerance,
+                                             progress_bar=progress_bar,
                                              )
+    progress_bar.close()
 
     validation_result_dict = collect_validation_results(keras_converted_node)
     conversion_result_dict = collect_conversion_results(keras_converted_node)
@@ -362,7 +374,7 @@ def pytorch_to_keras(
     keras_model = keras.Model(inputs_tf_flat, outputs_tf)
 
     elapsed = time.time() - start
-    print(f'Conversion complete. Elapsed time: {elapsed:.2f} sec.')
+    print(f'[Nobuco] Conversion complete. Elapsed time: {elapsed:.2f} sec.')
 
     if return_outputs_pt:
         outputs_pt = node_hierarchy.node.outputs

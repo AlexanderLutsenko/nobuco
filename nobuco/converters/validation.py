@@ -5,7 +5,6 @@ import math
 
 import numpy as np
 import torch
-from nobuco.layers.channel_order import ChangeOrderingLayer
 
 from nobuco.commons import ChannelOrder, TF_TENSOR_CLASSES
 from nobuco.converters.channel_ordering import t_keras2pytorch, pytorch2keras_recursively
@@ -48,12 +47,6 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
         diffs = validate_diff_default(keras_op, pytorch_op, input_args, input_kwargs, output_tensors)
 
         if len(diffs):
-            for i, (diff_abs, diff_rel) in enumerate(diffs):
-                if diff_abs > tolerance or math.isnan(diff_abs):
-                    warn_string = f'[{op_type}|{str_parents(node)}] conversion procedure might be incorrect: max. discrepancy for output #{i} is {diff_abs:.5f}'
-                    if diff_rel is not None:
-                        warn_string += f' ({(diff_rel*100):.3f}%)'
-                    warnings.warn(warn_string, category=RuntimeWarning)
             diff_abs, diff_rel = max(diffs, key=lambda x: x[0])
         else:
             diff_abs, diff_rel = 0, 0
@@ -80,10 +73,6 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
 
     outputs_tf = collect_recursively(outputs_tf, TF_TENSOR_CLASSES)
     outputs_tf_converted = [t_keras2pytorch(t, restore_channel_order=True) for t in outputs_tf]
-
-    # with torch.no_grad():
-    #     outputs_pt = pytorch_op(*args_pt, **kwargs_pt)
-    #     outputs_pt = collect_recursively(outputs_pt, torch.Tensor)
 
     if len(outputs_tf_converted) != len(outputs_pt):
         raise Exception(f"Number of outputs do not match: (Pytorch) {len(outputs_pt)} vs {len(outputs_tf_converted)} (Tensorflow)")
@@ -124,7 +113,6 @@ def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, 
             if diff.numel() == 0:
                 return 0, 0
             else:
-                # return diff.abs().max().numpy()
                 diff_abs = diff.abs().numpy()
                 diff_max = diff_abs.max()
                 diff_argmax = diff_abs.argmax()

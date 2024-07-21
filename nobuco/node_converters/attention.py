@@ -100,5 +100,6 @@ def converter_scaled_dot_product_attention(query, key, value, attn_mask=None, dr
 
         attn = tf.nn.softmax(sim, axis=-1)
         attn = keras.layers.Dropout(dropout_p)(attn)
-        return attn @ value
+
+        return attn @ tf.cast(value, attn.dtype)
     return func

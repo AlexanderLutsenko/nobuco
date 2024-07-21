@@ -117,6 +117,12 @@ class PytorchNodeHierarchy:
         self.node = node
         self.children = children
 
+    def get_op_count(self):
+        if self.children:
+            return sum(child.get_op_count() for child in self.children)
+        else:
+            return 1
+
     def __str__(self, tier=0,
                 tier_statuses=None,
                 validation_result_dict=None, conversion_result_dict=None,
