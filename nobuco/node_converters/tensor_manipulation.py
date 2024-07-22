@@ -254,20 +254,19 @@ def converter_unflatten(input: Tensor, dim: _int, sizes):
     return func
 
 
-@converter(torch.Tensor.narrow, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
-def converter_narrow(self, dimension, start, length):
-    n_dims = self.dim()
+@converter(torch.narrow, torch.Tensor.narrow, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_narrow(input, dim, start, length):
+    n_dims = input.dim()
 
-    def func(self, dimension, start, length):
-        x = self
-        dimension = _dim_make_positive(dimension, n_dims)
+    def func(input, dim, start, length):
+        dim = _dim_make_positive(dim, n_dims)
 
-        if get_channel_order(x) == ChannelOrder.TENSORFLOW:
-            perm = perm_keras2pytorch(n_dims)
-            x = _permute(perm)(x)
-        slices = (*[slice(None)]*dimension, slice(start, start+length))
-        x = x.__getitem__(slices)
-        x = set_channel_order(x, ChannelOrder.PYTORCH)
+        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
+            dim = dim_pytorch2keras(dim, n_dims)
+
+        start_list = [0]*dim + [start] + [0]*(n_dims - dim - 1)
+        size_list = [-1]*dim + [length] + [-1]*(n_dims - dim - 1)
+        x = tf.slice(input, start_list, size_list)
         return x
     return func
 

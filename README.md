@@ -8,6 +8,7 @@
 - Supports a wide range of architectures
   - [x] Control flow ops (If, For, While)
   - [x] Recurrent layers (LSTM, GRU)
+  - [x] Stateful modules
   - [x] Arbitrary torch functions
 - Simple
 - Flexible
@@ -33,6 +34,8 @@ pip install -U nobuco
 - [Going dynamic](#going-dynamic)
   - [Control flows](#control-flows)
   - [Dynamic shapes](#dynamic-shapes)
+- [No, that's too dynamic!](#no-thats-too-dynamic)
+  - [Forcing static crops](#forcing-static-crops)
 - [In-place operations](#in-place-operations)
 - [A little white lie: tracing mode](#a-little-white-lie-tracing-mode)
 - [Ad hoc modifications](#ad-hoc-modifications) 
@@ -528,6 +531,91 @@ keras_model = nobuco.pytorch_to_keras(
   trace_shape=True
 )
 ```
+
+## No, that's too dynamic!
+
+### Forcing static crops
+
+Sometimes, dynamic tensors appear against our will. They can also be very detrimental, especially when it comes to efficient inference. Let me show you.
+
+Our Pytorch module here involves extracting a crop of a fixed size, something along these lines:
+
+```python
+class CroppingModule(nn.Module):
+    def __init__(self, crop_height, crop_width):
+        super().__init__()
+        self.crop_height = crop_height
+        self.crop_width = crop_width
+
+    def forward(self, x, crop_x, crop_y):
+        _, _, h, w = x.shape
+        crop_x = (crop_x * (w - self.crop_width)).int()
+        crop_y = (crop_y * (h - self.crop_height)).int()
+        crop = x[:, :, crop_y: crop_y + self.crop_height, crop_x: crop_x + self.crop_width]  # Poor way to crop
+        return crop
+
+
+x = torch.normal(0, 1, size=(1, 3, 128, 128))
+crop_y = torch.rand(())
+crop_x = torch.rand(())
+pytorch_module = CroppingModule(64, 32).eval()
+```
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/static_crop1.png" width="50%">
+</p>
+
+```console
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: Attempting to use a delegate that only supports static-sized tensors with a graph that has dynamic-sized tensors (tensor#17 is a dynamic-sized tensor).
+ERROR: Failed to apply XNNPACK delegate.
+```
+
+TFLite fails to recognize the crop shape as static. Why? Consider this:
+
+```python
+y0 = torch.tensor(())
+y1 = y0 + h
+crop = image[:, y0: y1]
+```
+
+When we invoke `image[:, y0: y1]`, the indexing operator (`[]`) has no way of knowing that `y0` and `y1` are related and `y1 - y0 == const`. 
+It wouldn't be a problem if instead of `(y0, y1)`, the op accepted `(y0, h)` as cropping parameters, since `h` is a constant. 
+
+Is there such op? Meet `torch.narrow`:
+
+```python
+crop = x.narrow(2, crop_y, self.crop_height).narrow(3, crop_x, self.crop_width)  # Better way to crop
+```
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/static_crop2.png" width="35%">
+</p>
+
+That's it, problem solved, the crop is statically-shaped now. 
+Alas, `narrow` only operates on one dimension at a time, so we have to apply it repeatedly.
+`tf.slice`, however, has no such limitation. See where I'm going? It's custom converter time!
+
+```python
+@nobuco.traceable
+def get_crop(x, crop_y, crop_x, h, w):
+    return x[:, :, crop_y: crop_y + h, crop_x: crop_x + w]
+
+
+@nobuco.converter(get_crop, channel_ordering_strategy=nobuco.ChannelOrderingStrategy.FORCE_TENSORFLOW_ORDER)
+def converter_get_crop(x, crop_y, crop_x, h, w):
+    def func(x, crop_y, crop_x, h, w):
+        return tf.image.crop_to_bounding_box(x, crop_y, crop_x, h, w)  # Calls tf.slice under the hood
+    return func
+```
+
+```python
+crop = get_crop(x, crop_y, crop_x, self.crop_height, self.crop_width)  # Best way to crop
+```
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/AlexanderLutsenko/nobuco/master/docs/static_crop3.png" width="35%">
+</p>
 
 ## In-place operations
 
