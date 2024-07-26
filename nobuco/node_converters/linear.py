@@ -127,7 +127,10 @@ def converter_norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None
 
     def func(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
         if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-            dim = dim_pytorch2keras(dim, num_dims)
+            if isinstance(dim, (tuple, list)):
+                dim = tuple([dim_pytorch2keras(item, num_dims) for item in dim])
+            else:
+                dim = dim_pytorch2keras(dim, num_dims)
         return tf.norm(input, ord=p, axis=dim, keepdims=keepdim)
     return func
 
