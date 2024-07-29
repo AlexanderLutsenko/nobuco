@@ -22,6 +22,8 @@ def converter_fill(input, value):
 @converter(torch.meshgrid, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_meshgrid(*tensors, indexing: Optional[str] = None):
     def func(*tensors, indexing=None):
+        if indexing is None:
+            indexing="ij"
         return tf.meshgrid(*tensors, indexing=indexing)
     return func
 
