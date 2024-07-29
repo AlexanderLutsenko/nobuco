@@ -5,6 +5,7 @@ from torch import nn
 from torch import Tensor
 
 import tensorflow as tf
+import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
@@ -24,7 +25,7 @@ def converter_meshgrid(*tensors, indexing: Optional[str] = None):
     def func(*tensors, indexing=None):
         if indexing is None:
             indexing="ij"
-        return tf.meshgrid(*tensors, indexing=indexing)
+        return keras.layers.Lambda(lambda tensors: tf.meshgrid(*tensors, indexing=indexing))(tensors)
     return func
 
 

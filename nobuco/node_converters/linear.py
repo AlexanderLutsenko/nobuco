@@ -1,7 +1,9 @@
 from numbers import Number
 from typing import Optional, Union, List, Tuple, Sequence, Any
 
+import numpy as np
 import torch
+from nobuco.node_converters.reduce import reduce_func
 from torch import nn
 from torch import Tensor
 import torch.nn.functional as F
@@ -9,7 +11,7 @@ import torch.nn.functional as F
 import tensorflow as tf
 import keras
 
-from nobuco.converters.tensor import dim_pytorch2keras
+from nobuco.converters.tensor import dim_pytorch2keras, dims_pytorch2keras
 from nobuco.converters.channel_ordering import get_channel_order
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy
 from nobuco.converters.node_converter import converter
@@ -121,14 +123,31 @@ def converter_normalize(input: Tensor, p: float = 2.0, dim: int = 1, eps: float 
     return func
 
 
-@converter(torch.norm, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+@converter(torch.norm, channel_ordering_strategy=ChannelOrderingStrategy.MANUAL)
 def converter_norm(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
-    num_dims = input.dim()
+
+    def inner_func(input, dim=None, keepdim=False, p="fro", out=None, dtype=None):
+        if isinstance(dim, (tuple, list)) and len(dim) == 1:
+            dim = dim[0]
+
+        if p is None or p == 'fro' or p == 2:
+            p = 'euclidean'
+
+        if p == 0:
+            return tf.math.reduce_sum(input * 0 + 1, axis=dim, keepdims=keepdim)
+        if p == 1:
+            return tf.math.reduce_sum(tf.abs(input), axis=dim, keepdims=keepdim)
+        if p == np.inf:
+            return tf.math.reduce_max(tf.abs(input), axis=dim, keepdims=keepdim)
+        if p == -np.inf:
+            return tf.math.reduce_min(tf.abs(input), axis=dim, keepdims=keepdim)
+        else:
+            return tf.norm(input, ord=p, axis=dim, keepdims=keepdim)
+
+    n_dims = input.dim()
 
     def func(input, p="fro", dim=None, keepdim=False, out=None, dtype=None):
-        if get_channel_order(input) == ChannelOrder.TENSORFLOW:
-            dim = dim_pytorch2keras(dim, num_dims)
-        return tf.norm(input, ord=p, axis=dim, keepdims=keepdim)
+        return reduce_func(inner_func, n_dims)(input, dim, keepdim, p=p)
     return func
 
 
