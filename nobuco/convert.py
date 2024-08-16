@@ -263,10 +263,9 @@ def pytorch_to_keras(
         constants_to_variables: bool = True,
         full_validation: bool = True,
         validation_tolerance: float = 1e-4,
-        return_outputs_pt: bool = False,
         save_trace_html: bool = False,
         debug_traces: TraceLevel = TraceLevel.DEFAULT,
-) -> keras.Model | Tuple[keras.Model, object]:
+) -> Tuple[keras.Model, object, Dict[PytorchNode, ValidationResult], Dict[PytorchNode, ConversionResult]]:
     """Converts Pytorch program to Keras graph
 
     Args:
@@ -376,8 +375,5 @@ def pytorch_to_keras(
     elapsed = time.time() - start
     print(f'[Nobuco] Conversion complete. Elapsed time: {elapsed:.2f} sec.')
 
-    if return_outputs_pt:
-        outputs_pt = node_hierarchy.node.outputs
-        return keras_model, outputs_pt
-    else:
-        return keras_model
+    outputs_pt = node_hierarchy.node.outputs
+    return keras_model, outputs_pt, validation_result_dict, conversion_result_dict
