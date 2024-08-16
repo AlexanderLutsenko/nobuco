@@ -15,13 +15,6 @@ def converter_contiguous(self, memory_format=None):
     return func
 
 
-@converter(torch.Tensor.detach, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
-def converter_detach(self):
-    def func(self):
-        return tf.stop_gradient(self)
-    return func
-
-
 @converter(torch.Tensor.cpu, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
 def converter_cpu(self, memory_format=None):
     def func(self, memory_format=None):

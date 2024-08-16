@@ -49,3 +49,15 @@ def converter_shape(x: Tensor, dim=None):
             shape = shape[dim]
         return shape
     return func
+
+
+@traceable
+def length(x: Tensor):
+    return torch.tensor(len(x), dtype=torch.int32)
+
+
+@converter(length, channel_ordering_strategy=ChannelOrderingStrategy.MINIMUM_TRANSPOSITIONS)
+def converter_length(x: Tensor):
+    def func(x):
+        return tf.shape(x)[0]
+    return func
