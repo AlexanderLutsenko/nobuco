@@ -13,6 +13,7 @@ from nobuco.util import str_parents, collect_recursively
 
 # Import rich for colored tracebacks
 from rich import print as rprint
+from rich.console import Console
 from rich.traceback import Traceback
 
 class ValidationStatus(Enum):
@@ -26,6 +27,18 @@ class ValidationResult:
         self.diff_rel = diff_rel
         self.status = status
 
+def summarize_tensors(obj):
+    if isinstance(obj, torch.Tensor):
+        return f"Tensor(shape={list(obj.shape)}, dtype={obj.dtype})"
+    elif isinstance(obj, TF_TENSOR_CLASSES):  # For TensorFlow tensors
+        return f"Tensor(shape={obj.shape}, dtype={obj.dtype})"
+    elif isinstance(obj, (list, tuple)):
+        return type(obj)(summarize_tensors(x) for x in obj)
+    elif isinstance(obj, dict):
+        return {k: summarize_tensors(v) for k, v in obj.items()}
+    else:
+        return obj
+    
 class ConversionResult:
     def __init__(self, converted_manually, is_implemented=True, is_duplicate=False, connectivity_status=None, converter=None):
         self.converted_manually = converted_manually
@@ -42,6 +55,14 @@ class ConversionResult:
             location_link = get_link_to_obj(convert_func)
             return location_link
 
+
+class ValidationResult:
+    def __init__(self, diff_abs: float, diff_rel: float, status: ValidationStatus, error_message: str = None):
+        self.diff_abs = diff_abs
+        self.diff_rel = diff_rel
+        self.status = status
+        self.error_message = error_message
+
 def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensors, op_type, tolerance=1e-4) -> ValidationResult:
     try:
         diffs = validate_diff_default(keras_op, pytorch_op, input_args, input_kwargs, output_tensors)
@@ -57,12 +78,31 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
             status = ValidationStatus.SUCCESS
         return ValidationResult(diff_abs, diff_rel, status)
     except Exception as e:
-        warnings.warn(f"Validation exception on node '{op_type.__name__}': {e}")
-        # Use rich to print the traceback in color
-        from rich.traceback import Traceback
-        tb = Traceback()
-        rprint(tb)
-        return ValidationResult(None, None, ValidationStatus.FAIL)
+        # Summarize tensors in input_args, input_kwargs, output_tensors
+        summarized_input_args = summarize_tensors(input_args)
+        summarized_input_kwargs = summarize_tensors(input_kwargs)
+        summarized_output_tensors = summarize_tensors(output_tensors)
+
+        error_message = f"❌ Validation exception on node '{op_type.__name__}':\n"
+        error_message += f"PyTorch op: {pytorch_op}\n"
+        error_message += f"Keras op: {keras_op}\n"
+        error_message += f"Input args: {summarized_input_args}\n"
+        error_message += f"Input kwargs: {summarized_input_kwargs}\n"
+        error_message += f"Output tensors: {summarized_output_tensors}\n"
+        error_message += f"Exception: {str(e)}\n"
+        error_message += "Traceback:\n"
+
+        # Use rich to print the error message and traceback in color
+        console = Console(width=1024)
+        console.print(error_message)
+        # console.print_exception(show_locals=True)
+
+        # Optionally, issue a warning (this will not be colored)
+        warnings.warn(error_message)
+
+        return ValidationResult(None, None, ValidationStatus.FAIL, error_message)
+
+
 
 def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, is_training=False):
     args_tf = pytorch2keras_recursively(args_pt, channel_order=ChannelOrder.TENSORFLOW)
