@@ -1,4 +1,3 @@
-import traceback
 import warnings
 from enum import Enum
 import math
@@ -12,18 +11,20 @@ from nobuco.locate.link import get_link_to_obj
 from nobuco.util import str_parents, collect_recursively
 
 
+# Import rich for colored tracebacks
+from rich import print as rprint
+from rich.traceback import Traceback
+
 class ValidationStatus(Enum):
     SUCCESS = 1
     FAIL = 2
     INACCURATE = 3
-
 
 class ValidationResult:
     def __init__(self, diff_abs: float, diff_rel: float, status: ValidationStatus):
         self.diff_abs = diff_abs
         self.diff_rel = diff_rel
         self.status = status
-
 
 class ConversionResult:
     def __init__(self, converted_manually, is_implemented=True, is_duplicate=False, connectivity_status=None, converter=None):
@@ -41,7 +42,6 @@ class ConversionResult:
             location_link = get_link_to_obj(convert_func)
             return location_link
 
-
 def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensors, op_type, tolerance=1e-4) -> ValidationResult:
     try:
         diffs = validate_diff_default(keras_op, pytorch_op, input_args, input_kwargs, output_tensors)
@@ -58,9 +58,11 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
         return ValidationResult(diff_abs, diff_rel, status)
     except Exception as e:
         warnings.warn(f"Validation exception on node '{op_type.__name__}': {e}")
-        traceback.print_exc()
+        # Use rich to print the traceback in color
+        from rich.traceback import Traceback
+        tb = Traceback()
+        rprint(tb)
         return ValidationResult(None, None, ValidationStatus.FAIL)
-
 
 def validate_diff_default(keras_op, pytorch_op, args_pt, kwargs_pt, outputs_pt, is_training=False):
     args_tf = pytorch2keras_recursively(args_pt, channel_order=ChannelOrder.TENSORFLOW)
