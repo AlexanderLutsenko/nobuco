@@ -30,7 +30,13 @@ from nobuco.vis.html_stylizer import HtmlStylizer
 # noinspection PyUnresolvedReferences
 from nobuco.node_converters import *
 from nobuco.vis.progress import ProgressBar
+from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
+from rich.traceback import Traceback
 
+import inspect
+console = Console()
 # Decorate pytorch ops right away
 Tracer.decorate_all()
 
@@ -149,9 +155,20 @@ def convert_hierarchy(
                 keras_op = convert_node(node, node_converter)
                 node_is_reusable = node_converter.reusable
             except Exception as e:
-                warnings.warn(f"Conversion exception on node '{node.get_type().__name__}': {e}")
-                traceback.print_exc()
+                console.print(Panel(f"[bold red]Conversion exception on node '[cyan]{node.get_type().__name__}[/cyan]'", 
+                                    title="Conversion Error", expand=False))
+                console.print(f"[yellow]Error message:[/yellow] {str(e)}")
+                
+                tb = Traceback()
+                console.print(tb)
+                
+                if hasattr(node, 'wrapped_op') and hasattr(node.wrapped_op, 'op'):
+                    op_source = inspect.getsource(node.wrapped_op.op)
+                    console.print("[yellow]Original operation source:[/yellow]")
+                    console.print(Syntax(op_source, "python", theme="monokai", line_numbers=True))
+                
                 keras_op = FailedConversionStub(node.get_op())
+                console.print("[red]Using FailedConversionStub for this node.[/red]")
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
             progress_bar.update(hierarchy.get_op_count())
         elif len(children) > 0 or isinstance(node.get_op(), nn.Module):
