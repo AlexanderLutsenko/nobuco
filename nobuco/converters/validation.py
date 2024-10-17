@@ -98,7 +98,7 @@ def validate(node, pytorch_op, keras_op, input_args, input_kwargs, output_tensor
         # console.print_exception(show_locals=True)
 
         # Optionally, issue a warning (this will not be colored)
-        warnings.warn(error_message)
+        # warnings.warn(error_message)
 
         return ValidationResult(None, None, ValidationStatus.FAIL, error_message)
 
