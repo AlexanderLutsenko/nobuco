@@ -3,3 +3,4 @@ torchvision==0.16.1
 torchaudio==2.1.1
 tensorflow==2.15.0.post1
 sty>=1.0.0
+rich
