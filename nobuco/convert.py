@@ -30,13 +30,14 @@ from nobuco.vis.html_stylizer import HtmlStylizer
 # noinspection PyUnresolvedReferences
 from nobuco.node_converters import *
 from nobuco.vis.progress import ProgressBar
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.traceback import Traceback
 
-import inspect
 console = Console()
+
 # Decorate pytorch ops right away
 Tracer.decorate_all()
 
@@ -169,6 +170,10 @@ def convert_hierarchy(
                 
                 keras_op = FailedConversionStub(node.get_op())
                 console.print("[red]Using FailedConversionStub for this node.[/red]")
+            
+
+
+
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
             progress_bar.update(hierarchy.get_op_count())
         elif len(children) > 0 or isinstance(node.get_op(), nn.Module):
@@ -344,20 +349,17 @@ def pytorch_to_keras(
 
     start = time.time()
 
-    progress_bar = ProgressBar("Tracing", bar_format="{desc}: {n_fmt} ops [{elapsed}]")
-    node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs, progress_bar)
-    progress_bar.close()
+    with ProgressBar("Tracing", total=None) as progress_bar:
+        node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs, progress_bar)
 
-    progress_bar = ProgressBar("Converting",
-                               total=node_hierarchy.get_op_count(),
-                               bar_format="{desc}: |{bar}| {n_fmt}/{total_fmt} ops [{elapsed}]"
-                               )
-    keras_converted_node = convert_hierarchy(node_hierarchy, CONVERTER_DICT,
-                                             reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
-                                             tolerance=validation_tolerance,
-                                             progress_bar=progress_bar,
-                                             )
-    progress_bar.close()
+
+    with ProgressBar("Converting", total=node_hierarchy.get_op_count()) as progress_bar:
+        keras_converted_node = convert_hierarchy(node_hierarchy, CONVERTER_DICT,
+                                                reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
+                                                tolerance=validation_tolerance,
+                                                progress_bar=progress_bar,
+                                                )
+
 
     validation_result_dict = collect_validation_results(keras_converted_node)
     conversion_result_dict = collect_conversion_results(keras_converted_node)
