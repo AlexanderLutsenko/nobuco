@@ -24,7 +24,7 @@ class MultiheadAttentionModel(nn.Module):
         attn_output, _ = self.multihead_attn(x, x, x)
         return attn_output.permute(1, 2, 0)
 
-class FurtherImprovedMultiHeadAttention(keras.layers.Layer):
+class TFMultiHeadAttention(keras.layers.Layer):
     def __init__(self, d_model, num_heads):
         super().__init__()
         self.d_model = d_model
@@ -87,7 +87,32 @@ class FurtherImprovedMultiHeadAttention(keras.layers.Layer):
 
 @nobuco.converter(MultiheadAttentionModel, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_MultiheadAttentionModel(self, x):
-    custom_mha = FurtherImprovedMultiHeadAttention(d_model=128, num_heads=8)
+    custom_mha = TFMultiHeadAttention(d_model=128, num_heads=8)
+    
+    # Copy weights from PyTorch model to Keras layer
+    in_proj_weight = self.multihead_attn.in_proj_weight.detach().numpy()  # Shape: (3*d_model, d_model)
+    in_proj_bias = self.multihead_attn.in_proj_bias.detach().numpy()  # Shape: (3*d_model)
+    
+    # Split in_proj_weight and in_proj_bias into wq, wk, wv
+    d_model = 128
+    wq_weight = in_proj_weight[:d_model, :]  # Shape: (d_model, d_model)
+    wk_weight = in_proj_weight[d_model:2*d_model, :]
+    wv_weight = in_proj_weight[2*d_model:, :]
+    
+    wq_bias = in_proj_bias[:d_model]
+    wk_bias = in_proj_bias[d_model:2*d_model]
+    wv_bias = in_proj_bias[2*d_model:]
+    
+    # Set weights in custom_mha.wq, wq_weight should be transposed
+    custom_mha.wq.set_weights([wq_weight.T, wq_bias])
+    custom_mha.wk.set_weights([wk_weight.T, wk_bias])
+    custom_mha.wv.set_weights([wv_weight.T, wv_bias])
+    
+    # Now set the output projection weights
+    out_proj_weight = self.multihead_attn.out_proj.weight.detach().numpy()  # Shape: (d_model, d_model)
+    out_proj_bias = self.multihead_attn.out_proj.bias.detach().numpy()  # Shape: (d_model,)
+    
+    custom_mha.dense.set_weights([out_proj_weight.T, out_proj_bias])
     
     def func(x):
         x = tf.transpose(x, perm=[2, 0, 1])
@@ -95,6 +120,7 @@ def converter_MultiheadAttentionModel(self, x):
         return tf.transpose(output, perm=[1, 2, 0])
     
     return func
+
 
 # Create the model
 model = MultiheadAttentionModel().eval()
@@ -116,7 +142,7 @@ keras_model.save(model_path + '.keras')
 print('Model saved')
 
 # Define custom objects
-custom_objects = {'WeightLayer': WeightLayer, 'FurtherImprovedMultiHeadAttention': FurtherImprovedMultiHeadAttention}
+custom_objects = {'WeightLayer': WeightLayer, 'TFMultiHeadAttention': TFMultiHeadAttention}
 
 # Load the Keras model
 keras_model_restored = keras.models.load_model(model_path + '.keras', custom_objects=custom_objects)
