@@ -20,16 +20,11 @@ class MultiheadAttentionModel(nn.Module):
         self.multihead_attn = nn.MultiheadAttention(embed_dim, num_heads)
 
     def forward(self, x):
-        # Reshape input to (seq_len, batch_size, embed_dim)
         x = x.permute(2, 0, 1)
-        
-        # Self-attention: use the same tensor for query, key, and value
         attn_output, _ = self.multihead_attn(x, x, x)
-        
-        # Reshape output back to (batch_size, embed_dim, seq_len)
         return attn_output.permute(1, 2, 0)
 
-class CustomMultiHeadAttention(keras.layers.Layer):
+class FurtherImprovedMultiHeadAttention(keras.layers.Layer):
     def __init__(self, d_model, num_heads):
         super().__init__()
         self.d_model = d_model
@@ -38,26 +33,39 @@ class CustomMultiHeadAttention(keras.layers.Layer):
         assert d_model % num_heads == 0
         self.depth = d_model // num_heads
         
-        self.wq = keras.layers.Dense(d_model)
-        self.wk = keras.layers.Dense(d_model)
-        self.wv = keras.layers.Dense(d_model)
+        self.wq = keras.layers.Dense(d_model, use_bias=True)
+        self.wk = keras.layers.Dense(d_model, use_bias=True)
+        self.wv = keras.layers.Dense(d_model, use_bias=True)
         
         self.dense = keras.layers.Dense(d_model)
-
+        
+        # Initialize weights to match PyTorch's default initialization
+        self.wq.build((None, d_model))
+        self.wk.build((None, d_model))
+        self.wv.build((None, d_model))
+        self.dense.build((None, d_model))
+        
+        for layer in [self.wq, self.wk, self.wv, self.dense]:
+            k = np.sqrt(1.0 / layer.weights[0].shape[0])
+            layer.set_weights([
+                np.random.uniform(-k, k, layer.weights[0].shape),
+                np.zeros(layer.weights[1].shape)
+            ])
+        
     def split_heads(self, x, batch_size):
         x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
-
+    
     def call(self, q, k, v):
-        batch_size = tf.shape(q)[0]
+        batch_size = tf.shape(q)[1]
         
         q = self.wq(q)
         k = self.wk(k)
         v = self.wv(v)
         
-        q = self.split_heads(q, batch_size)
-        k = self.split_heads(k, batch_size)
-        v = self.split_heads(v, batch_size)
+        q = self.split_heads(tf.transpose(q, [1, 0, 2]), batch_size)
+        k = self.split_heads(tf.transpose(k, [1, 0, 2]), batch_size)
+        v = self.split_heads(tf.transpose(v, [1, 0, 2]), batch_size)
         
         scaled_attention, attention_weights = self.scaled_dot_product_attention(q, k, v)
         
@@ -65,8 +73,10 @@ class CustomMultiHeadAttention(keras.layers.Layer):
         concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.d_model))
         
         output = self.dense(concat_attention)
+        output = tf.transpose(output, [1, 0, 2])
+        
         return output, attention_weights
-
+    
     def scaled_dot_product_attention(self, q, k, v):
         matmul_qk = tf.matmul(q, k, transpose_b=True)
         dk = tf.cast(tf.shape(k)[-1], tf.float32)
@@ -77,12 +87,12 @@ class CustomMultiHeadAttention(keras.layers.Layer):
 
 @nobuco.converter(MultiheadAttentionModel, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
 def converter_MultiheadAttentionModel(self, x):
-    custom_mha = CustomMultiHeadAttention(d_model=128, num_heads=8)
+    custom_mha = FurtherImprovedMultiHeadAttention(d_model=128, num_heads=8)
     
     def func(x):
-        x = tf.transpose(x, perm=[2, 0, 1])  # (seq_len, batch_size, embed_dim)
+        x = tf.transpose(x, perm=[2, 0, 1])
         output, _ = custom_mha(x, x, x)
-        return tf.transpose(output, perm=[1, 2, 0])  # (batch_size, embed_dim, seq_len)
+        return tf.transpose(output, perm=[1, 2, 0])
     
     return func
 
@@ -90,7 +100,7 @@ def converter_MultiheadAttentionModel(self, x):
 model = MultiheadAttentionModel().eval()
 
 # Create a dummy input tensor
-dummy_input = torch.randn(1, 128, 4096)  # (batch_size, embed_dim, seq_len)
+dummy_input = torch.randn(1, 128, 4096)
 
 # Convert PyTorch model to Keras
 keras_model = nobuco.pytorch_to_keras(
@@ -102,19 +112,19 @@ keras_model = nobuco.pytorch_to_keras(
 
 # Save the Keras model
 model_path = 'multihead_attention'
-keras_model.save(model_path + '.h5')
+keras_model.save(model_path + '.keras')
 print('Model saved')
 
 # Define custom objects
-custom_objects = {'WeightLayer': WeightLayer, 'CustomMultiHeadAttention': CustomMultiHeadAttention}
+custom_objects = {'WeightLayer': WeightLayer, 'FurtherImprovedMultiHeadAttention': FurtherImprovedMultiHeadAttention}
 
 # Load the Keras model
-keras_model_restored = keras.models.load_model(model_path + '.h5', custom_objects=custom_objects)
+keras_model_restored = keras.models.load_model(model_path + '.keras', custom_objects=custom_objects)
 print('Model loaded')
 
 # Convert to TFLite
-converter = TFLiteConverter.from_keras_model_file(model_path + '.h5', custom_objects=custom_objects)
-converter.target_ops = [tf.lite.OpsSet.SELECT_TF_OPS, tf.lite.OpsSet.TFLITE_BUILTINS]
+converter = tf.lite.TFLiteConverter.from_keras_model(keras_model_restored)
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
 tflite_model = converter.convert()
 
 # Save the TFLite model
@@ -130,3 +140,4 @@ keras_output = keras_model.predict(dummy_input.numpy())
 print("PyTorch output shape:", pytorch_output.shape)
 print("Keras output shape:", keras_output.shape)
 print("Output difference:", np.abs(pytorch_output.numpy() - keras_output).max())
+print("Relative difference:", np.abs((pytorch_output.numpy() - keras_output) / pytorch_output.numpy()).max())
