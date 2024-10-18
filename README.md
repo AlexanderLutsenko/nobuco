@@ -1134,6 +1134,102 @@ class MyModule(nn.Module):          ################################
 
 ---
 
+
+
+## Transferring existing weights
+
+Step 1: Set up the converter function
+
+First, you need to define a converter function for your PyTorch model. Use the `@converter` decorator from nobuco:
+
+```python
+from nobuco import converter, ChannelOrderingStrategy
+
+@converter(YourPyTorchModel, channel_ordering_strategy=ChannelOrderingStrategy.FORCE_PYTORCH_ORDER)
+def converter_YourPyTorchModel(self, *args):
+    # Create the corresponding Keras model
+    keras_model = YourKerasModel(...)
+    
+    # Build the Keras model with dummy inputs
+    dummy_inputs = [tf.zeros_like(arg) for arg in args]
+    keras_model(dummy_inputs)
+    
+    # Transfer weights here
+    
+    return keras_model
+```
+
+Step 2: Create the Keras model
+
+Inside the converter function, create the corresponding Keras model with the same architecture as your PyTorch model.
+
+Step 3: Build the Keras model
+
+Call the Keras model with dummy inputs to build its layers. This step is crucial for setting up the weights.
+
+Step 4: Transfer weights
+
+Now, you'll transfer weights from the PyTorch model to the Keras model. This process varies depending on the layer types, but here are some common scenarios:
+
+a) For simple layers (e.g., Dense, Conv2D):
+
+```python
+keras_layer.set_weights([
+    pytorch_layer.weight.detach().numpy().T,  # Transpose for Dense layers
+    pytorch_layer.bias.detach().numpy()
+])
+```
+
+b) For more complex layers (e.g., MultiHeadAttention):
+
+```python
+# Extract weights from PyTorch layer
+pytorch_weights = pytorch_layer.some_weight.detach().numpy()
+pytorch_bias = pytorch_layer.some_bias.detach().numpy()
+
+# Reshape or process weights if necessary
+processed_weights = process_weights(pytorch_weights)
+
+# Set weights for Keras layer
+keras_layer.set_weights([processed_weights, pytorch_bias])
+```
+
+Step 5: Handle nested structures
+
+If your model has nested structures (e.g., a list of blocks), you may need to iterate through them:
+
+```python
+for pytorch_block, keras_block in zip(self.blocks, keras_model.blocks):
+    # Transfer weights for each block
+    transfer_block_weights(pytorch_block, keras_block)
+```
+
+Step 6: Use the converter
+
+After defining your converter function, you can use it to convert your PyTorch model to Keras:
+
+```python
+keras_model = nobuco.pytorch_to_keras(
+    pytorch_model,
+    args=[dummy_input1, dummy_input2, ...],
+    inputs_channel_order=ChannelOrder.PYTORCH,
+    outputs_channel_order=ChannelOrder.PYTORCH
+)
+```
+
+Tips for beginners:
+
+1. Start with simpler models and gradually work your way up to more complex ones.
+2. Print the shapes of weights before and after transfer to ensure they match.
+3. Use `model.summary()` for both PyTorch and Keras models to compare their structures.
+4. Be aware of differences in weight formats between PyTorch and Keras (e.g., transposing may be necessary).
+5. For custom layers, you might need to implement custom weight transfer logic.
+6. Always verify the converted model's output against the original PyTorch model's output.
+
+
+
+
+
 ### Acknowledgements
 
 Slice assign converter is based on [Zaccharie Ramzi's tf-slice-assign script](https://github.com/zaccharieramzi/tf-slice-assign).
