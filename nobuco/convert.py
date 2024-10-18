@@ -156,20 +156,28 @@ def convert_hierarchy(
                 keras_op = convert_node(node, node_converter)
                 node_is_reusable = node_converter.reusable
             except Exception as e:
-                console.print(Panel(f"[bold red]Conversion exception on node '[cyan]{node.get_type().__name__}[/cyan]'", 
-                                    title="Conversion Error", expand=False))
-                console.print(f"[yellow]Error message:[/yellow] {str(e)}")
-                
-                tb = Traceback()
-                console.print(tb)
-                
-                if hasattr(node, 'wrapped_op') and hasattr(node.wrapped_op, 'op'):
-                    op_source = inspect.getsource(node.wrapped_op.op)
-                    console.print("[yellow]Original operation source:[/yellow]")
-                    console.print(Syntax(op_source, "python", theme="monokai", line_numbers=True))
-                
-                keras_op = FailedConversionStub(node.get_op())
-                console.print("[red]Using FailedConversionStub for this node.[/red]")
+                try:
+                    console.print(Panel(f"[bold red]Conversion exception on node '[cyan]{node.get_type().__name__}[/cyan]'",
+                                        title="Conversion Error", expand=False))
+                    console.print(f"[yellow]Error message:[/yellow] {str(e)}")
+            
+                    tb = Traceback()
+                    console.print(tb)
+            
+                    if hasattr(node, 'wrapped_op') and hasattr(node.wrapped_op, 'op'):
+                        op_source = inspect.getsource(node.wrapped_op.op)
+                        console.print("[yellow]Original operation source:[/yellow]")
+                        console.print(Syntax(op_source, "python", theme="monokai", line_numbers=True))
+            
+                    console.print("[red]Using FailedConversionStub for this node.[/red]")
+                except Exception as rich_error:
+                    # Fallback to simple print if Rich console fails
+                    print(f"Conversion exception on node '{node.get_type().__name__}': {str(e)}")
+                    print(f"Rich console error: {str(rich_error)}")
+                finally:
+                    keras_op = FailedConversionStub(node.get_op())
+                    node_is_reusable = False
+
             
 
 
