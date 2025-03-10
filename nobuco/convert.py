@@ -360,14 +360,12 @@ def pytorch_to_keras(
     with ProgressBar("Tracing", total=None) as progress_bar:
         node_hierarchy = Tracer.trace(model, trace_shape, enable_torch_tracing, args, kwargs, progress_bar)
 
-
     with ProgressBar("Converting", total=node_hierarchy.get_op_count()) as progress_bar:
         keras_converted_node = convert_hierarchy(node_hierarchy, CONVERTER_DICT,
                                                 reuse_layers=True, full_validation=full_validation, constants_to_variables=constants_to_variables,
                                                 tolerance=validation_tolerance,
                                                 progress_bar=progress_bar,
                                                 )
-
 
     validation_result_dict = collect_validation_results(keras_converted_node)
     conversion_result_dict = collect_conversion_results(keras_converted_node)

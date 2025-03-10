@@ -2,12 +2,11 @@ from tqdm import tqdm
 import time
 import warnings
 
+
 class ProgressBar:
     def __init__(self, prefix, total=None, bar_format=None):
         self.prefix = prefix
         self.total = total
-        self.start_time = time.time()
-        
         self.bar = tqdm(
             total=total,
             desc=f"[Nobuco] {self.prefix}",
@@ -34,9 +33,6 @@ class ProgressBar:
         except Exception:
             warnings.warn("Error occurred while closing the progress bar.", RuntimeWarning)
         
-        elapsed = time.time() - self.start_time
-        print(f"\n[Nobuco] {self.prefix} (DONE) - Elapsed time: {elapsed:.2f} sec")
-
     def __del__(self):
         try:
             self.close()
