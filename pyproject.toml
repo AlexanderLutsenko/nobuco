@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nobuco"
-version = "0.16.5"
+version = "0.17.0"
 description = "Pytorch to Tensorflow conversion made intuitive"
 readme = "README.md"
 authors = [
@@ -19,7 +19,8 @@ keywords = ["pytorch", "tensorflow", "keras", "converter"]
 dependencies = [
     "sty >= 1.0.0",
     "tqdm >= 4.66.0",
-    "numpy"
+    "rich",
+    "numpy",
 ]
 requires-python = ">=3.7"
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import inspect
 import time
-import traceback
 import warnings
 from typing import Callable, Dict, Collection, Optional, List, Union, Tuple
 
@@ -9,7 +9,6 @@ import torch
 
 from nobuco.converters.tensor import permute_pytorch2keras
 from torch import nn
-import tensorflow as tf
 import keras
 
 from nobuco.commons import ChannelOrder, ChannelOrderingStrategy, TF_TENSOR_CLASSES, TraceLevel
@@ -177,10 +176,6 @@ def convert_hierarchy(
                 finally:
                     keras_op = FailedConversionStub(node.get_op())
                     node_is_reusable = False
-
-            
-
-
 
             conversion_result = ConversionResult(converted_manually=True, converter=converter)
             progress_bar.update(hierarchy.get_op_count())
